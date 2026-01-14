@@ -1,0 +1,33 @@
+const express = require('express');
+const sequelize = require('./models').sequelize; // From models/index.js
+const cors=require('cors')
+const app = express();
+app.use(express.json());
+app.use(cors()); 
+
+const roleRoutes = require('./routes/roleRoutes');
+const employeeRoutes = require('./routes/employeeRoutes');
+const classRoutes = require('./routes/classRoutes');
+const academicYearRoutes = require('./routes/academicYearRoutes');
+const casteRoutes = require('./routes/casteRoutes');
+const divisionRoutes = require('./routes/divisionRoutes');
+const physicallyDisableRoutes = require('./routes/phisallyDisableRoute');
+
+app.use('/api/physically-disable', physicallyDisableRoutes);
+
+app.use('/api/divisions', divisionRoutes);
+app.use('/api/castes', casteRoutes);
+app.use('/api/academic-years', academicYearRoutes);
+app.use('/api/classes', classRoutes);
+app.use('/api/employees', employeeRoutes);
+app.use('/api/roles', roleRoutes);
+
+// Routes
+
+
+// Sync DB and start (for dev; use migrations in prod)
+sequelize.sync().then(() => {
+  console.log('DB connected');
+}).catch(err => console.error('DB error:', err));
+
+module.exports = app;
