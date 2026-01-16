@@ -17,11 +17,12 @@ router.post('/stage', stageController.createStage);
 // routes/admin/fields.js
 router.get('/stage/allfiled/:stageId', fieldController.getFieldsByStage);
 router.post('/stage/addfield/:stageId', fieldController.createField);
+router.get('/allfield',fieldController.getallField)
 //router.put('/:id', fieldController.updateField);
 //router.delete('/:id', fieldController.deleteField);
 
 // routes/admin/field-options.js
-router.get('/fieldOption', fieldOptionController.getOptionsByField);
+router.get('/fieldOption/:fieldId', fieldOptionController.getOptionsByField);
 router.post('/fieldOption/:fieldId', fieldOptionController.createOption);
 //router.delete('/:id', fieldOptionController.deleteOption);
 

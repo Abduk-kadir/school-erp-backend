@@ -1,4 +1,6 @@
-const { Field } = require('../models');
+const { Field,Stage,FieldType } = require('../models');
+const { sequelize, Op } = require('../models');
+
 
 exports.getFieldsByStage = async (req, res) => {
   try {
@@ -12,7 +14,54 @@ exports.getFieldsByStage = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+// At the top of the file (if not already there)
+// or wherever your models/index.js exports sequelize
 
+exports.getallField = async (req, res) => {
+  try {
+    const fields = await Field.findAll({
+      raw: true,  // important → returns flat objects
+      attributes: [
+        'id',
+        'name',
+        'label',
+        'isRequired',
+        'placeholder',
+        'defaultValue',
+        'order',
+        [sequelize.col('stage.name'), 'stageName'],           // alias for stage name
+        [sequelize.col('fieldType.typeName'), 'fieldTypeName'] // alias for field type name
+      ],
+      include: [
+        {
+          model: Stage,
+          as: 'stage',
+          attributes: []  // we only want the name via alias
+        },
+        {
+          model: FieldType,
+          as: 'fieldType',   // ← correct alias
+          attributes: []     // we only want typeName via alias
+        }
+      ],
+      order: [
+        [sequelize.col('stage.order'), 'ASC'],  // first sort by stage order
+        ['order', 'ASC']                        // then by field order inside stage
+      ]
+    });
+
+    res.json({
+      success: true,
+      data: fields
+    });
+  } catch (err) {
+    console.error('Error fetching all fields:', err);
+    res.status(500).json({
+      success: false,
+      message: err.message || 'Server error while fetching fields'
+    });
+  }
+};
 exports.createField = async (req, res) => {
   try {
     console.log('filed type id:',req.body.filedTypeId)
