@@ -12,6 +12,7 @@ const academicYearRoutes = require('./routes/academicYearRoutes');
 const casteRoutes = require('./routes/casteRoutes');
 const divisionRoutes = require('./routes/divisionRoutes');
 const physicallyDisableRoutes = require('./routes/phisallyDisableRoute');
+const formRoutes=require('./routes/formRoutes')
 
 app.use('/api/physically-disable', physicallyDisableRoutes);
 
@@ -21,6 +22,8 @@ app.use('/api/academic-years', academicYearRoutes);
 app.use('/api/classes', classRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/roles', roleRoutes);
+
+app.use('/api',formRoutes)
 
 // Routes
 
