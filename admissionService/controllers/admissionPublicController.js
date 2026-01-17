@@ -5,7 +5,6 @@ exports.getFullFormStructure = async (req, res) => {
     const stages = await Stage.findAll({
       attributes: ['id', 'name', 'description', 'order'],
       order: [['order', 'ASC']],
-
       include: [
         {
           model: Field,

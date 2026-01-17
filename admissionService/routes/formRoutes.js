@@ -24,6 +24,8 @@ router.get('/allfield',fieldController.getallField)
 // routes/admin/field-options.js
 router.get('/fieldOption/:fieldId', fieldOptionController.getOptionsByField);
 router.post('/fieldOption/:fieldId', fieldOptionController.createOption);
+router.get('/fieldAllOption', fieldOptionController.getAllOption);
+router.post('/fieldMultiple/:fieldId',fieldOptionController.createmultipleOption)
 //router.delete('/:id', fieldOptionController.deleteOption);
 
 // routes/admin/field-types.js  (mostly read-only)

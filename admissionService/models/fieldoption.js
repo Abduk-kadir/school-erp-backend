@@ -2,6 +2,7 @@
 const {
   Model
 } = require('sequelize');
+const { Field} = require('../models');
 module.exports = (sequelize, DataTypes) => {
   class FieldOption extends Model {
     /**
