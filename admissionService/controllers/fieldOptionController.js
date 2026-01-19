@@ -14,7 +14,7 @@ exports.createmultipleOption = async (req, res) => {
       });
     }
    
-
+     console.log('table name is::::',tablename)
     const config = tableConfig[tablename];
 
     if (!config) {
@@ -26,14 +26,16 @@ exports.createmultipleOption = async (req, res) => {
    
    let {model}=config
    let data=await model.findAll({ raw: true })
-   
+  
     const preparedOptions = data.map(item => ({
-      ...item,
-      fieldId: item.fieldId || fieldId,  // prefer item's fieldId if sent, else from param/body
+     fieldId: fieldId,
+      value: item.value,
+      label: item.label,
+      order: item.order
+       // prefer item's fieldId if sent, else from param/body
     }));
-    console.log(preparedOptions)
-    // Bulk create - very efficient for many rows
-    await FieldOption.destroy({ where: { fieldId } });
+   
+   await FieldOption.destroy({ where: { fieldId } });
    const createdOptions = await FieldOption.bulkCreate(preparedOptions, {
       validate: true,           // run validations on each row
       individualHooks: true,    // run hooks (if you have any) on each record

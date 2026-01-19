@@ -14,7 +14,7 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   caste_master.init({
-    cast_name: DataTypes.STRING
+    value: DataTypes.STRING
   }, {
     sequelize,
     modelName: 'caste_master',

@@ -33,7 +33,7 @@ const createDisability = async (req, res) => {
     const { name } = req.body;
     if (!name) return res.status(400).json({ message: "Name is required" });
 
-    const newDisability = await phyically_disable.create({ name });
+    const newDisability = await phyically_disable.create({ value:name});
     res.status(201).json(newDisability);
   } catch (error) {
     console.error(error);

@@ -2,14 +2,14 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('caste_masters', {
+    await queryInterface.createTable('States', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      cast_name: {
+      value: {
         type: Sequelize.STRING
       },
       createdAt: {
@@ -23,6 +23,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('caste_masters');
+    await queryInterface.dropTable('States');
   }
 };

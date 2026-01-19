@@ -14,7 +14,7 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   phyically_disable.init({
-    name: DataTypes.STRING
+    value: DataTypes.STRING
   }, {
     sequelize,
     modelName: 'phyically_disable',

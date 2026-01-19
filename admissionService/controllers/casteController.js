@@ -9,7 +9,7 @@ const createCaste = async (req, res) => {
       return res.status(400).json({ message: "Caste name is required" });
     }
 
-    const newCaste = await caste_master.create({ cast_name });
+    const newCaste = await caste_master.create({ value:cast_name });
     res.status(201).json({ message: "Caste created", data: newCaste });
   } catch (error) {
     console.error(error);
