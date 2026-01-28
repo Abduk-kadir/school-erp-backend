@@ -1,7 +1,6 @@
 const { Field,Stage,FieldType } = require('../models');
 const { sequelize, Op } = require('../models');
 
-
 exports.getFieldsByStage = async (req, res) => {
   try {
     const fields = await Field.findAll({
@@ -69,6 +68,28 @@ exports.createField = async (req, res) => {
       ...req.body,
       stageId: req.params.stageId || req.body.stageId,
     });
+    let {tableName,columnType,name}=req.body
+    const allowedTypes = ["VARCHAR(255)", "TEXT", "INTEGER", "DATE"];
+    console.log('column type:',columnType)
+    if (!allowedTypes.includes(columnType)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid column type",
+      });
+    }
+    const tableExists = await sequelize.getQueryInterface().showAllTables();
+    console.log('tables are:',tableExists)
+    if (!tableExists.includes(tableName)) {
+      return res.status(400).json({
+        success: false,
+        message: `Table '${tableName}' doesn't exist`,
+      });
+    }
+   console.log(tableName)
+   let sql = `ALTER TABLE \`${tableName}\` ADD COLUMN \`${name}\` ${columnType} NULL`;
+
+    let result =await sequelize.query(sql);
+    console.log('result is',result)
     res.status(201).json({ success: true, data: field });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
