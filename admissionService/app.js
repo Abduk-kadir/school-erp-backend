@@ -2,6 +2,7 @@ const express = require('express');
 const sequelize = require('./models').sequelize; // From models/index.js
 const cors=require('cors')
 const app = express();
+const path = require('path');
 app.use(express.json());
 app.use(cors()); 
 
@@ -17,11 +18,21 @@ const personalInformationRoutes = require("./routes/personalInformationRoute");
 const subjectRoutes = require('./routes/subjectRoute');
 const categoryRoutes=require('./routes/catergoryRoute')
 const documentTypeRoutes = require('./routes/documentTypeRoute');
+const requirementDocumentRoutes = require('./routes/requirementDocumentRoutes');
+const studentDocumentRoutes = require('./routes/studentDocumentRoutes');
+const programRoutes = require('./routes/programRoutes');
+
+const programSubjectRoutes = require('./routes/programSubjectRoutes');
+
+
+app.use('/api/program-subjects', programSubjectRoutes);
+app.use('/api/programs', programRoutes);
+
+app.use('/api/student-documents', studentDocumentRoutes);
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 
 app.use('/api/document-types', documentTypeRoutes);
-
-const requirementDocumentRoutes = require('./routes/requirementDocumentRoutes');
 app.use('/api/requirement-documents', requirementDocumentRoutes);
 
 

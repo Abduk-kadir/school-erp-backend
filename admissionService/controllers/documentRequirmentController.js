@@ -46,6 +46,7 @@ async function getAll(req, res) {
 id: doc.id,
 class_name: doc.class.class_name,
 document_type: doc.documentType.name,
+document_id:doc.document_type_id,
 category: doc.category.name,
 condition_attribute:doc.condition_attribute,
 condition_value:doc.condition_value,
