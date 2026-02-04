@@ -23,10 +23,17 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: true,      // important: programId can be NULL
         
       });
+      ProgramSubject.belongsTo(models.ElectiveBasket,{
+        foreignKey:"basketId",
+        as:'electivebasket',
+        allowNull: true, 
+
+      })
      
     }
   }
   ProgramSubject.init({
+    batch:DataTypes.STRING,
     classId: DataTypes.INTEGER,
     programId: DataTypes.INTEGER,
     subjectId: DataTypes.INTEGER,

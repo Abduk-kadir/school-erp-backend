@@ -7,6 +7,12 @@ async function getDataTable(req, model, searchFields = [], extraWhere = {}) {
   const length = parseInt(req.query.length) || 10;
   const search = req.query['search[value]'] || req.query.search?.value || "";
 
+  const filter = req.query.filter|| {};
+
+  console.log(filter);
+
+
+
   // Build search clause
   const searchClause = search && searchFields.length > 0
     ? { [Op.or]: searchFields.map(field => ({ [field]: { [Op.like]: `%${search}%` } })) }

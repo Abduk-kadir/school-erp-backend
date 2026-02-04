@@ -9,6 +9,10 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
+      batch: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
       classId: {
         type: Sequelize.INTEGER,
         allowNull: false,
@@ -75,6 +79,22 @@ module.exports = {
       onDelete: 'CASCADE',
       onUpdate: 'CASCADE',
     });
+
+     await queryInterface.addConstraint('ProgramSubjects', {
+      fields: ['basketId'],
+      type: 'foreign key',
+      name: 'fk_baskets_basket',
+      references: {
+        table: 'electivebaskets',
+        field: 'id',
+      },
+      onDelete: 'CASCADE',
+      onUpdate: 'CASCADE',
+    });
+
+
+
+
   },
   async down(queryInterface, Sequelize) {
     await queryInterface.dropTable('ProgramSubjects');

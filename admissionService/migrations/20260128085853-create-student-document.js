@@ -33,7 +33,7 @@ module.exports = {
     await queryInterface.addConstraint('StudentDocuments', {
       fields: ['document_id'],
       type: 'foreign key',
-      name: 'fk_student_documents_document_type',
+      name: 'fk_student_documents_document_type_v2',
       references: {
         table: 'document_types',
         field: 'id',

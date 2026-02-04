@@ -1,12 +1,20 @@
-const { ProgramSubject, Class, Program, Subject, ElectiveBasket } = require('../models');
+const { ProgramSubject, class_master, Program, Subject, ElectiveBasket } = require('../models');
 exports.getAllProgramSubjects = async (req, res) => {
+ 
+  let {classId}=req.query
+  let whereConditon={}
+  if(classId){
+    whereConditon['classId']=classId
+  }
+
   try {
     const subjects = await ProgramSubject.findAll({
+      where:whereConditon,
       include: [
-        { model: Class, as: 'class' },
+        { model:class_master, as: 'class' },
         { model: Program, as: 'program' },
         { model: Subject, as: 'subject' },
-        { model: ElectiveBasket, as: 'basket' },
+        { model: ElectiveBasket, as: 'electivebasket' },
       ],
     });
     return res.status(200).json({
@@ -20,35 +28,129 @@ exports.getAllProgramSubjects = async (req, res) => {
   }
 };
 
-// Very useful endpoint: Get subjects for a specific class + semester
-// GET /api/program-subjects/class/:classId/semester/:semester
-exports.getSubjectsByClassAndSemester = async (req, res) => {
-  try {
-    const { classId, semester } = req.params;
 
-    const subjects = await ProgramSubject.findAll({
-      where: {
-        classId: parseInt(classId),
-        semester: parseInt(semester),
-      },
+exports.getAllProgramSubjectsByClassAndSemester = async (req, res) => {
+  console.log('calling *******');
+  let {classId}=req.query
+  let whereConditon={}
+  if(classId){
+    whereConditon['classId']=classId
+  }
+
+  try {
+    // Fetch all relevant ProgramSubject records
+    
+    const programSubjects = await ProgramSubject.findAll({
+      where:whereConditon,
       include: [
-        { model: Subject, as: 'subject' },
-        { model: Program, as: 'program' },
-        { model: ElectiveBasket, as: 'basket' },
+        {
+          model: class_master,
+          as: 'class',
+          attributes: ['id', 'class_name'],
+        },
+        {
+          model: Program,
+          as: 'program',
+          attributes: ['id', 'program_name'],
+          required: false, // allow null programId
+        },
+        {
+          model: Subject,
+          as: 'subject',
+          attributes: ['id', 'value', 'subject_code'],
+        },
+        {
+          model: ElectiveBasket,
+          as: 'electivebasket',
+          attributes: ['id', 'exactChoices'],
+          required: false,
+        },
       ],
-      order: [['isCompulsory', 'DESC'], ['sequence', 'ASC']],
     });
+
+    // Group by classId + semester
+    const grouped = {};
+
+    programSubjects.forEach((ps) => {
+      const classId = ps.classId;
+      const semester = ps.semester;
+     const key = `${ps.classId}-${ps.semester}-${ps.programId ?? 'null'}`;
+
+      if (!grouped[key]) {
+        grouped[key] = {
+          classId: classId,
+          className: ps.class?.class_name || 'Unknown Class',
+          semester: semester,
+          programId: ps.program?.id || null,
+          programName: ps.program?.program_name || null, // ← added program info here
+          compulsorySubjects: [],
+          optionalSubjects: [],
+          batch: ps.batch || null, // will be grouped by basket
+        };
+      }
+
+      const subjectData = {
+        subjectId: ps.subject?.id,
+        subjectName: ps.subject?.value||null,
+        subjectCode: ps.subject?.subject_code || null,
+        batch: ps.batch || null,
+        sequence: ps.sequence,
+      };
+
+      if (ps.isCompulsory) {
+        // Compulsory → simple array
+        grouped[key].compulsorySubjects.push(subjectData);
+      } else {
+        // Optional → group by elective basket
+        const basket = ps.electivebasket;
+
+        if (basket) {
+          // Find if this basket already exists in optionalSubjects
+          let basketGroup = grouped[key].optionalSubjects.find(
+            (b) => b.electiveBasketId === basket?.id
+          );
+
+          if (!basketGroup) {
+            basketGroup = {
+              electiveBasketId: basket?.id,
+              exactChoices: basket.exactChoices,
+              subjects: [],
+            };
+            grouped[key].optionalSubjects.push(basketGroup);
+          }
+
+          basketGroup.subjects.push(subjectData);
+        } else {
+          // Optional but no basket assigned (fallback)
+          grouped[key].optionalSubjects.push({
+            electiveBasketId: null,
+            basketName: 'General Optional',
+            subjects: [subjectData],
+          });
+        }
+      }
+    });
+
+    // Convert grouped object to array
+    const result = Object.values(grouped);
 
     return res.status(200).json({
       success: true,
-      count: subjects.length,
-      data: subjects,
+      count: result.length,
+      data: result,
     });
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ success: false, message: 'Server error' });
+    console.error('Error in getAllProgramSubjectsByClassAndSemester:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message,
+    });
   }
 };
+
+
+
 
 exports.getProgramSubjectById = async (req, res) => {
   try {
@@ -117,6 +219,7 @@ exports.bulkCreateProgramSubjects = async (req, res) => {
 
     // Prepare data - ensure programId & basketId are null if not provided
     const preparedEntries = arr.map((entry) => ({
+      batch:entry.batch,
       classId: entry.classId,
       programId: entry.programId ?? null,
       subjectId: entry.subjectId,

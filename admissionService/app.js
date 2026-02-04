@@ -21,9 +21,14 @@ const documentTypeRoutes = require('./routes/documentTypeRoute');
 const requirementDocumentRoutes = require('./routes/requirementDocumentRoutes');
 const studentDocumentRoutes = require('./routes/studentDocumentRoutes');
 const programRoutes = require('./routes/programRoutes');
-
 const programSubjectRoutes = require('./routes/programSubjectRoutes');
+const electiveBasketRoutes = require('./routes/electiveBasketRoutes');
+const studentSubjectRoutes = require('./routes/studentSubjectRoutes');
+const declarationRoutes = require('./routes/declarationRoutes');
 
+app.use('/api/declarations', declarationRoutes);
+app.use('/api/studentsubjects', studentSubjectRoutes);
+app.use('/api/elective-baskets', electiveBasketRoutes);
 
 app.use('/api/program-subjects', programSubjectRoutes);
 app.use('/api/programs', programRoutes);

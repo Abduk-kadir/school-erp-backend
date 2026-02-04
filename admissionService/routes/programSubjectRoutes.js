@@ -8,16 +8,18 @@ const {
   createProgramSubject,
   updateProgramSubject,
   deleteProgramSubject,
-  bulkCreateProgramSubjects
+  bulkCreateProgramSubjects,
+  getAllProgramSubjectsByClassAndSemester
 } = require('../controllers/programSubjectController');
 
 // Routes
 router.get('/', getAllProgramSubjects);
-router.get('/class/:classId/semester/:semester', getSubjectsByClassAndSemester);
-router.get('/:id', getProgramSubjectById);
+
+//router.get('/:id', getProgramSubjectById);
 router.post('/', createProgramSubject);
-router.put('/:id', updateProgramSubject);
-router.delete('/:id', deleteProgramSubject);
+//router.put('/:id', updateProgramSubject);
+//router.delete('/:id', deleteProgramSubject);
 router.post('/bulk', bulkCreateProgramSubjects);
+router.get('/byclasssemester', getAllProgramSubjectsByClassAndSemester);
 
 module.exports = router;

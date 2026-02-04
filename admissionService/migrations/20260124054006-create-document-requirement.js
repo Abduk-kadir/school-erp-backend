@@ -60,7 +60,7 @@ module.exports = {
     await queryInterface.addConstraint('DocumentRequirements', {
       fields: ['document_type_id'],
       type: 'foreign key',
-      name: 'fk_documentrequirements_documenttype',
+      name: 'fk_documentrequirements_documenttype_v5',
       references: {
         table: 'document_types',
         field: 'id',
@@ -72,6 +72,7 @@ module.exports = {
     await queryInterface.addConstraint('DocumentRequirements', {
       fields: ['class_id'],
       type: 'foreign key',
+      name: 'fk_documentrequirements_class_v5',
       
       references: {
         table: 'class_masters',
@@ -84,7 +85,7 @@ module.exports = {
     await queryInterface.addConstraint('DocumentRequirements', {
       fields: ['category_id'],
       type: 'foreign key',
-      name: 'fk_documentrequirements_category',
+      name: 'fk_documentrequirements_category_v5',
       references: {
         table: 'categories',
         field: 'id',
@@ -97,7 +98,7 @@ module.exports = {
     await queryInterface.addConstraint('DocumentRequirements', {
       fields: ['document_type_id', 'class_id', 'category_id'],
       type: 'unique',
-      name: 'unique_document_rule',
+      name: 'unique_document_rule5',
     });
   },
 
