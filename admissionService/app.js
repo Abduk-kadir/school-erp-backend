@@ -25,7 +25,14 @@ const programSubjectRoutes = require('./routes/programSubjectRoutes');
 const electiveBasketRoutes = require('./routes/electiveBasketRoutes');
 const studentSubjectRoutes = require('./routes/studentSubjectRoutes');
 const declarationRoutes = require('./routes/declarationRoutes');
+const studentDeclarationRoutes = require('./routes/studentDeclarationRoutes');
+const instituteRoutes=require('./routes/instituteRoutes')
+const formStatusRoutes=require('./routes/formStatusRoute')
 
+
+app.use('/api/form-status', formStatusRoutes);
+app.use('/api/institute', instituteRoutes);
+app.use('/api/student-declarations', studentDeclarationRoutes);
 app.use('/api/declarations', declarationRoutes);
 app.use('/api/studentsubjects', studentSubjectRoutes);
 app.use('/api/elective-baskets', electiveBasketRoutes);

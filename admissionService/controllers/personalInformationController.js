@@ -1,9 +1,18 @@
-const {PersonalInformation} = require('../models'); // adjust path if needed
+const {PersonalInformation,institute} = require('../models'); // adjust path if needed
 
-// Create a new academic year
 const createPersonalInformation = async (req, res) => {
   try {
     const data = await PersonalInformation.create(req.body);
+
+    const inst = await institute.findOne(); 
+    let code=inst?.code
+   
+    const year = new Date().getFullYear(); // 2026
+    const lastTwoDigits = year.toString().slice(-2);
+    const reg_no = `${lastTwoDigits}${code}000${data.id}`;
+    console.log('reg no is:',reg_no)
+    await data.update({ reg_no });
+
     res.status(201).json({ message: "personal information are created", data:data });
   } catch (error) {
     console.error(error);

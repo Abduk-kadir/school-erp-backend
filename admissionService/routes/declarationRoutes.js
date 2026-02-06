@@ -4,7 +4,7 @@ const router = express.Router();
 const {
   createDeclaration,
   getAllDeclarations,
-  getDeclarationById,
+ getDeclarationByClassId,
   updateDeclaration,
   deleteDeclaration,
 } = require('../controllers/declarationController');
@@ -17,8 +17,8 @@ const {
 
 router.post('/', createDeclaration);
 router.get('/', getAllDeclarations);
-router.get('/:id', getDeclarationById);
-router.put('/:id', updateDeclaration);
+router.get('/:classId', getDeclarationByClassId);
+//router.put('/:id', updateDeclaration);
 router.delete('/:id', deleteDeclaration);
 
 module.exports = router;

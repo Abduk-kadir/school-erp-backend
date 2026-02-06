@@ -1,5 +1,5 @@
 const { Declaration, class_master } = require('../models');
-const { Op } = require('sequelize');
+const { Op, where } = require('sequelize');
 
 // 1. Create a new declaration
 const createDeclaration = async (req, res) => {
@@ -80,18 +80,22 @@ const getAllDeclarations = async (req, res) => {
 };
 
 // 3. Get single declaration by ID
-const getDeclarationById = async (req, res) => {
+const getDeclarationByClassId = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { classId } = req.params;
 
-    const declaration = await Declaration.findByPk(id, {
+    const declaration = await Declaration.findOne({
+      where:{class_id:classId},
+      
       include: [
         {
           model: class_master,
           as: 'class',
-          attributes: ['id', 'class_name', 'section'],
+          attributes: ['class_name']
+         
         },
       ],
+      
     });
 
     if (!declaration) {
@@ -199,7 +203,7 @@ const deleteDeclaration = async (req, res) => {
 module.exports = {
   createDeclaration,
   getAllDeclarations,
-  getDeclarationById,
+  getDeclarationByClassId,
   updateDeclaration,
   deleteDeclaration,
 };

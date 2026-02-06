@@ -15,6 +15,10 @@ module.exports = (sequelize, DataTypes) => {
   }
   PersonalInformation.init({
     first_name: DataTypes.STRING,
+    reg_no:{
+      type:DataTypes.BIGINT,
+      unique: true
+    },
     last_name: DataTypes.STRING,
     father_name: DataTypes.STRING,
     class: DataTypes.STRING,

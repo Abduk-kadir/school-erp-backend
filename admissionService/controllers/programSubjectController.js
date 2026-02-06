@@ -149,9 +149,6 @@ exports.getAllProgramSubjectsByClassAndSemester = async (req, res) => {
   }
 };
 
-
-
-
 exports.getProgramSubjectById = async (req, res) => {
   try {
     const ps = await ProgramSubject.findByPk(req.params.id, {
