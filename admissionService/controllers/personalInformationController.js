@@ -1,4 +1,7 @@
+const { raw } = require('express');
 const {PersonalInformation,institute} = require('../models'); // adjust path if needed
+const generateToken=require('../utils/generateToken')
+const { Op } = require("sequelize");
 
 const createPersonalInformation = async (req, res) => {
   try {
@@ -20,10 +23,11 @@ const createPersonalInformation = async (req, res) => {
   }
 };
 
-// Get all academic years
-const getPersonalInformation = async (req, res) => {
+
+const getPersonalInformationbyEmail = async (req, res) => {
   try {
-    const data = await PersonalInformation.findAll();
+    let {email}=req.body
+    const data = await PersonalInformation.findAll({where:{email},raw:true});
     res.status(200).json({ data: data,success:true});
   } catch (error) {
     console.error(error);
@@ -32,12 +36,27 @@ const getPersonalInformation = async (req, res) => {
 };
 
 // Get a single academic year by ID
-const getPersonalInformationById = async (req, res) => {
+const login = async (req, res) => {
   try {
-    const { id } = req.params;
-    const data = await PersonalInformation.findByPk(id);
+    const {email,reg_no} = req.body;
+    const data = await PersonalInformation.findOne({where:{[Op.and]:[{ email: email },{ reg_no: reg_no }]},raw: true});
     if (!data) return res.status(404).json({ message: "personal detail not found" });
-    res.status(200).json({ data: data });
+    console.log('data is********',data)
+    let token=generateToken({reg_no:data?.id})
+    res.status(200).json({ success:true,token:token,reg_no: data.reg_no});
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// get all personal information
+const getAllPersonalInformation = async (req, res) => {
+  try {
+   
+    const data = await PersonalInformation.findAll();
+    res.status(200).json({ success:true, data:data});
+
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error", error: error.message });
@@ -73,8 +92,9 @@ const deletePersonalInformation = async (req, res) => {
 
 module.exports = {
   createPersonalInformation,
-  getPersonalInformation,
-  getPersonalInformationById,
+  getPersonalInformationbyEmail,
+  login,
+  getAllPersonalInformation,
   updatePersonalInformation,
   deletePersonalInformation
 };

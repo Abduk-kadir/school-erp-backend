@@ -3,8 +3,9 @@ const router = express.Router();
 
 const {
   createPersonalInformation,
-  getPersonalInformation,
-  getPersonalInformationById,
+  getPersonalInformationbyEmail,
+  getAllPersonalInformation,
+  login,
   updatePersonalInformation,
   deletePersonalInformation,
 } = require("../controllers/personalInformationController"); 
@@ -12,16 +13,18 @@ const {
 // CREATE
 router.post("/", createPersonalInformation);
 
-// GET ALL
-router.get("/", getPersonalInformation);
+// GET ALL personal information data by email
+router.post("/all",getPersonalInformationbyEmail);
 
-// GET BY ID
-router.get("/:id", getPersonalInformationById);
+// login
+router.post("/login", login);
+
+router.get('/all',getAllPersonalInformation)
 
 // UPDATE BY ID
-router.put("/:id", updatePersonalInformation);
+//router.put("/:id", updatePersonalInformation);
 
 // DELETE BY ID
-router.delete("/:id", deletePersonalInformation);
+//router.delete("/:id", deletePersonalInformation);
 
 module.exports = router;

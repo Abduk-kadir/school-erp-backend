@@ -49,7 +49,8 @@ const formStatusController = {
   async getByRegNo(req, res) {
     try {
       const { reg_no } = req.params;
-
+      console.log('calling get by reg no')
+      console.log('registration number',reg_no)
       const status = await form_status.findOne({
         where: { reg_no },
         // include: [{ model: Student, as: 'student', attributes: ['name', 'email'] }], // if you want student info
@@ -59,7 +60,10 @@ const formStatusController = {
         return res.status(404).json({ message: 'No form status found for this registration number' });
       }
 
-      return res.json(status);
+      return res.json({
+        success:true,
+        data:status
+      });
     } catch (error) {
       return res.status(500).json({ message: 'Server error' });
     }
