@@ -21,7 +21,7 @@ const createDivision = async (req, res) => {
 const getDivisions = async (req, res) => {
   try {
     const divisions = await division_master.findAll();
-    res.status(200).json({ data: divisions });
+    res.status(200).json({ data: divisions ,success:true});
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error", error: error.message });

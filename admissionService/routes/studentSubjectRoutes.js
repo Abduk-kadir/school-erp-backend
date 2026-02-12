@@ -8,11 +8,12 @@ const {
   bulkCreateStudentSubjects,
   updateStudentSubject,
   deleteStudentSubject,
+  
 } = require('../controllers/studentSubjectController');
 
 // Routes
 router.get('/', getAllStudentSubjects);                  // GET all assignments
-//router.get('/student/:student_reg_no', getStudentSubjects);  // GET all subjects for one student
+router.get('/student/:student_reg_no', getStudentSubjects);  // GET all subjects for one student
 //router.post('/', createStudentSubject);                  // Create single assignment
 router.post('/bulk', bulkCreateStudentSubjects);         // Bulk assign multiple subjects
 //router.put('/:id', updateStudentSubject);                // Update one assignment

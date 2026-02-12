@@ -141,10 +141,10 @@ static async update(req, res) {
     }
 
     const { reg_number, document_id } = req.body;
-
+    
     let newFilePath = doc.file_path; // keep old path if no new file
     let newOriginalName = doc.original_filename;
-     console.log('new file path***',new file_path)
+     console.log('new file path***',newFilePath)
     console.log('new file name***',newOriginalName)
 
     // If a new file is uploaded → replace the old one

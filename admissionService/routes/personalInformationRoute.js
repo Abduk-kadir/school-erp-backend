@@ -8,6 +8,7 @@ const {
   login,
   updatePersonalInformation,
   deletePersonalInformation,
+  getPersonalInformationbyRegNO
 } = require("../controllers/personalInformationController"); 
 
 // CREATE
@@ -20,9 +21,10 @@ router.post("/all",getPersonalInformationbyEmail);
 router.post("/login", login);
 
 router.get('/all',getAllPersonalInformation)
+router.get('/reg_no/:reg_no',getPersonalInformationbyRegNO)
 
-// UPDATE BY ID
-//router.put("/:id", updatePersonalInformation);
+
+router.put("/reg_no/:reg_no", updatePersonalInformation);
 
 // DELETE BY ID
 //router.delete("/:id", deletePersonalInformation);

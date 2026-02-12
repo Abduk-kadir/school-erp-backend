@@ -35,6 +35,17 @@ const getPersonalInformationbyEmail = async (req, res) => {
   }
 };
 
+const getPersonalInformationbyRegNO = async (req, res) => {
+  try {
+    let {reg_no}=req.params
+    const data = await PersonalInformation.findOne({where:{reg_no},raw:true});
+    res.status(200).json({ data: data,success:true});
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
 // Get a single academic year by ID
 const login = async (req, res) => {
   try {
@@ -66,11 +77,11 @@ const getAllPersonalInformation = async (req, res) => {
 // Update academic year
 const updatePersonalInformation = async (req, res) => {
   try {
-    const { id } = req.params;
-    const p= await PersonalInformation.findByPk(id);
-    if (!p) return res.status(404).json({ message: "personal Information not found" });
-    await PersonalInformation.update(req?.body,{where:{id:id}});
-    res.status(200).json({ message: "Academic year updated", data: req.body });
+    const { reg_no} = req.params;
+    const p= await PersonalInformation.findOne({where:{reg_no}});
+    if (!p) return res.status(404).json({ message: "personal Information not found", success:false });
+    await PersonalInformation.update(req?.body,{where:{reg_no}});
+    res.status(200).json({ success:true, message: "personal Information updated", data: req.body });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error", error: error.message });
@@ -96,5 +107,6 @@ module.exports = {
   login,
   getAllPersonalInformation,
   updatePersonalInformation,
-  deletePersonalInformation
+  deletePersonalInformation,
+  getPersonalInformationbyRegNO
 };

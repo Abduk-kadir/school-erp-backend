@@ -32,12 +32,11 @@ exports.getStudentSubjects = async (req, res) => {
     const records = await student_subject.findAll({
       where: { student_reg_no: parseInt(student_reg_no) },
       include: [
-        { model: class_master, as: 'class' },
-        { model: Program, as: 'program' },
+       
         { model: Subject, as: 'subject' },
-        { model: ElectiveBasket, as: 'electiveBasket' },
+       
       ],
-      order: [['semester', 'ASC'], ['subject_id', 'ASC']],
+    
     });
 
     return res.status(200).json({
@@ -127,6 +126,10 @@ exports.bulkCreateStudentSubjects = async (req, res) => {
     return res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 };
+
+//bulkupdate
+
+
 
 // Update single assignment
 exports.updateStudentSubject = async (req, res) => {
