@@ -28,8 +28,15 @@ const declarationRoutes = require('./routes/declarationRoutes');
 const studentDeclarationRoutes = require('./routes/studentDeclarationRoutes');
 const instituteRoutes=require('./routes/instituteRoutes')
 const formStatusRoutes=require('./routes/formStatusRoute')
+const routeRouter = require('./routes/routeRoutes');
+const subrouteRouter = require('./routes/subRouteRoutes');
 
+const studentTransportRoutes = require('./routes/studentTransportRoutes');
 
+app.use('/api/student-transport', studentTransportRoutes);
+
+app.use('/api/subroutes', subrouteRouter);
+app.use('/api/routes', routeRouter);
 app.use('/api/form-status', formStatusRoutes);
 app.use('/api/institute', instituteRoutes);
 app.use('/api/student-declarations', studentDeclarationRoutes);

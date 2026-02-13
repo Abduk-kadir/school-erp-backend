@@ -45,9 +45,12 @@ const student_declarationController = {
         ],
       
       });
-
+      if (!records) {
+        return res.status(404).json({ success: false, message: 'No declaration found for this student' });
+      }
       return res.json({
          message: 'Declaration found successfully',
+         success: true,
          data: records,
       });
     } catch (error) {
@@ -80,7 +83,7 @@ const student_declarationController = {
   async update(req, res) {
     try {
       const { id } = req.params;
-      const { accepted, location } = req.body;
+      const { accepted, location , date} = req.body;
 
       const record = await student_declaration.findByPk(id);
       if (!record) {
@@ -90,6 +93,7 @@ const student_declarationController = {
       await record.update({
         accepted: accepted !== undefined ? accepted : record.accepted,
         location: location !== undefined ? location : record.location,
+        date: date !== undefined ? date : record.date,
       });
 
       return res.json({ message: 'Updated successfully', data: record });
