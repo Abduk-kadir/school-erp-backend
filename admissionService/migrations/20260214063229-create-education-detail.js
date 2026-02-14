@@ -2,7 +2,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('StudentTransports', {
+    await queryInterface.createTable('EducationDetails', {
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -11,15 +11,6 @@ module.exports = {
       },
       reg_no: {
         type: Sequelize.BIGINT
-      },
-      route_id: {
-        type: Sequelize.INTEGER
-      },
-      sub_route_id: {
-        type: Sequelize.INTEGER
-      },
-      is_taken: {
-        type: Sequelize.STRING
       },
       createdAt: {
         allowNull: false,
@@ -32,6 +23,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('StudentTransports');
+    await queryInterface.dropTable('EducationDetails');
   }
 };

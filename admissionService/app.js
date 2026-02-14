@@ -33,8 +33,12 @@ const subrouteRouter = require('./routes/subRouteRoutes');
 
 const studentTransportRoutes = require('./routes/studentTransportRoutes');
 
-app.use('/api/student-transport', studentTransportRoutes);
+const otherInformationRoutes = require('./routes/otherInformationRoutes');
 
+// ...
+
+app.use('/api/other-information', otherInformationRoutes);
+app.use('/api/student-transport', studentTransportRoutes);
 app.use('/api/subroutes', subrouteRouter);
 app.use('/api/routes', routeRouter);
 app.use('/api/form-status', formStatusRoutes);

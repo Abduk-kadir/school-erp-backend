@@ -1,8 +1,10 @@
 const { Stage, Field, FieldType, FieldOption } = require('../models');
 
 exports.getFullFormStructure = async (req, res) => {
+  const whereClause = req.query?.id ? { id: req.query.id } : {};
   try {
     const stages = await Stage.findAll({
+      where:whereClause,
       attributes: ['id', 'name', 'description', 'order'],
       order: [['order', 'ASC']],
       include: [

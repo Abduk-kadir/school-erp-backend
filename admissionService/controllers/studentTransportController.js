@@ -51,9 +51,10 @@ class StudentTransportController {
   // GET /api/student-transport/student/:reg_no
   static async getByStudent(req, res) {
     try {
-      const { reg_no } = req.params;
+      let { reg_no } = req.params;
+    
 
-      const records = await StudentTransport.findAll({
+      const records = await StudentTransport.findOne({
         where: { reg_no },
         include: [
           { model: Route, as: 'Route' },
