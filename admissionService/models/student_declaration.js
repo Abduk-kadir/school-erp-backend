@@ -18,7 +18,7 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   student_declaration.init({
-    reg_no: DataTypes.INTEGER,
+    reg_no: DataTypes.BIGINT,
     declaration_id: DataTypes.INTEGER,
     accepted: DataTypes.BOOLEAN,
     date: DataTypes.DATE,

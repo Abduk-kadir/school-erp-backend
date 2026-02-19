@@ -2,49 +2,32 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('PersonalInformations', {
+    await queryInterface.createTable('classWiseSchools', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      reg_no:{
-        type: Sequelize.BIGINT
-
+      class_id: {
+        type: Sequelize.INTEGER
       },
-      first_name: {
+      school_name: {
         type: Sequelize.STRING
       },
-      last_name: {
-        type: Sequelize.STRING
-      },
-      father_name: {
-        type: Sequelize.STRING
-      },
-      mother_name:{
-         type: Sequelize.STRING
-
-      },
-      class: {
-        type: Sequelize.STRING
-      },
-      division: {
+      address: {
         type: Sequelize.STRING
       },
       contact_number: {
-        type: Sequelize.STRING
+        type: Sequelize.INTEGER
       },
       email: {
         type: Sequelize.STRING
       },
-      password: {
+      gst_number: {
         type: Sequelize.STRING
       },
-      dob: {
-        type: Sequelize.STRING
-      },
-      blood_group: {
+      logo: {
         type: Sequelize.STRING
       },
       createdAt: {
@@ -58,6 +41,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('PersonalInformations');
+    await queryInterface.dropTable('classWiseSchools');
   }
 };

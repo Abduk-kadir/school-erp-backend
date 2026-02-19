@@ -30,13 +30,15 @@ const instituteRoutes=require('./routes/instituteRoutes')
 const formStatusRoutes=require('./routes/formStatusRoute')
 const routeRouter = require('./routes/routeRoutes');
 const subrouteRouter = require('./routes/subRouteRoutes');
-
 const studentTransportRoutes = require('./routes/studentTransportRoutes');
-
 const otherInformationRoutes = require('./routes/otherInformationRoutes');
+const educationDetailRoutes=require('./routes/educationalDetailRoutes')
+const parentParticularRoutes=require('./routes/parentParticularRoute')
+const classFiledRoutes=require('./routes/classFieldRoutes')
 
-// ...
-
+app.use('/api/class-fields', classFiledRoutes);
+app.use('/api/parent-particular', parentParticularRoutes);
+app.use('/api/educational-detail', educationDetailRoutes);
 app.use('/api/other-information', otherInformationRoutes);
 app.use('/api/student-transport', studentTransportRoutes);
 app.use('/api/subroutes', subrouteRouter);

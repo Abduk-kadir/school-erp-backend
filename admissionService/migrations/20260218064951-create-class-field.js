@@ -2,27 +2,24 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('student_declarations', {
+    await queryInterface.createTable('class_fields', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      reg_no: {
-        type: Sequelize.BIGINT
-      },
-      declaration_id: {
+      class_id: {
         type: Sequelize.INTEGER
       },
-      accepted: {
+      field_id: {
+        type: Sequelize.INTEGER
+      },
+      stage_id: {
+        type: Sequelize.INTEGER
+      },
+      is_required: {
         type: Sequelize.BOOLEAN
-      },
-      date: {
-        type: Sequelize.DATE
-      },
-      location: {
-        type: Sequelize.STRING
       },
       createdAt: {
         allowNull: false,
@@ -35,6 +32,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('student_declarations');
+    await queryInterface.dropTable('class_fields');
   }
 };

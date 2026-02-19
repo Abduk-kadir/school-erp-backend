@@ -14,7 +14,7 @@ module.exports = {
   async down(queryInterface, Sequelize) {
     // Revert back to INTEGER if needed (for rollback)
     await queryInterface.changeColumn('institutes', 'name', {
-      type: Sequelize.INTEGER,
+      type: Sequelize.STRING,
     });
 
     await queryInterface.changeColumn('institutes', 'code', {

@@ -10,7 +10,7 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       reg_number: {
-        type: Sequelize.INTEGER
+        type: Sequelize.BIGINT
       },
       document_id: {
         type: Sequelize.INTEGER

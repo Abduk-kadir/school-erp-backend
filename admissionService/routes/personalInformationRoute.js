@@ -7,7 +7,7 @@ const {
   getAllPersonalInformation,
   login,
   updatePersonalInformation,
-  deletePersonalInformation,
+ 
   getPersonalInformationbyRegNO
 } = require("../controllers/personalInformationController"); 
 

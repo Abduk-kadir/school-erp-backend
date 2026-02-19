@@ -17,7 +17,7 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   StudentDocument.init({
-    reg_number: DataTypes.INTEGER,
+    reg_number: DataTypes.BIGINT,
     document_id: DataTypes.INTEGER,
     file_path: DataTypes.STRING,
     original_filename: DataTypes.STRING
