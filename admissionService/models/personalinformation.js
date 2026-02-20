@@ -10,15 +10,27 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      // define association here
+      PersonalInformation.hasOne(models.form_status, {
+        foreignKey: 'reg_no',
+        sourceKey: 'reg_no',        // same FK as above 
+        as: 'formStatus'
+      });
+      PersonalInformation.hasMany(models.student_subject, {
+       foreignKey: 'student_reg_no',     // ← corrected to your actual column name
+  sourceKey: 'reg_no',              // this stays the same (column in PersonalInformation)
+  as: 'studentSubjects'      // choose a clear alias (plural recommended)
+      });
+
+
     }
   }
   PersonalInformation.init({
     first_name: DataTypes.STRING,
-    reg_no:{
-      type:DataTypes.BIGINT,
+    reg_no: {
+      type: DataTypes.BIGINT,
       unique: true
     },
+
     last_name: DataTypes.STRING,
     father_name: DataTypes.STRING,
     class: DataTypes.STRING,

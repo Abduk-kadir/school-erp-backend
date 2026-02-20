@@ -10,12 +10,16 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      // define association here
+     
     }
   }
   form_status.init({
     reg_no: DataTypes.BIGINT,
     current_step: DataTypes.INTEGER,
+    form_status: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0
+    }
     
 
   }, {

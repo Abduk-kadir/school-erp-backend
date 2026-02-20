@@ -67,11 +67,12 @@ const createPersonalInformation = async (req, res) => {
     }
 
     const year = new Date().getFullYear();
-    const yy = year.toString().slice(-2);
-    const paddedId = String(insertedId).padStart(4, '0'); // adjust padding if needed
+   const yy = year.toString().slice(-2);
+   const paddedId = String(insertedId).padStart(4, '0'); // adjust padding if needed
 
-    const reg_no = `${yy}${inst.code}${paddedId}`;
-    console.log('Generated reg_no:', reg_no);
+  
+   const reg_no = Number(`${yy}${inst.code}${paddedId}`)
+   
 
     // Update reg_no
     await sequelize.query(

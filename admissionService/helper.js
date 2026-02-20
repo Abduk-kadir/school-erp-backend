@@ -1,23 +1,24 @@
 const { Op } = require('sequelize');
 
-async function getDataTable(req, model, searchFields = [], extraWhere = {}) {
+async function getDataTable(req, model, searchFields = [], extraWhere = {},include) {
     console.log('hello')
   const draw = parseInt(req.query.draw) || 1;
   const start = parseInt(req.query.start) || 0;
   const length = parseInt(req.query.length) || 10;
   const search = req.query['search[value]'] || req.query.search?.value || "";
+ //const classFilter = req.query['filter[className]'] || '';
+//const programFilter = req.query['filter[programName]'] || '';
 
-  const filter = req.query.filter|| {};
-
-  console.log(filter);
-
-
+//console.log('Class Filter:', classFilter);
+//console.log('Program Filter:', programFilter);
+console.log('req.query:', req.query);
+console.log('req.query.filter:', req.query.filter);
 
   // Build search clause
   const searchClause = search && searchFields.length > 0
     ? { [Op.or]: searchFields.map(field => ({ [field]: { [Op.like]: `%${search}%` } })) }
     : {};
-  console.log('search clause is*********:',searchClause)
+  //console.log('search clause is*********:',searchClause)
   // Merge with extra where clause if any
   const whereClause = { ...extraWhere, ...searchClause };
 
@@ -27,8 +28,10 @@ async function getDataTable(req, model, searchFields = [], extraWhere = {}) {
   // Fetch filtered records with pagination
   const { count: recordsFiltered, rows: data } = await model.findAndCountAll({
     where: whereClause,
+    include: include,
     offset: start,
-    limit: length
+    limit: length,
+     distinct: true 
   });
 
   return { draw, recordsTotal, recordsFiltered, data };

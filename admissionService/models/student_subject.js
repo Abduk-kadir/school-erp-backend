@@ -33,7 +33,7 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   student_subject.init({
-    student_reg_no: DataTypes.INTEGER,
+    student_reg_no: DataTypes.BIGINT,
     class_id: DataTypes.INTEGER,
     program_id: DataTypes.INTEGER,
     semester: DataTypes.INTEGER,

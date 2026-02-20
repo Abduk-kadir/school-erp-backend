@@ -10,7 +10,7 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       student_reg_no: {
-        type: Sequelize.INTEGER
+        type: Sequelize.BIGINT
       },
       class_id: {
         type: Sequelize.INTEGER
