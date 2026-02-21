@@ -36,8 +36,11 @@ const educationDetailRoutes=require('./routes/educationalDetailRoutes')
 const parentParticularRoutes=require('./routes/parentParticularRoute')
 const classFiledRoutes=require('./routes/classFieldRoutes')
 const admissionConformRoutes=require('./routes/admissionComformRoutes')
+const seatAllotmentRoutes = require('./routes/seatAllotmentRoutes');
 
 
+
+app.use('/api/seat-allotments', seatAllotmentRoutes);
 app.use('/api/admission-conform', admissionConformRoutes);
 app.use('/api/class-fields', classFiledRoutes);
 app.use('/api/parent-particular', parentParticularRoutes);

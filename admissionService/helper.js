@@ -5,23 +5,30 @@ async function getDataTable(req, model, searchFields = [], extraWhere = {},inclu
   const draw = parseInt(req.query.draw) || 1;
   const start = parseInt(req.query.start) || 0;
   const length = parseInt(req.query.length) || 10;
-  const search = req.query['search[value]'] || req.query.search?.value || "";
- //const classFilter = req.query['filter[className]'] || '';
-//const programFilter = req.query['filter[programName]'] || '';
+ const search = req.query['search[value]'] || req.query.search?.value || "";
+ const classFilter = req.query['filter[className]'] || '';
 
-//console.log('Class Filter:', classFilter);
-//console.log('Program Filter:', programFilter);
-console.log('req.query:', req.query);
-console.log('req.query.filter:', req.query.filter);
+const regFilter=req.query['filter[regNo]']||''
+
+
+
 
   // Build search clause
   const searchClause = search && searchFields.length > 0
     ? { [Op.or]: searchFields.map(field => ({ [field]: { [Op.like]: `%${search}%` } })) }
     : {};
-  //console.log('search clause is*********:',searchClause)
-  // Merge with extra where clause if any
+ 
   const whereClause = { ...extraWhere, ...searchClause };
 
+  // Add filters if provided
+  if (classFilter) {
+    whereClause.class = { [Op.like]: `%${classFilter}%` };
+  }
+ 
+  if (regFilter) {
+    whereClause.reg_no = { [Op.like]: `%${regFilter}%` };
+  }
+  console.log('Final where clause:', JSON.stringify(whereClause));
   // Count total records
   const recordsTotal = await model.count();
 
