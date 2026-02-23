@@ -19,7 +19,7 @@ module.exports = {
         type: Sequelize.STRING
       },
       contact_number: {
-        type: Sequelize.INTEGER
+        type: Sequelize.BIGINT
       },
       email: {
         type: Sequelize.STRING

@@ -44,6 +44,7 @@ function createUploader(destinationFolder, allowedTypes = /jpeg|jpg|png/, maxSiz
 
 
 const LOGO_UPLOAD_ROOT = 'E:\\institutes\\logos';
+const CLASSWISE_LOGO_UPLOAD_ROOT = 'E:\\classwiseInstitutes\\logos';
 
 const uploadInstituteLogo = createUploader(
   LOGO_UPLOAD_ROOT,
@@ -51,8 +52,15 @@ const uploadInstituteLogo = createUploader(
   5 * 1024 * 1024          // 2MB is usually enough for logos
 );
 
+const uploadClasswiseInstituteLogo = createUploader(
+  CLASSWISE_LOGO_UPLOAD_ROOT,
+  /jpeg|jpg|png/,          // only images
+  5 * 1024 * 1024          // 2MB is usually enough for logos
+);
+
 // Export both
 module.exports = {
  
-  uploadInstituteLogo,        
+  uploadInstituteLogo,
+  uploadClasswiseInstituteLogo        
 };

@@ -37,9 +37,9 @@ const parentParticularRoutes=require('./routes/parentParticularRoute')
 const classFiledRoutes=require('./routes/classFieldRoutes')
 const admissionConformRoutes=require('./routes/admissionComformRoutes')
 const seatAllotmentRoutes = require('./routes/seatAllotmentRoutes');
+const classwiseSchoolRoutes=require('./routes/classwiseSchoolRoutes')
 
-
-
+app.use('/api/classwise-institute', classwiseSchoolRoutes);
 app.use('/api/seat-allotments', seatAllotmentRoutes);
 app.use('/api/admission-conform', admissionConformRoutes);
 app.use('/api/class-fields', classFiledRoutes);
@@ -60,7 +60,12 @@ app.use('/api/program-subjects', programSubjectRoutes);
 app.use('/api/programs', programRoutes);
 
 app.use('/api/student-documents', studentDocumentRoutes);
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+//app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use(
+  '/uploads/classwiseInstitutes/logos',
+  express.static('E:/classwiseInstitutes/logos')
+);
+
 
 
 app.use('/api/document-types', documentTypeRoutes);
