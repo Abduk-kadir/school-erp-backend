@@ -90,6 +90,43 @@ console.log('Found student:', student);
   }
 };
 
+const editByStudent = async (req, res) => {
+  try {
+    // Validate input
+    if (!req.body.reg_no) {
+      return res.status(400).json({
+        success: false,
+        message: 'Registration number is required'
+      });
+    }
+    console.log('registation number is***********:',req.body.reg_no)
+    console.log('Checking DB for reg_no:', req.body.reg_no);
+const student = await form_status.findOne({ where: { reg_no: req.body.reg_no } });
+console.log('Found student:', student);
+    // Update the form status using Sequelize
+    const [affectedRows] = await form_status.update(
+      { form_status: 0 ,current_step:2},
+      { where: { reg_no: req.body.reg_no } }
+    );
+
+    if (affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Student not found or already accepted'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Student form accepted successfully'
+    });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: 'Server error', err: err.message });
+  }
+};
+
 
 
 
@@ -104,6 +141,7 @@ console.log('Found student:', student);
 
 module.exports={
     filledFormStudensts,
-    formAccepted
+    formAccepted,
+    editByStudent
 
 }
