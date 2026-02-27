@@ -1,6 +1,6 @@
 // controllers/pdfController.js
 const { sequelize } = require('../models');
-const { student_subject, PersonalInformation, class_master, Program, Subject, ElectiveBasket, StudentTransport, Route, SubRoute ,student_declaration,Declaration} = require('../models');
+const { student_subject, PersonalInformation,classWiseSchool, class_master, Program, Subject, ElectiveBasket, StudentTransport, Route, SubRoute ,student_declaration,Declaration} = require('../models');
 
 const puppeteer = require('puppeteer');
 const ejs = require('ejs');
@@ -18,6 +18,20 @@ exports.generateAdmissionPDF = async (req, res) => {
             replacements: { reg_no },
             type: sequelize.QueryTypes.SELECT
         });
+
+       // console.log('personal data:',personalData)
+        let classid=personalData.class
+        let classwiseinst=await classWiseSchool.findOne({
+            where:{
+                class_id:classid
+            },
+             raw: true
+
+        })
+       
+         const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
+         classwiseinst.logo =classwiseinst?.logo? `${baseUrl}${classwiseinst.logo}` : null;
+          console.log('classwise inst:',classwiseinst)
 
         const [educationData] = await sequelize.query(`
       SELECT *
@@ -52,6 +66,7 @@ exports.generateAdmissionPDF = async (req, res) => {
                 { model: Subject, as: 'subject' },
 
             ],
+            
 
         });
         const plainSubjects = stSubject.map(record => record.get({ plain: true }));
@@ -64,9 +79,10 @@ exports.generateAdmissionPDF = async (req, res) => {
                 { model: SubRoute, as: 'SubRoute' },
 
             ],
+            raw:true,
             order: [['createdAt', 'DESC']]
         });
-       const transportData = transp ? transp.get({ plain: true }) : null;
+      
 
       const dec = await student_declaration.findOne({
         where: { reg_no },
@@ -83,7 +99,7 @@ exports.generateAdmissionPDF = async (req, res) => {
       const declarationData=dec? dec.get({ plain: true }) : null;
 
 
-       console.log('transportData',transportData)
+     //  console.log('transportData',transportData)
         const renderData = {
             personalInformationData: personalData,
             educationalData: educationData,
@@ -91,8 +107,9 @@ exports.generateAdmissionPDF = async (req, res) => {
             otherInformationData: otherinfor,
 
             subjectData: plainSubjects,
-            transportData: transportData,
-            declarationData:declarationData
+            transportData: transp,
+            declarationData:declarationData,
+            classwiseSchool:classwiseinst
 
         };
 
@@ -140,13 +157,16 @@ exports.generateAdmissionPDF = async (req, res) => {
         await browser.close();
 
         // 6. Send PDF to frontend
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader(
-            'Content-Disposition',
-            `attachment; filename="admission-${'student'}-${reg_no || ''}.pdf"`
-        );
+      // 6. Send PDF to frontend
+res.setHeader('Content-Type', 'application/pdf');
+res.setHeader(
+  'Content-Disposition',
+  `attachment; filename="admission-student-${reg_no || ''}.pdf"`
+);
+res.setHeader('Content-Length', pdfBuffer.length);
 
-        return res.send(pdfBuffer);
+// Send raw buffer and end response
+res.end(pdfBuffer);
 
     } catch (err) {
         if (browser) await browser.close().catch(() => { });

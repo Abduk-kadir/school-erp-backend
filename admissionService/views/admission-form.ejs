@@ -67,14 +67,50 @@
 </head>
 
 <body>
+  <div class="container-fluid">
+    <div class="row">
 
-  <!-- Page 1 start -->
+      <!-- Logo + Address -->
+      <div class="col-8 text-center" style="border:1px solid #000;">
 
-  <!-- PERSONAL INFORMATION / EDUCATION DETAIL / etc. -->
+        <!-- Logo -->
+        <% if (classwiseSchool?.logo) { %>
+          <img src="<%= classwiseSchool.logo %>" style="width:100px;height:100px;border:1px solid #000;" />
+          <% } %>
 
-  <!-- Replace only this table part with grid -->
+            <!-- School Address -->
+            <h5 class="mt-2 mb-0">
+              <%= classwiseSchool?.school_name || '' %>
+            </h5>
+            <h5 class="mt-2 mb-0">
+              <%= classwiseSchool?.address || '' %>
+            </h5>
+            <h5 class="mt-2 mb-0">
+              <%= classwiseSchool?.contact_number || '' %>
+            </h5>
+
+            <h5 class="mt-2 mb-0">
+              www.school.institue1.com <%= classwiseSchool?.email || '' %>
+            </h5>
+
+      </div>
+
+      <!-- Right side (Form No / Photo / etc) -->
+      <div class="col-4 text-center" style="border:1px solid #000;">
+
+        <!-- Example: Form No -->
+        <h5>Student photo</h5>
+
+      </div>
+
+    </div>
+  </div>
 
   <!-- Personal Information -->
+
+
+
+
   <div class="section-title">Personal Information</div>
   <div class="row g-1">
     <% const ignorePersonalFields=["id", "createdAt" , "updatedAt" ]; Object.entries(personalInformationData ||
@@ -90,7 +126,7 @@
   </div>
 
   <!-- Education Detail -->
-  <div class="row"></div>
+
   <div class="section-title">Education Detail</div>
   <div class="row g-1">
     <% const ignoreEducationFields=["id", "reg_no" , "createdAt" , "updatedAt" ]; Object.entries(educationalData ||
@@ -148,17 +184,6 @@
   </div>
 
 
-
-
-
-
-
-
-
-
-
-
-
   <!-- Parent particulars -->
   <div class="section-title">Parent particulars</div>
   <div class="row g-1">
@@ -175,11 +200,11 @@
   </div>
 
 
-  <!-- transport detail-->
+
+  <!-- transport detail -->
   <div class="section-title">Transport Detail</div>
   <div class="row g-1">
     <% if (transportData) { %>
-
       <div class="col-6 col-md-4 col-lg-3">
         <div class="field-item">
           Route - <%= transportData.Route?.route_name || '' %>
@@ -191,84 +216,47 @@
           Sub Route - <%= transportData.SubRoute?.sub_route_name || '' %>
         </div>
       </div>
-
       <% } else { %>
-
         <div class="col-12">
           <div class="field-item">No transport data available</div>
         </div>
-
         <% } %>
   </div>
 
+  <!-- Declaration -->
+
 
   <!-- Declaration -->
-   <!-- Declaration -->
-<!-- transport detail -->
-<div class="section-title">Transport Detail</div>
-<div class="row g-1">
-  <% if (transportData) { %>
-    <div class="col-6 col-md-4 col-lg-3">
-      <div class="field-item">
-        Route - <%= transportData.Route?.route_name || '' %>
-      </div>
-    </div>
-
-    <div class="col-6 col-md-4 col-lg-3">
-      <div class="field-item">
-        Sub Route - <%= transportData.SubRoute?.sub_route_name || '' %>
-      </div>
-    </div>
-  <% } else { %>
+  <!-- Declaration Heading -->
+  <div class="row g-1">
     <div class="col-12">
-      <div class="field-item">No transport data available</div>
-    </div>
-  <% } %>
-</div>
-
-<!-- Declaration -->
-
-
-<!-- Declaration -->
-<!-- Declaration Heading -->
-<div class="row g-1">
-  <div class="col-12">
-    <div class="section-title">
-      Declaration
+      <div class="section-title">
+        Declaration
+      </div>
     </div>
   </div>
-</div>
-
-<!-- Declaration Content -->
-<div class="row g-1 mb-2">
-  <div class="col-12">
-    <!-- Declaration content -->
-    <div class="field-item">
-      <%- declarationData?.declaration?.content || '' %>
-    </div>
-
-    <!-- Place & Date row inside the declaration block -->
-    <div class="row g-1 mt-2">
-      <div class="col-6">
-        <div class="field-item">
-          Place: <%= declarationData?.location || '' %>
-        </div>
+  <div class="row g-1 mb-2">
+    <div class="col-12">
+      <!-- Declaration content -->
+      <div class="field-item">
+        <%- declarationData?.declaration?.content || '' %>
       </div>
-      <div class="col-6">
-        <div class="field-item">
-          Date: <%= declarationData?.date ? new Date(declarationData.date).toISOString().split("T")[0] : '' %>
+
+      <!-- Place & Date row inside the declaration block -->
+      <div class="row g-1 mt-2">
+        <div class="col-6">
+          <div class="field-item">
+            Place: <%= declarationData?.location || '' %>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="field-item">
+            Date: <%= declarationData?.date ? new Date(declarationData.date).toISOString().split("T")[0] : '' %>
+          </div>
         </div>
       </div>
     </div>
   </div>
-</div>
-
-<!-- Place and Date Row -->
-
-
-  
-
-
 
 
 
@@ -289,6 +277,139 @@
       </div>
       <% }); %>
   </div>
+
+  <!-- For office use only -->
+  <div class="row">
+    <div class="col-12">
+      <div class="section-title">
+        For Office use Only
+      </div>
+    </div>
+  </div>
+
+  <div class="container-fluid">
+
+    <div class="row">
+
+      <div class="col-2 field-item"></div>
+      <div class="col-2 field-item"> ADMISSION CLERK</div>
+      <div class="col-2 field-item"> ADMISSION COMMITTEE</div>
+      <div class="col-2 field-item"> REGISTAR/OFFICE SUPERINTENDENT</div>
+      <div class="col-2 field-item">PRINCIPAL</div>
+      <div class="col-2 field-item">ACCOUNTS</div>
+
+
+
+    </div>
+    <div class="row">
+
+      <div class="col-2 field-item">Remark</div>
+      <div class="col-2 field-item"></div>
+      <div class="col-2 field-item"> </div>
+      <div class="col-2 field-item"> </div>
+      <div class="col-2 field-item"></div>
+      <div class="col-2 field-item"></div>
+
+
+
+    </div>
+    <div class="row">
+
+      <div class="col-2 field-item">Sign & Date</div>
+      <div class="col-2 field-item"> </div>
+      <div class="col-2 field-item"> </div>
+      <div class="col-2 field-item"> </div>
+      <div class="col-2 field-item"></div>
+      <div class="col-2 field-item"></div>
+
+
+
+    </div>
+    <div class="row">
+
+      <div class="col-12 field-item">
+
+        Note : Student must retain photocopy of completely filled in admission form (both pages) for future reference.
+        Available information in this form will be required to
+        activate his/her account on Digital University Portal
+
+      </div>
+
+
+
+    </div>
+
+
+
+  </div>
+  <!--seprate row-->
+  <hr class="dotted-line" style="border:1px solid #000;">
+
+  <div class="row">
+    <div class="col-12">
+      <div class="section-title">
+        Student Copy
+      </div>
+    </div>
+  </div>
+
+
+  <div class="container-fluid">
+    <div class="row">
+
+      <!-- Logo + Address -->
+      <div class="col-3 text-center " style="border:1px solid #000;">
+
+        <!-- Logo -->
+        <% if (classwiseSchool?.logo) { %>
+          <img src="<%= classwiseSchool.logo %>" class="img-fluid logo-fit" />
+          <% } %>
+
+      </div>
+
+
+      <div class="col-6 text-center" style="border:1px solid #000;">
+        <!-- School Address -->
+        <div class="row">
+          <div class="col-12" style="border:1px solid #000;">
+            <h5>
+              <%= classwiseSchool?.school_name || '' %>
+            </h5>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-6" style="border:1px solid #000;">
+            <h5>
+              Year/course Addmission Category
+            </h5>
+
+          </div>
+
+          <div class="col-6" style="border:1px solid #000;">
+            <h5>
+              Uid No:
+            </h5>
+
+          </div>
+
+        </div>
+
+
+      </div>
+
+      <div class="col-3 text-center" style="border:1px solid #000;">
+
+         <h5>Student Photo</h5>
+
+
+
+      </div>
+
+    </div>
+  </div>
+
+
+
 
 </body>
 
