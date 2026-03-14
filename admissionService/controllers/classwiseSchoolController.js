@@ -41,7 +41,6 @@ async create(req, res) {
 async bulkCreate(req, res) {
   try {
     let  { class_id,school_name,address,contact_number,email,gst_number} = req.body;
-
    class_id=JSON.parse(class_id)
    let logo = null;
       if (req.file) {

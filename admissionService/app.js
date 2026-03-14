@@ -39,8 +39,9 @@ const admissionConformRoutes=require('./routes/admissionComformRoutes')
 const seatAllotmentRoutes = require('./routes/seatAllotmentRoutes');
 const classwiseSchoolRoutes=require('./routes/classwiseSchoolRoutes')
 const admissionpdfRoutes = require('./routes/admissionPdfRoutes');
+const studentDownloadDataRoutes = require('./routes/studentDownloadDataRoute');
 
-
+app.use('/api/studentData-download', studentDownloadDataRoutes);
 app.use('/api/admission', admissionpdfRoutes);
 app.use('/api/classwise-institute', classwiseSchoolRoutes);
 app.use('/api/seat-allotments', seatAllotmentRoutes);

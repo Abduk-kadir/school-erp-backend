@@ -1,6 +1,6 @@
 // controllers/pdfController.js
 const { sequelize } = require('../models');
-const { student_subject, PersonalInformation,classWiseSchool, class_master, Program, Subject, ElectiveBasket, StudentTransport, Route, SubRoute ,student_declaration,Declaration} = require('../models');
+const { student_subject, PersonalInformation, classWiseSchool, class_master, Program, Subject, ElectiveBasket, StudentTransport, Route, SubRoute, student_declaration, Declaration } = require('../models');
 
 const puppeteer = require('puppeteer');
 const ejs = require('ejs');
@@ -19,19 +19,19 @@ exports.generateAdmissionPDF = async (req, res) => {
             type: sequelize.QueryTypes.SELECT
         });
 
-       // console.log('personal data:',personalData)
-        let classid=personalData.class
-        let classwiseinst=await classWiseSchool.findOne({
-            where:{
-                class_id:classid
+        // console.log('personal data:',personalData)
+        let classid = personalData.class
+        let classwiseinst = await classWiseSchool.findOne({
+            where: {
+                class_id: classid
             },
-             raw: true
+            raw: true
 
         })
-       
-         const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
-         classwiseinst.logo =classwiseinst?.logo? `${baseUrl}${classwiseinst.logo}` : null;
-          console.log('classwise inst:',classwiseinst)
+
+        const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
+        classwiseinst.logo = classwiseinst?.logo ? `${baseUrl}${classwiseinst.logo}` : null;
+        console.log('classwise inst:', classwiseinst)
 
         const [educationData] = await sequelize.query(`
       SELECT *
@@ -66,12 +66,12 @@ exports.generateAdmissionPDF = async (req, res) => {
                 { model: Subject, as: 'subject' },
 
             ],
-            
+
 
         });
         const plainSubjects = stSubject.map(record => record.get({ plain: true }));
 
-       
+
         const transp = await StudentTransport.findOne({
             where: { reg_no },
             include: [
@@ -79,27 +79,27 @@ exports.generateAdmissionPDF = async (req, res) => {
                 { model: SubRoute, as: 'SubRoute' },
 
             ],
-            raw:true,
+            raw: true,
             order: [['createdAt', 'DESC']]
         });
-      
-
-      const dec = await student_declaration.findOne({
-        where: { reg_no },
-        include: [
-          {
-            model: Declaration,
-            as: 'declaration',
-            attributes: ['id', 'content'],
-          },
-        ],
-      
-      });
-
-      const declarationData=dec? dec.get({ plain: true }) : null;
 
 
-     //  console.log('transportData',transportData)
+        const dec = await student_declaration.findOne({
+            where: { reg_no },
+            include: [
+                {
+                    model: Declaration,
+                    as: 'declaration',
+                    attributes: ['id', 'content'],
+                },
+            ],
+
+        });
+
+        const declarationData = dec ? dec.get({ plain: true }) : null;
+
+
+        //  console.log('transportData',transportData)
         const renderData = {
             personalInformationData: personalData,
             educationalData: educationData,
@@ -108,8 +108,8 @@ exports.generateAdmissionPDF = async (req, res) => {
 
             subjectData: plainSubjects,
             transportData: transp,
-            declarationData:declarationData,
-            classwiseSchool:classwiseinst
+            declarationData: declarationData,
+            classwiseSchool: classwiseinst
 
         };
 
@@ -157,16 +157,16 @@ exports.generateAdmissionPDF = async (req, res) => {
         await browser.close();
 
         // 6. Send PDF to frontend
-      // 6. Send PDF to frontend
-res.setHeader('Content-Type', 'application/pdf');
-res.setHeader(
-  'Content-Disposition',
-  `attachment; filename="admission-student-${reg_no || ''}.pdf"`
-);
-res.setHeader('Content-Length', pdfBuffer.length);
+        // 6. Send PDF to frontend
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader(
+            'Content-Disposition',
+            `attachment; filename="admission-student-${reg_no || ''}.pdf"`
+        );
+        res.setHeader('Content-Length', pdfBuffer.length);
 
-// Send raw buffer and end response
-res.end(pdfBuffer);
+        // Send raw buffer and end response
+        res.end(pdfBuffer);
 
     } catch (err) {
         if (browser) await browser.close().catch(() => { });
