@@ -1,6 +1,7 @@
 const db = require('../models')
 const sequelize = db.sequelize;
 const ExcelJS = require('exceljs');
+const { student_subject, PersonalInformation, class_master, Program, Subject, ElectiveBasket } = require('../models');
 
 
 let allColumnOfTable = async (req, res) => {
@@ -106,7 +107,15 @@ const exportAllStudentData = async (req, res) => {
         });
 
 
-
+       const records = await student_subject.findAll({
+          include: [
+            
+            { model: class_master, as: 'class', attributes: ['id', 'class_name'] },
+            { model: Program, as: 'program', attributes: ['id', 'program_name'] },
+            { model: Subject, as: 'subject', attributes: ['id', 'value', 'subject_code'] },
+            { model: ElectiveBasket, as: 'electiveBasket', attributes: ['id'] },
+          ],
+        });
 
 
         if (results.length === 0) {

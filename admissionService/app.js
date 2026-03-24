@@ -40,6 +40,27 @@ const seatAllotmentRoutes = require('./routes/seatAllotmentRoutes');
 const classwiseSchoolRoutes=require('./routes/classwiseSchoolRoutes')
 const admissionpdfRoutes = require('./routes/admissionPdfRoutes');
 const studentDownloadDataRoutes = require('./routes/studentDownloadDataRoute');
+const bankDetailsRouter = require('./routes/Fee/Bank/bankDetailRoutes');
+const banksRouter = require('./routes/Fee/Bank/bankRoutes');
+const feeHeadRoutes = require('./routes/Fee/Bank/feeHeadRoutes');
+const feeCollectionRoutes = require('./routes/Fee/feeCollectionRoutes');
+
+
+//fee module routes
+app.use('/api/fees', feeCollectionRoutes);
+
+
+app.use('/api/fee-heads', feeHeadRoutes);
+
+
+app.use('/api/banks', banksRouter);
+app.use('/api/bank-details', bankDetailsRouter);
+
+
+//fee module end here
+
+
+//admission routes
 
 app.use('/api/studentData-download', studentDownloadDataRoutes);
 app.use('/api/admission', admissionpdfRoutes);

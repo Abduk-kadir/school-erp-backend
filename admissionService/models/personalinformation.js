@@ -10,6 +10,9 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
+      //this is for testing purspos we have to join with par_student_perosnl
+      PersonalInformation.hasMany(models.FeeCollection, { foreignKey: 'reg_no', as: 'FeeCollection' });
+      PersonalInformation.belongsTo(models.class_master, { foreignKey: 'class', targetKey: 'id', as: 'classInfo' });
       PersonalInformation.hasOne(models.form_status, {
         foreignKey: 'reg_no',
         sourceKey: 'reg_no',        // same FK as above 
