@@ -2,27 +2,7 @@ const { raw } = require('express');
 const {PersonalInformation,institute,sequelize} = require('../models'); // adjust path if needed
 const generateToken=require('../utils/generateToken')
 const { Op } = require("sequelize");
-/*
-const createPersonalInformation = async (req, res) => {
-  try {
-    const data = await PersonalInformation.create(req.body);
 
-    const inst = await institute.findOne(); 
-    let code=inst?.code
-   
-    const year = new Date().getFullYear(); // 2026
-    const lastTwoDigits = year.toString().slice(-2);
-    const reg_no = `${lastTwoDigits}${code}000${data.id}`;
-    console.log('reg no is:',reg_no)
-    await data.update({ reg_no });
-
-    res.status(201).json({ message: "personal information are created", data:data });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-};
-*/
 const createPersonalInformation = async (req, res) => {
   console.log('create personal information is called');
 
@@ -108,18 +88,7 @@ const getPersonalInformationbyEmail = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-/*
-const getPersonalInformationbyRegNO = async (req, res) => {
-  try {
-    let {reg_no}=req.params
-    const data = await PersonalInformation.findOne({where:{reg_no},raw:true});
-    res.status(200).json({ data: data,success:true});
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-};
-*/
+
 const getPersonalInformationbyRegNO = async (req, res) => {
   try {
     const { reg_no } = req.params;
@@ -190,22 +159,83 @@ const getAllPersonalInformation = async (req, res) => {
   }
 };
 
-// Update academic year
-/*
-const updatePersonalInformation = async (req, res) => {
+const getAllColumns = async (req, res) => {
   try {
-    const { reg_no} = req.params;
-    const p= await PersonalInformation.findOne({where:{reg_no}});
-    if (!p) return res.status(404).json({ message: "personal Information not found", success:false });
-    await PersonalInformation.update(req?.body,{where:{reg_no}});
-    res.status(200).json({ success:true, message: "personal Information updated", data: req.body });
+    console.log('get all coluns is called***********************')
+    const columns = await sequelize.query(
+      `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'personalinformations' AND TABLE_SCHEMA = DATABASE()`,
+      { type: sequelize.QueryTypes.SELECT }
+    );
+
+    const columnNames = columns.map(col => col.COLUMN_NAME).filter(name => name !== 'id');
+
+    return res.status(200).json({
+      success: true,
+      data: columnNames
+    });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    console.error('Get columns error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+}
+const bulkUpdatePersonalInformation = async (req, res) => {
+  const transaction = await sequelize.transaction();
+  try {
+    const { records } = req.body;
+
+    if (!Array.isArray(records) || records.length === 0) {
+      return res.status(400).json({ success: false, message: 'records array is required and must not be empty' });
+    }
+
+    let updatedCount = 0;
+
+    for (const record of records) {
+      const { reg_no, ...updateData } = record;
+
+      if (!reg_no) continue;
+
+      const columns = Object.keys(updateData);
+      if (columns.length === 0) continue;
+
+      const setClause = columns.map(c => `\`${c}\` = ?`).join(', ');
+      const values = columns.map(c => updateData[c]);
+      values.push(reg_no);
+
+      const updateQuery = `
+        UPDATE \`personalinformations\`
+        SET ${setClause}
+        WHERE \`reg_no\` = ?
+      `;
+
+      const [result] = await sequelize.query(updateQuery, {
+        replacements: values,
+        type: sequelize.QueryTypes.UPDATE,
+        transaction
+      });
+
+      updatedCount += result;
+    }
+
+    await transaction.commit();
+
+    return res.status(200).json({
+      success: true,
+      message: `${updatedCount} record(s) updated successfully`
+    });
+  } catch (error) {
+    await transaction.rollback();
+    console.error('Bulk update error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error while bulk updating records',
+      error: error.message
+    });
   }
 };
-
-*/
 
 const updatePersonalInformation = async (req, res) => {
   try {
@@ -276,7 +306,8 @@ module.exports = {
   getPersonalInformationbyEmail,
   login,
   getAllPersonalInformation,
+  getAllColumns,
   updatePersonalInformation,
- 
+  bulkUpdatePersonalInformation,
   getPersonalInformationbyRegNO
 };
