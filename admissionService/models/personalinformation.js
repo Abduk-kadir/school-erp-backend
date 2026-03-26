@@ -19,12 +19,15 @@ module.exports = (sequelize, DataTypes) => {
         as: 'formStatus'
       });
       PersonalInformation.hasMany(models.student_subject, {
-       foreignKey: 'student_reg_no',     // ← corrected to your actual column name
-  sourceKey: 'reg_no',              // this stays the same (column in PersonalInformation)
-  as: 'studentSubjects'      // choose a clear alias (plural recommended)
+       foreignKey: 'student_reg_no',
+  sourceKey: 'reg_no',
+  as: 'studentSubjects'
       });
-
-
+      PersonalInformation.hasMany(models.FeeRecordMonthly, {
+        foreignKey: 'reg_no',
+        sourceKey: 'reg_no',
+        as: 'feeRecords'
+      });
     }
   }
   PersonalInformation.init({

@@ -14,6 +14,10 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'bank_id',
         as: 'bank',
       });
+      FeeHead.hasMany(models.FeeRecordMonthly, {
+        foreignKey: 'fee_table_id',
+        as: 'feeRecords'
+      });
     }
   }
   FeeHead.init({

@@ -44,10 +44,12 @@ const bankDetailsRouter = require('./routes/Fee/Bank/bankDetailRoutes');
 const banksRouter = require('./routes/Fee/Bank/bankRoutes');
 const feeHeadRoutes = require('./routes/Fee/Bank/feeHeadRoutes');
 const feeCollectionRoutes = require('./routes/Fee/feeCollectionRoutes');
+const feeRecordMonthlyRoutes = require('./routes/feeRecordMonthlyRoutes');
 
 
 //fee module routes
 app.use('/api/fees', feeCollectionRoutes);
+app.use('/api/fee-record-monthly', feeRecordMonthlyRoutes);
 
 
 app.use('/api/fee-heads', feeHeadRoutes);
