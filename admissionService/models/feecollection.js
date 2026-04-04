@@ -13,6 +13,11 @@ module.exports = (sequelize, DataTypes) => {
 
       FeeCollection.belongsTo(models.PersonalInformation, { foreignKey: 'reg_no', targetKey: 'reg_no', as: 'PeronalInformation' });
       FeeCollection.belongsTo(models.par_student_personal_information, { foreignKey: 'reg_no' });
+
+      FeeCollection.hasMany(models.FeeRecordMonthly, {
+        foreignKey: 'fee_table_id',
+        as: 'feecollectionrecords'
+      });
     }
   }
   FeeCollection.init({
@@ -52,6 +57,9 @@ module.exports = (sequelize, DataTypes) => {
   }, {
     sequelize,
     modelName: 'FeeCollection',
+    indexes: [
+      { fields: ['reg_no'], name: 'feecollections_reg_no_idx' }
+    ]
   });
   return FeeCollection;
 };

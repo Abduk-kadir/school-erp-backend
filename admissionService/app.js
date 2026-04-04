@@ -9,7 +9,6 @@ app.use(cors());
 const roleRoutes = require('./routes/roleRoutes');
 const employeeRoutes = require('./routes/employeeRoutes');
 const classRoutes = require('./routes/classRoutes');
-const academicYearRoutes = require('./routes/academicYearRoutes');
 const casteRoutes = require('./routes/casteRoutes');
 const divisionRoutes = require('./routes/divisionRoutes');
 const physicallyDisableRoutes = require('./routes/phisallyDisableRoute');
@@ -43,6 +42,7 @@ const studentDownloadDataRoutes = require('./routes/studentDownloadDataRoute');
 const bankDetailsRouter = require('./routes/Fee/Bank/bankDetailRoutes');
 const banksRouter = require('./routes/Fee/Bank/bankRoutes');
 const feeHeadRoutes = require('./routes/Fee/Bank/feeHeadRoutes');
+const feeGroupRoutes = require('./routes/Fee/feeGroupRoutes');
 const feeCollectionRoutes = require('./routes/Fee/feeCollectionRoutes');
 const feeRecordMonthlyRoutes = require('./routes/feeRecordMonthlyRoutes');
 
@@ -53,7 +53,7 @@ app.use('/api/fee-record-monthly', feeRecordMonthlyRoutes);
 
 
 app.use('/api/fee-heads', feeHeadRoutes);
-
+app.use('/api/fee-groups', feeGroupRoutes);
 
 app.use('/api/banks', banksRouter);
 app.use('/api/bank-details', bankDetailsRouter);
@@ -107,7 +107,6 @@ app.use("/api/personal-information", personalInformationRoutes);
 app.use('/api/physically-disable', physicallyDisableRoutes);
 app.use('/api/divisions', divisionRoutes);
 app.use('/api/castes', casteRoutes);
-app.use('/api/academic-years', academicYearRoutes);
 app.use('/api/classes', classRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/roles', roleRoutes);

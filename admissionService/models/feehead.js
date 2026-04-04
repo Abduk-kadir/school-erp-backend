@@ -15,8 +15,16 @@ module.exports = (sequelize, DataTypes) => {
         as: 'bank',
       });
       FeeHead.hasMany(models.FeeRecordMonthly, {
-        foreignKey: 'fee_table_id',
-        as: 'feeRecords'
+        foreignKey: 'fee_head',
+        as: 'feeHeads'
+      });
+      FeeHead.hasMany(models.FeeGroupHead, {
+        foreignKey: 'feeheadid',
+        as: 'feeGroupHeads'
+      });
+      FeeHead.hasMany(models.FeeGroupDetailPrice, {
+        foreignKey: 'feeheadid',
+        as: 'feeGroupDetailPrices'
       });
     }
   }

@@ -15,8 +15,14 @@ module.exports = (sequelize, DataTypes) => {
         targetKey: 'reg_no',
         as: 'student'
       });
-      FeeRecordMonthly.belongsTo(models.FeeHead, {
+      FeeRecordMonthly.belongsTo(models.FeeCollection, {
         foreignKey: 'fee_table_id',
+        targetKey: 'id',
+        as: 'feeCollectionInfo'
+      });
+
+      FeeRecordMonthly.belongsTo(models.FeeHead, {
+        foreignKey: 'fee_head',
         targetKey: 'id',
         as: 'feeHeadInfo'
       });
@@ -67,7 +73,8 @@ module.exports = (sequelize, DataTypes) => {
     sequelize,
     modelName: 'FeeRecordMonthly',
     indexes: [
-      { fields: ['reg_no'] }
+     
+      { fields: ['fee_table_id'], name: 'feerecordmonthlies_fee_table_id_idx' }
     ]
   });
   return FeeRecordMonthly;

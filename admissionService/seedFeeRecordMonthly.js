@@ -1,33 +1,44 @@
 const { FeeRecordMonthly, sequelize } = require('./models');
 
-const TOTAL_RECORDS = 2000000; // 20 lakh records
-const BATCH_SIZE = 5000;
+const LAST_REG_NO = 9090;
+const J_MAX = 11;
+const Z_MAX = 40;
+const BATCH_SIZE = 2000;
 
-const feeHeads = ['Tuition Fee', 'Hostel Fee', 'Transport Fee', 'Library Fee', 'Lab Fee'];
 const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+const MONTH_TOTAL = 25;
+const MONTH_PAID = 25;
+const MONTH_DUE = 0;
 
-function randomBetween(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+/**
+ * Loops: for (i=1..9090) for (j=1..11) for (z=1..40)
+ * - reg_no = i
+ * - fee_head = z (1..40 per j)
+ * - fee_table_id: see TABLE_ID_SOURCE below.
+ *
+ * TABLE_ID_SOURCE 'j' (default): fee_table_id = (i - 1) * J_MAX + j so ids continue across students:
+ *   reg 1 → j=1..11 → table_id 1..11; reg 2 → j=1..11 → table_id 12..22; etc. (not restarting at 1 per reg_no).
+ * TABLE_ID_SOURCE 'i': fee_table_id = i (same for all j,z for that student).
+ */
+const TABLE_ID_SOURCE = 'j'; // 'j' | 'i'
+
+function feeTableId(i, j) {
+  if (TABLE_ID_SOURCE === 'i') return i;
+  return (i - 1) * J_MAX + j;
 }
 
-function generateRecord(index) {
-  const regNo = 2601001 + index;
-  const feeHead = feeHeads[index % feeHeads.length];
-  const feeTableId = (index % feeHeads.length) + 1;
-  const total = randomBetween(5, 20) * 10000;
-
+function buildRecord(i, j, z) {
   const record = {
-    reg_no: regNo,
-    fee_head: feeHead,
-    fee_table_id: feeTableId,
+    reg_no: i,
+    fee_head: String(z),
+    fee_table_id: feeTableId(i, j),
     date: new Date(),
   };
 
-  for (const month of months) {
-    const paid = randomBetween(0, total / 10000) * 10000;
-    record[`${month}_total`] = total;
-    record[`${month}_paid`] = paid;
-    record[`${month}_due`] = total - paid;
+  for (const m of months) {
+    record[`${m}_total`] = MONTH_TOTAL;
+    record[`${m}_paid`] = MONTH_PAID;
+    record[`${m}_due`] = MONTH_DUE;
   }
 
   return record;
@@ -37,21 +48,37 @@ async function seed() {
   try {
     await sequelize.authenticate();
     console.log('Connected to database.');
-    console.log(`Inserting ${TOTAL_RECORDS} records in batches of ${BATCH_SIZE}...`);
 
-    for (let i = 0; i < TOTAL_RECORDS; i += BATCH_SIZE) {
-      const batch = [];
-      const end = Math.min(i + BATCH_SIZE, TOTAL_RECORDS);
+    const totalRows = LAST_REG_NO * J_MAX * Z_MAX;
+    const maxTableId = TABLE_ID_SOURCE === 'j' ? LAST_REG_NO * J_MAX : LAST_REG_NO;
+    console.log(
+      `Inserting ${totalRows} rows: reg_no=i, fee_table_id=${TABLE_ID_SOURCE === 'j' ? `(i-1)*${J_MAX}+j (1..${maxTableId})` : 'i'}, fee_head=z; months: total/paid ${MONTH_TOTAL}, due ${MONTH_DUE}.`
+    );
 
-      for (let j = i; j < end; j++) {
-        batch.push(generateRecord(j));
+    let inserted = 0;
+    let buffer = [];
+
+    for (let i = 1; i <= LAST_REG_NO; i += 1) {
+      for (let j = 1; j <= J_MAX; j += 1) {
+        for (let z = 1; z <= Z_MAX; z += 1) {
+          buffer.push(buildRecord(i, j, z));
+          if (buffer.length >= BATCH_SIZE) {
+            await FeeRecordMonthly.bulkCreate(buffer);
+            inserted += buffer.length;
+            buffer = [];
+            console.log(`Inserted ${inserted} / ${totalRows}`);
+          }
+        }
       }
-
-      await FeeRecordMonthly.bulkCreate(batch);
-      console.log(`Inserted ${end} / ${TOTAL_RECORDS} records`);
     }
 
-    console.log('Done! All records inserted.');
+    if (buffer.length > 0) {
+      await FeeRecordMonthly.bulkCreate(buffer);
+      inserted += buffer.length;
+      console.log(`Inserted ${inserted} / ${totalRows}`);
+    }
+
+    console.log('Done.');
     process.exit(0);
   } catch (error) {
     console.error('Seeding failed:', error.message);

@@ -2,21 +2,16 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('Academic_Years', {
+    await queryInterface.createTable('feegroups', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      academic_year: {
-        type: Sequelize.STRING
-      },
-      start_date: {
-        type: Sequelize.DATE
-      },
-      end_date: {
-        type: Sequelize.DATE
+      groupname: {
+        type: Sequelize.STRING,
+        allowNull: false
       },
       createdAt: {
         allowNull: false,
@@ -27,8 +22,12 @@ module.exports = {
         type: Sequelize.DATE
       }
     });
+
+    await queryInterface.addIndex('feegroups', ['groupname'], {
+      name: 'feegroups_groupname_idx'
+    });
   },
   async down(queryInterface) {
-    await queryInterface.dropTable('Academic_Years');
+    await queryInterface.dropTable('feegroups');
   }
 };
