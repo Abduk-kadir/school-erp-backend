@@ -1,7 +1,123 @@
-const { FeeGroup , FeeGroupDetail,FeeGroupDetailPrice,Group} = require('../../models');
+const {
+  FeeGroup,
+  FeeGroupDetail,
+  FeeGroupDetailPrice,
+  FeeGroupHead,
+  FeeHead,
+  par_student_personal_information
+} = require('../../models');
 
 const feeGroupController = {
+  /**
+   * Fee assignment for a student: par_student_personal_information → FeeGroup →
+   * FeeGroupDetail → FeeGroupDetailPrice (+ FeeHead per row).
+   * @route GET .../student/:regNo/assigned-fees
+   */
+  async getfeeAssignedToStudent(req, res) {
+    try {
+      const { regNo } = req.params;
+      if (regNo == null || String(regNo).trim() === '') {
+        return res.status(400).json({
+          success: false,
+          message: 'Student reg_no is required (route param regNo)'
+        });
+      }
 
+      const reg_no = String(regNo).trim();
+
+      const student = await par_student_personal_information.findOne({
+        where: { reg_no },
+        attributes: [
+          'reg_no',
+          'first_name',
+          'last_name',
+          'class',
+          'division',
+          'feegroupid'
+        ],
+        include: [
+          {
+            model: FeeGroup,
+            as: 'feeGroup',
+            required: false,
+            include: [
+              {
+                model: FeeGroupDetail,
+                as: 'feeGroupDetails',
+                required: false,
+                include: [
+                  {
+                    model: FeeGroupDetailPrice,
+                    as: 'feeGroupDetailPrices',
+                    required: false,
+                    include: [
+                      {
+                        model: FeeHead,
+                        as: 'feeHead',
+                        attributes: ['id', 'fee_head_name', 'is_refundable', 'status', 'bank_id']
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      });
+
+      if (!student) {
+        return res.status(404).json({
+          success: false,
+          message: 'Student not found for this reg_no'
+        });
+      }
+
+      if (!student.feegroupid) {
+        const plain = student.get({ plain: true });
+        return res.status(200).json({
+          success: true,
+          message: 'No fee group assigned to this student',
+          data: {
+            student: {
+              reg_no: plain.reg_no,
+              first_name: plain.first_name,
+              last_name: plain.last_name,
+              class: plain.class,
+              division: plain.division,
+              feegroupid: plain.feegroupid
+            },
+            feeGroupDetailPrices: []
+          }
+        });
+      }
+
+      const plain = student.get({ plain: true });
+      const feeGroupDetailPrices =
+        plain?.feeGroup?.feeGroupDetails?.flatMap((d) => d.feeGroupDetailPrices || []) || [];
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          student: {
+            reg_no: plain.reg_no,
+            first_name: plain.first_name,
+            last_name: plain.last_name,
+            class: plain.class,
+            division: plain.division,
+            feegroupid: plain.feegroupid
+          },
+          feeGroupDetailPrices
+        }
+      });
+    } catch (error) {
+      console.error('getfeeAssignedToStudent:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch fee assignment for student',
+        error: error.message
+      });
+    }
+  },
 
   async creategroupDetailAndPricing(req, res) {
     try {
@@ -13,18 +129,33 @@ const feeGroupController = {
           message: 'groupPricingRecord must be a non-empty array'
         });
       }
+     
+      let headdata=groupPricingRecord.map(elem=>{
+        return {feeheadid:elem.feehead,groupid:groupdetails.feegroupid}
+      })
+      console.log('head data*****************************:',headdata)
+
+    await FeeGroupHead.bulkCreate(headdata, {
+        validate: true,
+        returning: true
+      });
 
       // Step 1: Create Single FeeGroupDetail
+    
       const createdFeeGroupDetail = await FeeGroupDetail.create(groupdetails);
+       
+
+     
 
       // Step 2: Map feeGroupDetailId to all pricing records
       const pricingData = groupPricingRecord.map((pricing) => ({
         ...pricing,
+        feeheadid:pricing.feehead,
         groupdetailid: createdFeeGroupDetail.id
       }));
-
+      
       // Step 3: Bulk Create Pricing Records
-      const createdPricingRecords = await FeeGroupDetailPrice.bulkCreate(pricingData, {
+     const createdPricingRecords = await FeeGroupDetailPrice.bulkCreate(pricingData, {
         validate: true,
         returning: true
       });

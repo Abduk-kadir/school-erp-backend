@@ -30,62 +30,62 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      jantotal: {
+      jan_total: {
         type: Sequelize.DECIMAL(12, 2),
         allowNull: true,
         defaultValue: 0
       },
-      febtotal: {
+      feb_total: {
         type: Sequelize.DECIMAL(12, 2),
         allowNull: true,
         defaultValue: 0
       },
-      marchtotal: {
+      mar_total: {
         type: Sequelize.DECIMAL(12, 2),
         allowNull: true,
         defaultValue: 0
       },
-      apriltotal: {
+      apr_total: {
         type: Sequelize.DECIMAL(12, 2),
         allowNull: true,
         defaultValue: 0
       },
-      maytotal: {
+      may_total: {
         type: Sequelize.DECIMAL(12, 2),
         allowNull: true,
         defaultValue: 0
       },
-      juntotal: {
+      jun_total: {
         type: Sequelize.DECIMAL(12, 2),
         allowNull: true,
         defaultValue: 0
       },
-      jultotal: {
+      jul_total: {
         type: Sequelize.DECIMAL(12, 2),
         allowNull: true,
         defaultValue: 0
       },
-      augtotal: {
+      aug_total: {
         type: Sequelize.DECIMAL(12, 2),
         allowNull: true,
         defaultValue: 0
       },
-      septotal: {
+      sep_total: {
         type: Sequelize.DECIMAL(12, 2),
         allowNull: true,
         defaultValue: 0
       },
-      octtotal: {
+      oct_total: {
         type: Sequelize.DECIMAL(12, 2),
         allowNull: true,
         defaultValue: 0
       },
-      novtotal: {
+      nov_total: {
         type: Sequelize.DECIMAL(12, 2),
         allowNull: true,
         defaultValue: 0
       },
-      dectotal: {
+      dec_total: {
         type: Sequelize.DECIMAL(12, 2),
         allowNull: true,
         defaultValue: 0
