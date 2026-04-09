@@ -30,7 +30,7 @@ function feeTableId(i, j) {
 function buildRecord(i, j, z) {
   const record = {
     reg_no: i,
-    fee_head: String(z),
+    feeheadid: z,
     fee_table_id: feeTableId(i, j),
     date: new Date(),
   };

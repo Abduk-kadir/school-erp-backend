@@ -22,15 +22,15 @@ module.exports = (sequelize, DataTypes) => {
       });
 
       FeeRecordMonthly.belongsTo(models.FeeHead, {
-        foreignKey: 'fee_head',
+        foreignKey: 'feeheadid',
         targetKey: 'id',
-        as: 'feeHeadInfo'
+        as: 'feeHead'
       });
     }
   }
   FeeRecordMonthly.init({
     reg_no: DataTypes.BIGINT,
-    fee_head: DataTypes.STRING,
+    feeheadid: DataTypes.INTEGER,
     fee_table_id: DataTypes.INTEGER,
     date: DataTypes.DATE,
     jan_total: DataTypes.DECIMAL,

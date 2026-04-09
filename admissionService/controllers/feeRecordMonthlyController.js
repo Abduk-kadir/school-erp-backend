@@ -1,4 +1,5 @@
-const { QueryTypes, Op } = require('sequelize');
+const { QueryTypes, Op} = require('sequelize');
+
 const {
   FeeRecordMonthly,
   PersonalInformation,
@@ -24,12 +25,13 @@ const getFeeRecordByRegNo = async (req, res) => {
       where: { reg_no },
       order: [['id', 'DESC']]
     });
-
+  
     if (!feeCollection) {
       return res.status(404).json({ success: false, message: 'no fee record found' });
     }
 
     const fee_table_id = feeCollection.id;
+    console.log('feetable id********************',fee_table_id)
     const fee_records = await FeeRecordMonthly.findAll({
       where: { fee_table_id },
       include: [
@@ -40,7 +42,7 @@ const getFeeRecordByRegNo = async (req, res) => {
         },
         {
           model: FeeHead,
-          as: 'feeHeadInfo',
+          as: 'feeHead',
           attributes: ['id', 'fee_head_name', 'is_refundable', 'status']
         }
       ]
@@ -61,9 +63,14 @@ const createFeeRecordMonthly = async (req, res) => {
       return res.status(400).json({ success: false, message: 'records must be a non-empty array' });
     }
 
-    const requiredFields = ['reg_no', 'fee_head', 'fee_table_id'];
+    const requiredFields = ['reg_no', 'feeheadid', 'fee_table_id'];
     for (let i = 0; i < records.length; i++) {
       for (const field of requiredFields) {
+        // backward-compat: allow fee_head in payload, map to feeheadid
+        if (field === 'feeheadid' && records[i].feeheadid == null && records[i].fee_head != null) {
+          records[i].feeheadid = records[i].fee_head;
+          delete records[i].fee_head;
+        }
         if (records[i][field] == null) {
           return res.status(400).json({
             success: false,
@@ -92,7 +99,7 @@ const createFeeRecordMonthly = async (req, res) => {
  */
 const getLatestPerFeeTable = async (req, res) => {
   try {
-    const { fee_head, class: classFilter } = req.query;
+    const { feeheadid, fee_head, class: classFilter } = req.query;
     const limitRaw = parseInt(req.query.limit, 10);
     const limit = Number.isFinite(limitRaw)
       ? Math.min(Math.max(limitRaw, LATEST_PER_FEE_TABLE_MIN), LATEST_PER_FEE_TABLE_MAX)
@@ -118,9 +125,15 @@ const getLatestPerFeeTable = async (req, res) => {
     }
 
     parts.push(`WHERE 1=1`);
-    if (fee_head != null && String(fee_head).trim() !== '') {
-      parts.push(`AND fr.\`fee_head\` = ?`);
-      replacements.push(String(fee_head));
+    const feeheadFilter =
+      feeheadid != null && String(feeheadid).trim() !== ''
+        ? String(feeheadid)
+        : fee_head != null && String(fee_head).trim() !== ''
+          ? String(fee_head)
+          : null;
+    if (feeheadFilter != null) {
+      parts.push(`AND fr.\`feeheadid\` = ?`);
+      replacements.push(feeheadFilter);
     }
 
     parts.push(`ORDER BY fr.\`fee_table_id\` ASC, fr.\`id\` ASC`);
@@ -138,7 +151,7 @@ const getLatestPerFeeTable = async (req, res) => {
         success: true,
         limit,
         filters: {
-          fee_head: fee_head != null && String(fee_head).trim() !== '' ? String(fee_head) : null,
+          feeheadid: feeheadFilter,
           class: classFilter != null && String(classFilter).trim() !== '' ? String(classFilter) : null
         },
         count: 0,
@@ -165,7 +178,7 @@ const getLatestPerFeeTable = async (req, res) => {
         },
         {
           model: FeeHead,
-          as: 'feeHeadInfo',
+          as: 'feeHead',
           attributes: ['id', 'fee_head_name', 'is_refundable', 'status']
         }
       ],
@@ -181,7 +194,7 @@ const getLatestPerFeeTable = async (req, res) => {
       success: true,
       limit,
       filters: {
-        fee_head: fee_head != null && String(fee_head).trim() !== '' ? String(fee_head) : null,
+        feeheadid: feeheadFilter,
         class: classFilter != null && String(classFilter).trim() !== '' ? String(classFilter) : null
       },
       count: data.length,

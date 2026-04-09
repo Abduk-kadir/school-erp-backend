@@ -12,8 +12,8 @@ module.exports = {
       reg_no: {
         type: Sequelize.BIGINT
       },
-      fee_head: {
-        type: Sequelize.STRING
+      feeheadid: {
+        type: Sequelize.INTEGER
       },
       fee_table_id: {
         type: Sequelize.INTEGER

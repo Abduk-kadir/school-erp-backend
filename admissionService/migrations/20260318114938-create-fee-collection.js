@@ -40,7 +40,12 @@ module.exports = {
         type: Sequelize.STRING
       },
       consession: {
-        type: Sequelize.INTEGER
+        type: Sequelize.BOOLEAN,
+        defaultValue: false
+      },
+      consessionamount: {
+        type: Sequelize.DECIMAL(12, 2),
+        defaultValue: 0
       },
       discount_type_id: {
         type: Sequelize.INTEGER

@@ -100,17 +100,27 @@ exports.getSummaryFeeCollection = async (req, res) => {
   }
 };
 
-// ✅ GET SINGLE
+// ✅ GET LATEST FEE ROW FOR A STUDENT (by registration number; multiple rows per reg_no)
 exports.getFeeById = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { reg_no } = req.params;
 
-    const data = await FeeCollection.findByPk(id);
+    if (reg_no == null || String(reg_no).trim() === '') {
+      return res.status(400).json({
+        success: false,
+        message: 'reg_no is required'
+      });
+    }
+
+    const data = await FeeCollection.findOne({
+      where: { reg_no: String(reg_no).trim() },
+      order: [['id', 'DESC']]
+    });
 
     if (!data) {
       return res.status(404).json({
         success: false,
-        message: "Fee not found"
+        message: 'No fee record found for this registration number'
       });
     }
 

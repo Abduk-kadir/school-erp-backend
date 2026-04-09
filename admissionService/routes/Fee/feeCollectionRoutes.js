@@ -7,7 +7,7 @@ const feeController = require('../../controllers/Fee/feeCollectionController');
 router.post('/', feeController.createFee);
 router.get('/', feeController.getAllFees);
 router.get('/summary', feeController.getSummaryFeeCollection);
-router.get('/:id', feeController.getFeeById);
+router.get('/registration/:reg_no', feeController.getFeeById);
 router.put('/:id', feeController.updateFee);
 router.delete('/:id', feeController.deleteFee);
 
