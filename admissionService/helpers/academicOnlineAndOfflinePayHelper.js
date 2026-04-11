@@ -1,6 +1,7 @@
 const { Op, Sequelize } = require('sequelize');
 
-async function academicOnlineAndOfflinePayDataTable(req, model, searchFields = [], extraWhere = {}, include) {
+async function academicOnlineAndOfflinePayDataTable(req, model, searchFields = [], extraWhere = {}, include, options = {}) {
+  const forExport = options.forExport === true;
   const draw = parseInt(req.query.draw) || 1;
   const start = parseInt(req.query.start) || 0;
   const length = parseInt(req.query.length) || 10;
@@ -64,6 +65,8 @@ async function academicOnlineAndOfflinePayDataTable(req, model, searchFields = [
   const { count: recordsFiltered, rows: data } = await model.findAndCountAll({
     where: whereClause,
     include: include,
+    raw: true,                    // ← This makes it FLAT (no nested objects)
+    nest: false,
     offset: start,
     limit: length,
     distinct: true

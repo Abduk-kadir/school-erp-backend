@@ -17,6 +17,7 @@ const FEE_MIGRATION_NAMES = [
   '20260403120000-create-fee-group-head.js',
   '20260403180000-create-feegroupdetail.js',
   '20260404120000-add-startmonth-feegroupdetails.js',
+  '20260410120000-add-classid-feegroupdetails.js',
   '20260404130000-create-feegroupdetailprice.js',
   // Legacy (files removed); delete meta rows if present
   '20260331120000-create-fee-group.js',

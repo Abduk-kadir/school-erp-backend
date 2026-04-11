@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "csv-stringify": "^6.7.0",
     "ejs": "^4.0.1",
     "express": "^5.2.1",
     "fs": "^0.0.1-security",

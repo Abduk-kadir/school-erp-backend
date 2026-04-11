@@ -6,6 +6,8 @@ const feeController = require('../../controllers/Fee/feeCollectionController');
 // CRUD Routes
 router.post('/', feeController.createFee);
 router.get('/', feeController.getAllFees);
+router.get('/excel', feeController.getAllFeesInExcel);
+router.get('/csv', feeController.getAllFeesInCsv);
 router.get('/summary', feeController.getSummaryFeeCollection);
 router.get('/registration/:reg_no', feeController.getFeeById);
 router.put('/:id', feeController.updateFee);

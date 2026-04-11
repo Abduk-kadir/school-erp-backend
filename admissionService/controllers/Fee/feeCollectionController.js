@@ -1,6 +1,57 @@
-const { FeeCollection, PersonalInformation, class_master } = require('../../models');
+const ExcelJS = require('exceljs');
+const { FeeCollection, PersonalInformation, class_master, sequelize } = require('../../models');
+const { QueryTypes } = require('sequelize');
 const { academicOnlineAndOfflinePayDataTable } = require('../../helpers/academicOnlineAndOfflinePayHelper');
 const { academicSummaryPayDataTable } = require('../../helpers/academicSummaryPayHelper');
+
+const FEE_EXPORT_COLUMNS = [
+  { header: 'Reg No', key: 'reg_no' },
+  { header: 'Client Txt ID', key: 'client_txt_id' },
+  { header: 'First_name', key: 'first_name' },
+  { header: 'Class Name', key: 'class_name' },
+  { header: 'Division', key: 'division' },
+  { header: 'Receipt No', key: 'reciept_no' },
+  { header: 'Transaction No', key: 'transaction_no' },
+  { header: 'Failure Message', key: 'failure_message' },
+  { header: 'Card Name', key: 'card_name' },
+  { header: 'Payment Mode', key: 'payment_mode' },
+  { header: 'Added By', key: 'added_by' },
+  { header: 'Role ID', key: 'role_id' },
+  { header: 'Fine', key: 'fine' },
+  { header: 'Concession', key: 'consession' },
+  { header: 'Concession Amount', key: 'consessionamount' },
+  { header: 'Discount Type', key: 'discount_type_id' },
+  { header: 'Total', key: 'total' },
+  { header: 'Total Paid', key: 'total_paid' },
+  { header: 'Payment', key: 'payment' },
+  { header: 'Balance', key: 'balance' },
+  { header: 'Remark', key: 'remark' },
+  { header: 'Payment Type', key: 'payment_type' },
+  { header: 'DD Number', key: 'dd_number' },
+  { header: 'DD Date', key: 'dd_date' },
+  { header: 'Check No', key: 'check_no' },
+  { header: 'Ref No', key: 'ref_no' },
+  { header: 'Check Date', key: 'check_date' },
+  { header: 'Check Name', key: 'check_name' },
+  { header: 'Bank ID', key: 'bank_id' },
+  { header: 'Start Month', key: 'start_month' },
+  { header: 'Paid/Unpaid Month', key: 'paid_and_unpai_month' },
+  { header: 'Extra Fee', key: 'extra_fee' },
+  { header: 'Date', key: 'date' },
+  { header: 'Split Flag', key: 'split_flag' },
+  { header: 'Raw Data', key: 'raw_data' },
+  { header: 'Installment', key: 'installment' },
+  { header: 'Split Response', key: 'split_response' },
+  { header: 'Created At', key: 'createdAt' },
+  { header: 'Updated At', key: 'updatedAt' }
+];
+
+function escapeCsvField(val) {
+  if (val === null || val === undefined) return '';
+  const s = String(val);
+  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
 
 // ✅ CREATE
 exports.createFee = async (req, res) => {
@@ -59,6 +110,135 @@ exports.getAllFees = async (req, res) => {
     });
   }
 };
+
+/**
+ * Query: fromDate, toDate, paymentStatus, className. Returns an .xlsx download.
+ */
+exports.getAllFeesInExcel = async (req, res) => {
+  try {
+    const { fromDate, toDate, paymentStatus, className } = req.query;
+
+    const whereClause = [];
+    if (fromDate && toDate) {
+      whereClause.push(`DATE(f.\`date\`) BETWEEN '${fromDate}' AND '${toDate}'`);
+    } else if (fromDate) {
+      whereClause.push(`DATE(f.\`date\`) >= '${fromDate}'`);
+    } else if (toDate) {
+      whereClause.push(`DATE(f.\`date\`) <= '${toDate}'`);
+    }
+
+    if (className !== undefined && className !== null && String(className).trim() !== '') {
+      const classId = parseInt(className, 10);
+      if (!Number.isNaN(classId)) {
+        whereClause.push(`p.\`class\` = ${classId}`);
+      }
+    }
+    if (paymentStatus) {
+      const safe = String(paymentStatus).replace(/'/g, "''");
+      whereClause.push(`f.\`payment_mode\`='${safe}'`);
+    }
+
+    const query = `select * from feecollections  as f 
+     join personalInformations p on f.reg_no=p.reg_no
+     join class_masters as c on p.class=c.id`;
+    const whereSql = whereClause.length ? ` where ${whereClause.join(' and ')}` : '';
+
+    const result = await sequelize.query(query + whereSql, {
+      type: QueryTypes.SELECT
+    });
+
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("Fee Collection");
+    sheet.columns = FEE_EXPORT_COLUMNS;
+   sheet.addRows(result)
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=feeCollection.xlsx"
+    );
+
+    
+   await workbook.xlsx.write(res);
+
+    res.end();
+   
+   
+  
+
+   
+  } catch (error) {
+    console.error('getAllFeesInExcel:', error);
+    if (!res.headersSent) {
+      return res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+};
+
+/**
+ * Same query params as GET .../excel: fromDate, toDate, paymentStatus, className. Returns a .csv download.
+ */
+exports.getAllFeesInCsv = async (req, res) => {
+  try {
+    const { fromDate, toDate, paymentStatus, className } = req.query;
+
+    const whereClause = [];
+    if (fromDate && toDate) {
+      whereClause.push(`DATE(f.\`date\`) BETWEEN '${fromDate}' AND '${toDate}'`);
+    } else if (fromDate) {
+      whereClause.push(`DATE(f.\`date\`) >= '${fromDate}'`);
+    } else if (toDate) {
+      whereClause.push(`DATE(f.\`date\`) <= '${toDate}'`);
+    }
+
+    if (className !== undefined && className !== null && String(className).trim() !== '') {
+      const classId = parseInt(className, 10);
+      if (!Number.isNaN(classId)) {
+        whereClause.push(`p.\`class\` = ${classId}`);
+      }
+    }
+    if (paymentStatus) {
+      const safe = String(paymentStatus).replace(/'/g, "''");
+      whereClause.push(`f.\`payment_mode\`='${safe}'`);
+    }
+
+    const query = `select * from feecollections  as f 
+     join personalInformations p on f.reg_no=p.reg_no
+     join class_masters as c on p.class=c.id`;
+    const whereSql = whereClause.length ? ` where ${whereClause.join(' and ')}` : '';
+
+    const result = await sequelize.query(query + whereSql, {
+      type: QueryTypes.SELECT
+    });
+
+    const keys = FEE_EXPORT_COLUMNS.map((c) => c.key);
+    const headerLine = FEE_EXPORT_COLUMNS.map((c) => escapeCsvField(c.header)).join(',');
+    const dataLines = result.map((row) =>
+      keys.map((k) => escapeCsvField(row[k])).join(',')
+    );
+    const csv = [headerLine, ...dataLines].join('\r\n');
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename=feeCollection.csv');
+    res.send(`\uFEFF${csv}`);
+  } catch (error) {
+    console.error('getAllFeesInCsv:', error);
+    if (!res.headersSent) {
+      return res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+};
+
+/** @deprecated Use getAllFeesInExcel — same handler */
+exports.getAllFeesInExcelFormat = exports.getAllFeesInExcel;
+
 
 
 exports.getSummaryFeeCollection = async (req, res) => {

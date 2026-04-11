@@ -28,6 +28,10 @@ module.exports = (sequelize, DataTypes) => {
         sourceKey: 'reg_no',
         as: 'feeRecords'
       });
+      PersonalInformation.belongsTo(models.FeeGroup, {
+        foreignKey: 'groupid',
+        as: 'feeGroup'
+      });
     }
   }
   PersonalInformation.init({
@@ -45,7 +49,11 @@ module.exports = (sequelize, DataTypes) => {
     email: DataTypes.STRING,
     password: DataTypes.STRING,
     dob: DataTypes.STRING,
-    blood_group: DataTypes.STRING
+    blood_group: DataTypes.STRING,
+    groupid: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    }
   }, {
     sequelize,
     modelName: 'PersonalInformation',

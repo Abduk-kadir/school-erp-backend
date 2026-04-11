@@ -18,6 +18,10 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'feegroupid',
         as: 'feeGroup'
       });
+      FeeGroupDetail.belongsTo(models.class_master, {
+        foreignKey: 'classid',
+        as: 'class'
+      });
       FeeGroupDetail.hasMany(models.FeeGroupDetailPrice, {
         foreignKey: 'groupdetailid',
         as: 'feeGroupDetailPrices'
@@ -48,6 +52,10 @@ module.exports = (sequelize, DataTypes) => {
         min: 1,
         max: 12
       }
+    },
+    classid: {
+      type: DataTypes.INTEGER,
+      allowNull: true
     }
   }, {
     sequelize,
