@@ -3,6 +3,10 @@ const { FeeCollection, PersonalInformation, class_master, sequelize } = require(
 const { QueryTypes } = require('sequelize');
 const { academicOnlineAndOfflinePayDataTable } = require('../../helpers/academicOnlineAndOfflinePayHelper');
 const { academicSummaryPayDataTable } = require('../../helpers/academicSummaryPayHelper');
+const PDFDocument = require('pdfkit-table');
+const puppeteer = require('puppeteer');
+  const ejs = require('ejs');
+  const path = require('path');
 
 const FEE_EXPORT_COLUMNS = [
   { header: 'Reg No', key: 'reg_no' },
@@ -52,6 +56,155 @@ function escapeCsvField(val) {
   if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
   return s;
 }
+/** pdfkit-table uses string headers, or objects with `label` (not `header`). */
+const FEE_COLLECTION_PDF_HEADERS = [
+  'Name',
+  'Class Name',
+  'Division',
+  'Receipt No',
+  'Transaction No',
+  'Failure Message',
+  'Card Name',
+  'Payment Mode',
+  'Added By',
+  'Role ID',
+  'Fine',
+  'Concession',
+  'Concession Amount',
+];
+
+
+
+function feeRecordRowToPdfCells(r) {
+  const c = (v) => (v != null && v !== '' ? String(v) : '');
+  return [
+    c(r.first_name),
+    c(r.class_name),
+    c(r.division),
+    c(r.reciept_no),
+    c(r.transaction_no),
+    c(r.failure_message),
+    c(r.card_name),
+    c(r.payment_mode),
+    c(r.added_by),
+    c(r.role_id),
+    c(r.fine),
+    c(r.consession),
+    c(r.consessionamount),
+  ];
+  };
+   
+
+
+
+
+  
+  
+  exports.feeRecieptPDF = async (req, res) => {
+    console.log('feeRecieptPDF is called***********************',req.body)
+      let browser;
+      try {
+          const { reg_no } = req.body;
+  
+        /*
+          let classid = personalData.class
+          let classwiseinst = await classWiseSchool.findOne({
+              where: {
+                  class_id: classid
+              },
+              raw: true
+  
+          })
+  
+          const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
+          classwiseinst.logo = classwiseinst?.logo ? `${baseUrl}${classwiseinst.logo}` : null;
+          console.log('classwise inst:', classwiseinst)
+         */
+        
+          const renderData = {
+             data:null
+  
+          };
+  
+  
+  
+          const templatePath = path.join(__dirname, '../../views/printfeereciept.ejs');
+  
+          // 2. Render EJS → get HTML string
+          const html = await ejs.renderFile(templatePath, renderData, {
+              // Helps EJS find partials if you use <%- include('partial.ejs') %>
+              views: [path.join(__dirname, '../../views')],
+          });
+  
+          // 3. Launch puppeteer
+          browser = await puppeteer.launch({
+              headless: true,
+              args: [
+                  '--no-sandbox',
+                  '--disable-setuid-sandbox',
+                  '--disable-dev-shm-usage',
+                  '--font-render-hinting=medium',
+              ],
+          });
+  
+          const page = await browser.newPage();
+  
+          // 4. Load HTML into page
+          await page.setContent(html, {
+              waitUntil: ['networkidle0', 'load', 'domcontentloaded'],
+              timeout: 45000,
+          });
+  
+          // Wait for fonts (especially if using Devanagari/Marathi fonts)
+          await page.evaluate(() => document.fonts.ready);
+  
+          // 5. Generate PDF
+          const pdfBuffer = await page.pdf({
+              format: 'A4',
+              printBackground: true,       // Very important → shows borders, colors, images
+              margin: { top: '8mm', right: '6mm', bottom: '8mm', left: '6mm' },
+              scale: 0.92,                 // Tiny shrink often fixes overflow in dense forms
+              preferCSSPageSize: true,
+          });
+  
+          await browser.close();
+  
+         
+          // 6. Send PDF to frontend
+          res.setHeader('Content-Type', 'application/pdf');
+          res.setHeader(
+              'Content-Disposition',
+              `attachment; filename="admission-student-${reg_no || ''}.pdf"`
+          );
+          res.setHeader('Content-Length', pdfBuffer.length);
+  
+          // Send raw buffer and end response
+          res.end(pdfBuffer);
+  
+      } catch (err) {
+          if (browser) await browser.close().catch(() => { });
+          console.error('PDF Error:', err);
+          return res.status(500).json({
+              success: false,
+              message: 'PDF generation failed',
+              error: err.message,
+          });
+      }
+  };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // ✅ CREATE
 exports.createFee = async (req, res) => {
@@ -108,6 +261,117 @@ exports.getAllFees = async (req, res) => {
       success: false,
       message: error.message
     });
+  }
+};
+
+exports.getAllFeesPDF = async (req, res) => {
+  try {
+    const { fromDate, toDate, paymentStatus, className } = req.query;
+    const whereClause = [];
+    if (fromDate && toDate) {
+      whereClause.push(`DATE(f.\`date\`) BETWEEN '${fromDate}' AND '${toDate}'`);
+    } else if (fromDate) {
+      whereClause.push(`DATE(f.\`date\`) >= '${fromDate}'`);
+    } else if (toDate) {
+      whereClause.push(`DATE(f.\`date\`) <= '${toDate}'`);
+    }
+
+    if (className !== undefined && className !== null && String(className).trim() !== '') {
+      const classId = parseInt(className, 10);
+      if (!Number.isNaN(classId)) {
+        whereClause.push(`p.\`class\` = ${classId}`);
+      }
+    }
+    if (paymentStatus) {
+      const safe = String(paymentStatus).replace(/'/g, "''");
+      whereClause.push(`f.\`payment_mode\`='${safe}'`);
+    }
+    const query = `select * from feecollections  as f 
+    join personalInformations p on f.reg_no=p.reg_no
+    join class_masters as c on p.class=c.id`;
+    const whereSql = whereClause.length ? ` where ${whereClause.join(' and ')}` : '';
+
+   const results = await sequelize.query(query + whereSql, {
+     type: QueryTypes.SELECT
+   });
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader(
+    'Content-Disposition',
+    'attachment; filename=fee_collections_report.pdf'
+  );
+
+   const doc = new PDFDocument({
+    size: 'A4',
+    layout: 'landscape',
+    margin: 16,
+  });
+
+  doc.pipe(res);
+
+  doc.fontSize(13).text('Online and offline  Report', { align: 'center' });
+  doc.moveDown(0.4);
+
+    if (!results.length) {
+      doc.fontSize(10).text('No records found.', { align: 'left' });
+      doc.end();
+      return;
+    }
+
+    const tableWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+    const colCount = FEE_COLLECTION_PDF_HEADERS.length;
+    const columnsSize = Array(colCount).fill(tableWidth / colCount);
+
+    const tableOptions = {
+      width: tableWidth,
+      columnsSize,
+      padding: [5, 4],        // top/bottom, left/right
+      columnSpacing: 3,
+    
+      prepareHeader: () => doc.font('Helvetica-Bold').fontSize(6.5),
+    
+      prepareRow: (row, indexColumn, indexRow, rectRow, rectCell) => {
+        doc.font('Helvetica').fontSize(6);
+    
+        const { x, y, width, height } = rectCell;
+    
+        // Draw clean border for every cell
+        doc
+          .lineWidth(0.75)
+          .strokeColor('#222222')
+          .rect(x, y, width, height)
+          .stroke();
+      },
+    
+      divider: {
+        header: { disabled: true },
+        horizontal: { disabled: true },
+      }
+    };
+
+    const BATCH_SIZE = 500;
+    for (let i = 0; i < results.length; i += BATCH_SIZE) {
+      const batch = results.slice(i, i + BATCH_SIZE);
+      if (i > 0) {
+        doc.addPage();
+      }
+
+      const table = {
+        headers: FEE_COLLECTION_PDF_HEADERS,
+        rows: batch.map(feeRecordRowToPdfCells),
+      };
+
+      await doc.table(table, tableOptions);
+    }
+
+    doc.end();
+  } catch (error) {
+    console.error('PDF generation error:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ success: false, message: error.message });
+    } else {
+      res.end();
+    }
   }
 };
 
