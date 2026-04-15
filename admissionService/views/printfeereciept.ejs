@@ -44,6 +44,90 @@
             height: auto;
         }
 
+        .receipt-header {
+            display: flex;
+            width: 100%;
+            align-items: stretch;
+            justify-content: space-between;
+            gap: 12px;
+            border: 1px solid #000;
+            padding: 8px 10px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+
+        .receipt-header__logo {
+            flex: 0 0 140px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 0;
+        }
+
+        .receipt-header__logo img.logo {
+            height: 80%;
+            width: auto;
+            max-width: 100%;
+            object-fit: contain;
+            border: 1px solid #000;
+            display: block;
+        }
+
+        .receipt-header__logo-placeholder {
+            height: 80%;
+            aspect-ratio: 1;
+            width: auto;
+            max-width: 100%;
+            border: 1px solid #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8pt;
+            color: #666;
+            box-sizing: border-box;
+        }
+
+        .receipt-header__school {
+            flex: 1;
+            text-align: center;
+            padding: 0 8px;
+            min-width: 0;
+        }
+
+        .receipt-header__school-name {
+            font-weight: bold;
+            font-size: 11pt;
+            margin-bottom: 4px;
+        }
+
+        .receipt-header__school-line {
+            font-size: 9pt;
+            margin: 2px 0;
+        }
+
+        .receipt-header__photo {
+            flex: 0 0 88px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            text-align: right;
+        }
+
+        .receipt-header__photo-frame {
+            width: 80px;
+            height: 100px;
+            border: 1px solid #000;
+            margin-left: auto;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 7pt;
+            color: #666;
+            background: #fafafa;
+            flex-shrink: 0;
+        }
+
         .page-break {
             page-break-before: always;
         }
@@ -98,14 +182,30 @@
 </head>
 
 <body>
-    <div class="section-title row">
-        
-        <div class="col-4">Logo</div>
-        <div class="col-4">Detail of school</div>
-        
-        <div class="col-4">Student Photo</div>
-
-
+    <div class="receipt-header">
+        <div class="receipt-header__logo">
+            <% if (classwiseSchool?.logo) { %>
+                <img src="<%= classwiseSchool.logo %>" alt="Logo" class="logo" />
+            <% } else { %>
+                <div class="receipt-header__logo-placeholder">Logo</div>
+            <% } %>
+        </div>
+        <div class="receipt-header__school">
+            <div class="receipt-header__school-name"><%= classwiseSchool?.school_name || '' %></div>
+            <% if (classwiseSchool?.address) { %>
+                <div class="receipt-header__school-line"><%= classwiseSchool.address %></div>
+            <% } %>
+            <% if (classwiseSchool?.contact_number != null && classwiseSchool?.contact_number !== '') { %>
+                <div class="receipt-header__school-line">Contact: <%= classwiseSchool.contact_number %></div>
+            <% } %>
+            <% if (classwiseSchool?.email) { %>
+                <div class="receipt-header__school-line"><%= classwiseSchool.email %></div>
+            <% } %>
+           
+        </div>
+        <div class="receipt-header__photo">
+            <div class="receipt-header__photo-frame">Student photo</div>
+        </div>
     </div>
 
 
@@ -124,7 +224,6 @@
     </div>
     <div class="row">
         <div class="col-4">Group Name</div>
-    </div>
     </div>
     <div class="row">
         <div class="col-4">Fee Taken by</div>
@@ -152,10 +251,11 @@
                             <%= item?.fee_head_name %>
                         </td>
                         <td>
-                            <%= item?.month %>
+                            <% const _mk = ['apr_new_paid','may_new_paid','jun_new_paid','jul_new_paid','aug_new_paid','sep_new_paid','oct_new_paid','nov_new_paid','dec_new_paid','jan_new_paid','feb_new_paid','mar_new_paid']; %>
+                            <%= _mk.filter(function (k) { return Number(item[k]) > 0; }).map(function (k) { return k.substring(0, 3); }).join(', ') %>
                         </td>
                         <td>
-                            <%= item?.amount %>
+                            <%= (Number(item?.apr_new_paid) || 0) + (Number(item?.may_new_paid) || 0) + (Number(item?.jun_new_paid) || 0) + (Number(item?.jul_new_paid) || 0) + (Number(item?.aug_new_paid) || 0) + (Number(item?.sep_new_paid) || 0) + (Number(item?.oct_new_paid) || 0) + (Number(item?.nov_new_paid) || 0) + (Number(item?.dec_new_paid) || 0) + (Number(item?.jan_new_paid) || 0) + (Number(item?.feb_new_paid) || 0) + (Number(item?.mar_new_paid) || 0) %>
                         </td>
 
                     </tr>

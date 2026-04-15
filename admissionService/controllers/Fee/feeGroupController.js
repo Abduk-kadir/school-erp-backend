@@ -4,7 +4,8 @@ const {
   FeeGroupDetailPrice,
   FeeGroupHead,
   FeeHead,
-  par_student_personal_information
+  PersonalInformation,
+ 
 } = require('../../models');
 
 const feeGroupController = {
@@ -25,7 +26,7 @@ const feeGroupController = {
 
       const reg_no = String(regNo).trim();
 
-      const student = await par_student_personal_information.findOne({
+      const student = await PersonalInformation.findOne({
         where: { reg_no },
         attributes: [
           'reg_no',
@@ -33,7 +34,7 @@ const feeGroupController = {
           'last_name',
           'class',
           'division',
-          'feegroupid'
+          'groupid'
         ],
         include: [
           {
@@ -72,7 +73,7 @@ const feeGroupController = {
         });
       }
 
-      if (!student.feegroupid) {
+      if (!student.groupid) {
         const plain = student.get({ plain: true });
         return res.status(200).json({
           success: true,

@@ -20,8 +20,8 @@ module.exports = (sequelize, DataTypes) => {
       });
       PersonalInformation.hasMany(models.student_subject, {
        foreignKey: 'student_reg_no',
-  sourceKey: 'reg_no',
-  as: 'studentSubjects'
+       sourceKey: 'reg_no',
+       as: 'studentSubjects'
       });
       PersonalInformation.hasMany(models.FeeRecordMonthly, {
         foreignKey: 'reg_no',

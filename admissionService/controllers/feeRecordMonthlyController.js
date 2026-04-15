@@ -4,9 +4,10 @@ const stringify = require('csv-stringify');
 const PDFDocument = require('pdfkit-table');
 
 
+
 const {
   FeeRecordMonthly,
-  PersonalInformation,
+  par_student_personal_information,
   FeeHead,
   sequelize,
   FeeCollection,
@@ -37,9 +38,9 @@ const getFeeRecordByRegNo = async (req, res) => {
       where: { fee_table_id },
       include: [
         {
-          model: PersonalInformation,
+          model: par_student_personal_information,
           as: 'student',
-          attributes: ['first_name', 'last_name', 'father_name', 'class', 'division', 'email', 'contact_number']
+          attributes: ['first_name', 'last_name', 'father_name', 'class', 'division',  'contact_number']
         },
         {
           model: FeeHead,

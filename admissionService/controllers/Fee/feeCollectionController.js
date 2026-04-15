@@ -1,5 +1,5 @@
 const ExcelJS = require('exceljs');
-const { FeeCollection, PersonalInformation, class_master, sequelize } = require('../../models');
+const { FeeCollection, PersonalInformation,par_student_personal_information, class_master, sequelize,classWiseSchool } = require('../../models');
 const { QueryTypes } = require('sequelize');
 const { academicOnlineAndOfflinePayDataTable } = require('../../helpers/academicOnlineAndOfflinePayHelper');
 const { academicSummaryPayDataTable } = require('../../helpers/academicSummaryPayHelper');
@@ -7,6 +7,7 @@ const PDFDocument = require('pdfkit-table');
 const puppeteer = require('puppeteer');
   const ejs = require('ejs');
   const path = require('path');
+
 
 const FEE_EXPORT_COLUMNS = [
   { header: 'Reg No', key: 'reg_no' },
@@ -104,10 +105,10 @@ function feeRecordRowToPdfCells(r) {
     console.log('feeRecieptPDF is called***********************',req.body)
       let browser;
       try {
-          const { reg_no } = req.body;
+          const { student,feerecords } = req.body;
   
-        /*
-          let classid = personalData.class
+        
+          let classid = student.class
           let classwiseinst = await classWiseSchool.findOne({
               where: {
                   class_id: classid
@@ -118,11 +119,14 @@ function feeRecordRowToPdfCells(r) {
   
           const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
           classwiseinst.logo = classwiseinst?.logo ? `${baseUrl}${classwiseinst.logo}` : null;
-          console.log('classwise inst:', classwiseinst)
-         */
+          console.log('classwise inst*************************', classwiseinst)
+         
         
           const renderData = {
-             data:null
+             data:feerecords,
+             student:student,
+             classwiseSchool: classwiseinst
+
   
           };
   
@@ -174,7 +178,7 @@ function feeRecordRowToPdfCells(r) {
           res.setHeader('Content-Type', 'application/pdf');
           res.setHeader(
               'Content-Disposition',
-              `attachment; filename="admission-student-${reg_no || ''}.pdf"`
+              `attachment; filename="admission-student-${student.frist_name || ''}.pdf"`
           );
           res.setHeader('Content-Length', pdfBuffer.length);
   
@@ -198,6 +202,43 @@ function feeRecordRowToPdfCells(r) {
 
 
 
+exports.studentCopyFromPersonalToParPersonal=async(req,res)=>{
+  let transaction=await sequelize.transaction()
+  try{
+   
+  let {reg_no}=req.body
+  let student=await par_student_personal_information.findOne({where:{reg_no:reg_no}})
+  if(!student){
+   let per=await PersonalInformation.findOne({where:{reg_no:reg_no}})
+   if(!per){
+    await transaction.rollback()
+    return res.status(404).json({success:false,message:'Personal information not found for this reg_no'})
+   }
+   const classNum = per.class != null && String(per.class).trim() !== '' ? parseInt(per.class, 10) : null
+   const divisionNum = per.division != null && String(per.division).trim() !== '' ? parseInt(per.division, 10) : null
+   await par_student_personal_information.create({
+    reg_no,
+    first_name: per.first_name,
+    last_name: per.last_name,
+    father_name: per.father_name,
+    class: Number.isNaN(classNum) ? null : classNum,
+    division: Number.isNaN(divisionNum) ? null : divisionNum,
+    contact_number: per.contact_number,
+    dob: per.dob,
+    blood_groop: per.blood_group,
+    feegroupid: per.groupid,
+    password: per.password
+   },{transaction})
+   await PersonalInformation.destroy({where:{reg_no:reg_no}, transaction})
+  }
+  await transaction.commit()
+  return res.status(200).json({success:true,message:'student copied from personal to par personal successfully'})
+  }
+  catch(error){
+    await transaction.rollback()
+    return res.status(500).json({success:false,message:error.message})
+  }
+}
 
 
 
@@ -206,7 +247,9 @@ function feeRecordRowToPdfCells(r) {
 
 
 
-// ✅ CREATE
+
+
+  
 exports.createFee = async (req, res) => {
   try {
     const data = await FeeCollection.create(req.body);
