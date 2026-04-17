@@ -15,6 +15,12 @@ module.exports = (sequelize, DataTypes) => {
         as: 'feeGroup'
       });
       par_student_personal_information.hasMany(models.FeeCollection, { foreignKey: 'reg_no', as: 'FeeCollection' });
+
+      par_student_personal_information.hasMany(models.FeeRecordMonthly, {
+        foreignKey: 'reg_no',
+        sourceKey: 'reg_no',
+        as: 'feeRecords'
+      });
     }
   }
   par_student_personal_information.init({
