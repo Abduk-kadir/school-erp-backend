@@ -14,6 +14,10 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'classid',
         as: 'feeGroupDetails'
       });
+      class_master.hasMany(models.FineAssigned, {
+        foreignKey: 'class_id',
+        as: 'fineAssignments',
+      });
     }
   }
   class_master.init({

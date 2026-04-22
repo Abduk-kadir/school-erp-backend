@@ -14,6 +14,7 @@ const divisionRoutes = require('./routes/divisionRoutes');
 const physicallyDisableRoutes = require('./routes/phisallyDisableRoute');
 const formRoutes=require('./routes/formRoutes')
 const personalInformationRoutes = require("./routes/personalInformationRoute");
+const parmanentPersonalInformationRoutes = require('./routes/parmanentPersonalInformationRoutes');
 const subjectRoutes = require('./routes/subjectRoute');
 const categoryRoutes=require('./routes/catergoryRoute')
 const documentTypeRoutes = require('./routes/documentTypeRoute');
@@ -44,11 +45,17 @@ const banksRouter = require('./routes/Fee/Bank/bankRoutes');
 const feeHeadRoutes = require('./routes/Fee/Bank/feeHeadRoutes');
 const feeGroupRoutes = require('./routes/Fee/feeGroupRoutes');
 const feeCollectionRoutes = require('./routes/Fee/feeCollectionRoutes');
+const fineRoutes = require('./routes/Fee/fineRoutes');
+const fineAssignedRoutes = require('./routes/Fee/fineAssignedRoutes');
+const studentfineRoutes = require('./routes/Fee/studentfineRoutes');
 const feeRecordMonthlyRoutes = require('./routes/feeRecordMonthlyRoutes');
 
 
 //fee module routes
 app.use('/api/fees', feeCollectionRoutes);
+app.use('/api/fines', fineRoutes);
+app.use('/api/fine-assigned', fineAssignedRoutes);
+app.use('/api/student-fines', studentfineRoutes);
 app.use('/api/fee-record-monthly', feeRecordMonthlyRoutes);
 
 
@@ -104,6 +111,7 @@ app.use('/api/categories',categoryRoutes)
 app.use('/api/subjects', subjectRoutes);
 
 app.use("/api/personal-information", personalInformationRoutes);
+app.use('/api/parmanent-personal-information', parmanentPersonalInformationRoutes);
 app.use('/api/physically-disable', physicallyDisableRoutes);
 app.use('/api/divisions', divisionRoutes);
 app.use('/api/castes', casteRoutes);

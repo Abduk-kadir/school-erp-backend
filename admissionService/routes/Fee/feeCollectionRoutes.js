@@ -13,6 +13,7 @@ router.get('/excel', feeController.getAllFeesInExcel);
 router.get('/csv', feeController.getAllFeesInCsv);
 router.get('/summary', feeController.getSummaryFeeCollection);
 router.get('/registration/:reg_no', feeController.getFeeById);
+router.get('/allfee/registration/:reg_no',feeController.getAllFeeById)
 router.put('/:id', feeController.updateFee);
 router.delete('/:id', feeController.deleteFee);
 

@@ -21,6 +21,12 @@ module.exports = (sequelize, DataTypes) => {
         sourceKey: 'reg_no',
         as: 'feeRecords'
       });
+
+      par_student_personal_information.hasMany(models.FineAssigned, {
+        foreignKey: 'student_reg_no',
+        sourceKey: 'reg_no',
+        as: 'fineAssignments',
+      });
     }
   }
   par_student_personal_information.init({

@@ -623,6 +623,42 @@ exports.getFeeById = async (req, res) => {
   }
 };
 
+
+exports.getAllFeeById = async (req, res) => {
+  try {
+    const { reg_no } = req.params;
+
+    if (reg_no == null || String(reg_no).trim() === '') {
+      return res.status(400).json({
+        success: false,
+        message: 'reg_no is required'
+      });
+    }
+
+    const data = await FeeCollection.findAll({
+      where: { reg_no: String(reg_no).trim() },
+      
+    });
+
+    if (!data) {
+      return res.status(404).json({
+        success: false,
+        message: 'No fee record found for this registration number'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
 // ✅ UPDATE
 exports.updateFee = async (req, res) => {
   try {
