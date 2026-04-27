@@ -94,6 +94,56 @@ const studentfineController = {
     }
   },
 
+  async bulkCreate(req, res) {
+    try {
+      const { records } = req.body;
+      if (!Array.isArray(records) || records.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'records must be a non-empty array',
+        });
+      }
+
+      const rowsPayload = [];
+      for (let i = 0; i < records.length; i++) {
+        const item = records[i];
+        const classId = item.class;
+        if (item.reg_no === undefined || item.reg_no === null || classId === undefined || classId === null) {
+          return res.status(400).json({
+            success: false,
+            message: `reg_no and class are required for each record (index ${i})`,
+          });
+        }
+        rowsPayload.push({
+          reg_no: item.reg_no,
+          class: classId,
+          actualfineamount: item.actualfineamount ?? null,
+          assignedfineamount: item.assignedfineamount ?? null,
+          paidfineamount: item.paidfineamount ?? null,
+          date: item.date ?? null,
+          reciept_no: item.reciept_no ?? null,
+          month: item.month ?? null,
+          fee_table_id: item.fee_table_id ?? null,
+        });
+      }
+
+      const created = await studentfine.bulkCreate(rowsPayload);
+
+      return res.status(201).json({
+        success: true,
+        message: 'Created successfully',
+        count: created.length,
+        data: created,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to bulk create',
+        error: error.message,
+      });
+    }
+  },
+
   async update(req, res) {
     try {
       const { id } = req.params;

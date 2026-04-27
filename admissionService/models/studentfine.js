@@ -13,6 +13,11 @@ module.exports = (sequelize, DataTypes) => {
         targetKey: 'reg_no',
         as: 'student',
       });
+      studentfine.belongsTo(models.FeeCollection, {
+        foreignKey: 'fee_table_id',
+        targetKey: 'id',
+        as: 'feeCollection',
+      });
     }
   }
 
@@ -25,6 +30,8 @@ module.exports = (sequelize, DataTypes) => {
       paidfineamount: DataTypes.DECIMAL(12, 2),
       date: DataTypes.DATEONLY,
       reciept_no: DataTypes.STRING,
+      month: DataTypes.STRING,
+      fee_table_id: DataTypes.INTEGER,
     },
     {
       sequelize,

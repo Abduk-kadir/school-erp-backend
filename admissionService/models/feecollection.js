@@ -18,6 +18,11 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'fee_table_id',
         as: 'feecollectionrecords'
       });
+
+      FeeCollection.hasMany(models.studentfine, {
+        foreignKey: 'fee_table_id',
+        as: 'studentFines',
+      });
     }
   }
   FeeCollection.init({

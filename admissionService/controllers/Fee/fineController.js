@@ -1,4 +1,5 @@
-const { Fine, class_master } = require('../../models');
+const { Fine, class_master,FineAssigned } = require('../../models');
+const asyncHandler = require('express-async-handler')
 
 const VALID_FINE_TYPES = ['daily', 'weekly', 'monthly', 'onetime'];
 
@@ -177,11 +178,14 @@ const fineController = {
 
   async calculateFine(req, res) {
     try {
-      const { class_id } = req.body;
-      const current_date = new Date();
+      const { class_id,reg_no,date} = req.body;
+
+     let fineAssigned=await FineAssigned.findAll({where:{student_reg_no:reg_no},raw:true})
+    
+      const current_date = date?new Date(date):new Date();
       const fineall = await Fine.findAll({ where: { class_id } });
 
-      const newallFine = fineall.map((elem) => {
+        let newallFine = fineall.map((elem) => {
         const plain = typeof elem.get === 'function' ? elem.get({ plain: true }) : { ...elem };
         const start = elem.fine_start_date ? new Date(elem.fine_start_date) : null;
         const amount = Number(elem.fine_amount);
@@ -219,6 +223,23 @@ const fineController = {
 
         return { ...plain, finalFine: 0 };
       });
+
+      newallFine=newallFine.map((elem)=>{
+        let f=fineAssigned.find((fine)=>fine.fine_for_month===elem.fine_for_month)
+        if(f){
+          console.log('f date is********',new Date(f.fine_pay_till_date))
+          console.log('current date is********',current_date)
+          console.log('f date greater than current date',new Date(f.fine_pay_till_date)>current_date)
+        }
+
+       
+        return {
+          ...elem,
+          assignedFine:f?f.fine_amount:0,
+          
+          finalFine:f?new Date(f.fine_pay_till_date)>current_date?f.fine_amount:elem.finalFine:elem.finalFine
+        }
+      })
 
       return res.status(200).json({
         success: true,

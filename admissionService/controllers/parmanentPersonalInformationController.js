@@ -66,15 +66,18 @@ const ParmanentPersonalInformation = {
     }
   },
 
-  async getById(req, res) {
+  async getByReg(req, res) {
     try {
-      const { id } = req.params;
-      const row = await par_student_personal_information.findByPk(id);
-      if (!row) return res.status(404).json({ message: 'Not found' });
-      res.status(200).json({ data: row });
+      const regNoParam = req.params.reg_no ?? req.params.regNo;
+      const reg_no = Number(regNoParam);
+      if (!Number.isFinite(reg_no)) return res.status(400).json({ message: 'reg_no is required' });
+
+      const row = await par_student_personal_information.findOne({ where: { reg_no } });
+      if (!row) return res.status(404).json({ message: 'Student not found',success:false });
+      res.status(200).json({message:"student is found", data: row,success:true });
     } catch (error) {
       console.error(error);
-      res.status(500).json({ message: 'Server error', error: error.message });
+      res.status(500).json({ message: 'Server error',success:false, error: error.message });
     }
   },
 

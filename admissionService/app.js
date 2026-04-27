@@ -49,6 +49,9 @@ const fineRoutes = require('./routes/Fee/fineRoutes');
 const fineAssignedRoutes = require('./routes/Fee/fineAssignedRoutes');
 const studentfineRoutes = require('./routes/Fee/studentfineRoutes');
 const feeRecordMonthlyRoutes = require('./routes/feeRecordMonthlyRoutes');
+const errorRoutes=require('./routes/errorRoutes')
+
+app.use('/api/error',errorRoutes)
 
 
 //fee module routes
@@ -107,9 +110,7 @@ app.use('/api/requirement-documents', requirementDocumentRoutes);
 
 
 app.use('/api/categories',categoryRoutes)
-
 app.use('/api/subjects', subjectRoutes);
-
 app.use("/api/personal-information", personalInformationRoutes);
 app.use('/api/parmanent-personal-information', parmanentPersonalInformationRoutes);
 app.use('/api/physically-disable', physicallyDisableRoutes);
@@ -118,8 +119,14 @@ app.use('/api/castes', casteRoutes);
 app.use('/api/classes', classRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/roles', roleRoutes);
+app.use('/api',formRoutes);
 
-app.use('/api',formRoutes)
+
+const globalError = require('./middlewares/globalError');
+app.use(globalError);
+
+
+
 
 // Routes
 

@@ -9,6 +9,8 @@ router.get(
   '/student/:regNo/assigned-fees',
   feeGroupController.getfeeAssignedToStudent
 );
+router.post('/assign-fee-to-student', feeGroupController.assignFeeToStudent);
+
 router.get('/:id', feeGroupController.getFeeGroupById);
 router.post('/', feeGroupController.createFeeGroup);
 router.put('/:id', feeGroupController.updateFeeGroup);

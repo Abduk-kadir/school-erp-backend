@@ -5,6 +5,8 @@ const {
   FeeGroupHead,
   FeeHead,
   PersonalInformation,
+  StudentFeeGroupDetailPrice,
+  sequelize
  
 } = require('../../models');
 
@@ -15,108 +17,114 @@ const feeGroupController = {
    * @route GET .../student/:regNo/assigned-fees
    */
   async getfeeAssignedToStudent(req, res) {
-    try {
-      const { regNo } = req.params;
-      if (regNo == null || String(regNo).trim() === '') {
-        return res.status(400).json({
+      try{
+       const regNoParam = req.params.reg_no ?? req.params.regNo;
+       const reg_no = Number(regNoParam);
+       if (!Number.isFinite(reg_no)) {
+        return res.send({
+          message:"reg_no is required",
           success: false,
-          message: 'Student reg_no is required (route param regNo)'
+          
         });
-      }
+       }
 
-      const reg_no = String(regNo).trim();
-
-      const student = await PersonalInformation.findOne({
-        where: { reg_no },
-        attributes: [
-          'reg_no',
-          'first_name',
-          'last_name',
-          'class',
-          'division',
-          'groupid'
-        ],
-        include: [
-          {
-            model: FeeGroup,
-            as: 'feeGroup',
-            required: false,
-            include: [
-              {
-                model: FeeGroupDetail,
-                as: 'feeGroupDetails',
-                required: false,
-                include: [
-                  {
-                    model: FeeGroupDetailPrice,
-                    as: 'feeGroupDetailPrices',
-                    required: false,
-                    include: [
-                      {
-                        model: FeeHead,
-                        as: 'feeHead',
-                        attributes: ['id', 'fee_head_name', 'is_refundable', 'status', 'bank_id']
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      });
-
-      if (!student) {
-        return res.status(404).json({
+       isfeeassigned=await  StudentFeeGroupDetailPrice.findOne({where:{reg_no:reg_no}})
+       if(!isfeeassigned){
+        return res.send({
+          message:"student fee installment is not assigned",
           success: false,
-          message: 'Student not found for this reg_no'
+          
         });
+       }
+       
+       let studentfee=await sequelize.query(
+        `select sfp.*,fh.fee_head_name
+         from studentfeegroupdetailprices as sfp
+         join feeheads as fh on sfp.feeheadid=fh.id
+         where reg_no = :reg_no`,
+        { replacements: { reg_no }, type: sequelize.QueryTypes.SELECT }
+      );
+       res.send({
+        success:true,
+        message:"student fee installment is fetched",
+        data:studentfee
+       })
       }
-
-      if (!student.groupid) {
-        const plain = student.get({ plain: true });
-        return res.status(200).json({
-          success: true,
-          message: 'No fee group assigned to this student',
-          data: {
-            student: {
-              reg_no: plain.reg_no,
-              first_name: plain.first_name,
-              last_name: plain.last_name,
-              class: plain.class,
-              division: plain.division,
-              feegroupid: plain.feegroupid
-            },
-            feeGroupDetailPrices: []
-          }
-        });
+      catch(error){
+          res.send({
+            success:false,
+            message:error.message
+          })
       }
+  },
 
-      const plain = student.get({ plain: true });
-      const feeGroupDetailPrices =
-        plain?.feeGroup?.feeGroupDetails?.flatMap((d) => d.feeGroupDetailPrices || []) || [];
+  async assignFeeToStudent(req,res){
+    try{
+      let {reg_no,class_id}=req.body;
+      let fgp=await FeeGroupDetail.findOne({where:{classid:class_id}})
+      let feegroupdetailid=fgp.id;
+      
+      let feegroupdetailprice=await FeeGroupDetailPrice.findAll({where:{groupdetailid:feegroupdetailid},raw:true})
 
-      return res.status(200).json({
-        success: true,
-        data: {
-          student: {
-            reg_no: plain.reg_no,
-            first_name: plain.first_name,
-            last_name: plain.last_name,
-            class: plain.class,
-            division: plain.division,
-            feegroupid: plain.feegroupid
-          },
-          feeGroupDetailPrices
-        }
+      let allstudentFee = feegroupdetailprice.map((elem) => {
+        const { id, groupdetailid,createdAt,updatedAt, ...rest } =elem;
+      
+        return {
+          ...rest,
+          reg_no:reg_no,
+          feegroupdetailpriceid: id,
+          jan_total_paid:0,
+          jan_total_due:0,
+          feb_total_paid:0,
+          feb_total_due:0,
+          mar_total_paid:0,
+          mar_total_due:0,
+          apr_total_paid:0,
+          apr_total_due:0,
+          may_total_paid:0,
+          may_total_due:0,
+          jun_total_paid:0,
+          jun_total_due:0,
+          jul_total_paid:0,
+          jul_total_due:0,
+          aug_total_paid:0,
+          aug_total_due:0,
+          sep_total_paid:0,
+          sep_total_due:0,
+          oct_total_paid:0,
+          oct_total_due:0,
+          nov_total_paid:0,
+          nov_total_due:0,
+          dec_total_paid:0,
+          dec_total_due:0
+         
+        };
       });
-    } catch (error) {
-      console.error('getfeeAssignedToStudent:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to fetch fee assignment for student',
-        error: error.message
+
+      let updatedstudent = await PersonalInformation.update(
+        { groupid: fgp.feegroupid },  
+        { where: { reg_no: reg_no } } 
+      );
+      let createdstudentfee=await StudentFeeGroupDetailPrice.bulkCreate(allstudentFee, {
+        validate: true,
+        returning: true
       });
+
+      res.send({
+        message:"student fee installment is created",
+        success:true,
+        data:createdstudentfee
+        
+      })
+
+     
+
+    }
+    catch(error){
+      res.send({
+        success:false,
+      })
+
     }
   },
 

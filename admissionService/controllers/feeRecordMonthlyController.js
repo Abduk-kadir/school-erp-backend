@@ -138,9 +138,9 @@ const getLatestPerFeeTable = async (req, res) => {
       SELECT 
         p.first_name,
         fh.fee_head_name,
-        fm.jan_total, fm.jan_paid, fm.feb_total, fm.feb_paid, fm.mar_total, fm.mar_paid, fm.apr_total, fm.apr_paid,
-        fm.may_total,fm.may_paid, fm.jun_total, fm.jun_paid, fm.jul_total, fm.jul_paid, fm.aug_total, fm.aug_paid,
-        fm.sep_total,fm.sep_paid, fm.oct_total, fm.oct_paid, fm.nov_total, fm.nov_paid, fm.dec_total, fm.dec_paid
+        fm.jan_total, fm.jan_total_paid, fm.feb_total, fm.feb_total_paid, fm.mar_total, fm.mar_total_paid, fm.apr_total, fm.apr_total_paid,
+        fm.may_total, fm.may_total_paid, fm.jun_total, fm.jun_total_paid, fm.jul_total, fm.jul_total_paid, fm.aug_total, fm.aug_total_paid,
+        fm.sep_total, fm.sep_total_paid, fm.oct_total, fm.oct_total_paid, fm.nov_total, fm.nov_total_paid, fm.dec_total, fm.dec_total_paid
       FROM personalinformations AS p
       JOIN feecollections AS fc ON fc.id = (
         SELECT MAX(id) FROM feecollections WHERE reg_no = p.reg_no
@@ -206,29 +206,29 @@ function feeRecordRowToPdfCells(r) {
     c(r.first_name),
     c(r.fee_head_name),
     c(r.jan_total),
-    c(r.jan_paid),
+    c(r.jan_total_paid),
     c(r.feb_total),
-    c(r.feb_paid),
+    c(r.feb_total_paid),
     c(r.mar_total),
-    c(r.mar_paid),
+    c(r.mar_total_paid),
     c(r.apr_total),
-    c(r.apr_paid),
+    c(r.apr_total_paid),
     c(r.may_total),
-    c(r.may_paid),
+    c(r.may_total_paid),
     c(r.jun_total),
-    c(r.jun_paid),
+    c(r.jun_total_paid),
     c(r.jul_total),
-    c(r.jul_paid),
+    c(r.jul_total_paid),
     c(r.aug_total),
-    c(r.aug_paid),
+    c(r.aug_total_paid),
     c(r.sep_total),
-    c(r.sep_paid),
+    c(r.sep_total_paid),
     c(r.oct_total),
-    c(r.oct_paid),
+    c(r.oct_total_paid),
     c(r.nov_total),
-    c(r.nov_paid),
+    c(r.nov_total_paid),
     c(r.dec_total),
-    c(r.dec_paid),
+    c(r.dec_total_paid),
   ];
 }
 
@@ -261,9 +261,9 @@ const getLatestFeePDF = async (req, res) => {
         p.first_name,
         p.class,
         fh.fee_head_name,
-        fm.jan_total, fm.jan_paid, fm.feb_total, fm.feb_paid, fm.mar_total, fm.mar_paid, fm.apr_total, fm.apr_paid,
-        fm.may_total,fm.may_paid, fm.jun_total, fm.jun_paid, fm.jul_total, fm.jul_paid, fm.aug_total, fm.aug_paid,
-        fm.sep_total,fm.sep_paid, fm.oct_total, fm.oct_paid, fm.nov_total, fm.nov_paid, fm.dec_total, fm.dec_paid
+        fm.jan_total, fm.jan_total_paid, fm.feb_total, fm.feb_total_paid, fm.mar_total, fm.mar_total_paid, fm.apr_total, fm.apr_total_paid,
+        fm.may_total, fm.may_total_paid, fm.jun_total, fm.jun_total_paid, fm.jul_total, fm.jul_total_paid, fm.aug_total, fm.aug_total_paid,
+        fm.sep_total, fm.sep_total_paid, fm.oct_total, fm.oct_total_paid, fm.nov_total, fm.nov_total_paid, fm.dec_total, fm.dec_total_paid
       FROM personalinformations AS p
       JOIN feecollections AS fc ON fc.id = (
         SELECT MAX(id) FROM feecollections WHERE reg_no = p.reg_no
@@ -369,9 +369,9 @@ const getLatestFeeExcel = async (req, res) => {
       SELECT 
         p.first_name,
         fh.fee_head_name,
-        fm.jan_total, fm.jan_paid, fm.feb_total, fm.feb_paid, fm.mar_total, fm.mar_paid, fm.apr_total, fm.apr_paid,
-        fm.may_total,fm.may_paid, fm.jun_total, fm.jun_paid, fm.jul_total, fm.jul_paid, fm.aug_total, fm.aug_paid,
-        fm.sep_total,fm.sep_paid, fm.oct_total, fm.oct_paid, fm.nov_total, fm.nov_paid, fm.dec_total, fm.dec_paid
+        fm.jan_total, fm.jan_total_paid, fm.feb_total, fm.feb_total_paid, fm.mar_total, fm.mar_total_paid, fm.apr_total, fm.apr_total_paid,
+        fm.may_total, fm.may_total_paid, fm.jun_total, fm.jun_total_paid, fm.jul_total, fm.jul_total_paid, fm.aug_total, fm.aug_total_paid,
+        fm.sep_total, fm.sep_total_paid, fm.oct_total, fm.oct_total_paid, fm.nov_total, fm.nov_total_paid, fm.dec_total, fm.dec_total_paid
       FROM personalinformations AS p
       JOIN feecollections AS fc ON fc.id = (
         SELECT MAX(id) FROM feecollections WHERE reg_no = p.reg_no
@@ -396,40 +396,40 @@ const getLatestFeeExcel = async (req, res) => {
       { header: 'First Name', key: 'first_name', width: 20 },
       { header: 'Fee Head', key: 'fee_head_name', width: 25 },
       { header: 'January', key: 'jan_total', width: 12 },
-      { header: "Jan Paid", key: "jan_paid", width: 12 },
+      { header: "Jan Paid", key: "jan_total_paid", width: 12 },
 
       { header: 'February', key: 'feb_total', width: 12 },
-      { header: "Feb Paid", key: "feb_paid", width: 12 },
+      { header: "Feb Paid", key: "feb_total_paid", width: 12 },
 
       { header: 'March', key: 'mar_total', width: 12 },
-      { header: "Mar Paid", key: "mar_paid", width: 12 },
+      { header: "Mar Paid", key: "mar_total_paid", width: 12 },
 
       { header: 'April', key: 'apr_total', width: 12 },
-      { header: "Apr Paid", key: "apr_paid", width: 12 },
+      { header: "Apr Paid", key: "apr_total_paid", width: 12 },
 
       { header: 'May', key: 'may_total', width: 12 },
-      { header: "May Paid", key: "may_paid", width: 12 },
+      { header: "May Paid", key: "may_total_paid", width: 12 },
 
       { header: 'June', key: 'jun_total', width: 12 },
-      { header: "Jun Paid", key: "jun_paid", width: 12 },
+      { header: "Jun Paid", key: "jun_total_paid", width: 12 },
 
       { header: 'July', key: 'jul_total', width: 12 },
-      { header: "Jul Paid", key: "jul_paid", width: 12 },
+      { header: "Jul Paid", key: "jul_total_paid", width: 12 },
 
       { header: 'August', key: 'aug_total', width: 12 },
-      { header: "Aug Paid", key: "aug_paid", width: 12 },
+      { header: "Aug Paid", key: "aug_total_paid", width: 12 },
 
       { header: 'September', key: 'sep_total', width: 12 },
-      { header: "Sep Paid", key: "sep_paid", width: 12 },
+      { header: "Sep Paid", key: "sep_total_paid", width: 12 },
 
       { header: 'October', key: 'oct_total', width: 12 },
-      { header: "Oct Paid", key: "oct_paid", width: 12 },
+      { header: "Oct Paid", key: "oct_total_paid", width: 12 },
 
       { header: 'November', key: 'nov_total', width: 12 },
-      { header: "Nov Paid", key: "nov_paid", width: 12 },
+      { header: "Nov Paid", key: "nov_total_paid", width: 12 },
 
       { header: 'December', key: 'dec_total', width: 12 },
-      { header: "Dec Paid", key: "dec_paid", width: 12 },
+      { header: "Dec Paid", key: "dec_total_paid", width: 12 },
     ];
 
     // Fetch and write row by row (or in small batches)
@@ -489,10 +489,10 @@ const getLatestFeeCSV = async (req, res) => {
       SELECT 
         p.first_name,
         fh.fee_head_name,
-        fm.jan_total, fm.jan_paid, fm.feb_total, fm.feb_paid, fm.mar_total, fm.mar_paid, 
-        fm.apr_total, fm.apr_paid, fm.may_total, fm.may_paid, fm.jun_total, fm.jun_paid, 
-        fm.jul_total, fm.jul_paid, fm.aug_total, fm.aug_paid, fm.sep_total, fm.sep_paid, 
-        fm.oct_total, fm.oct_paid, fm.nov_total, fm.nov_paid, fm.dec_total, fm.dec_paid
+        fm.jan_total, fm.jan_total_paid, fm.feb_total, fm.feb_total_paid, fm.mar_total, fm.mar_total_paid,
+        fm.apr_total, fm.apr_total_paid, fm.may_total, fm.may_total_paid, fm.jun_total, fm.jun_total_paid,
+        fm.jul_total, fm.jul_total_paid, fm.aug_total, fm.aug_total_paid, fm.sep_total, fm.sep_total_paid,
+        fm.oct_total, fm.oct_total_paid, fm.nov_total, fm.nov_total_paid, fm.dec_total, fm.dec_total_paid
       FROM personalinformations AS p
       JOIN feecollections AS fc ON fc.id = (
         SELECT MAX(id) FROM feecollections WHERE reg_no = p.reg_no
@@ -511,29 +511,29 @@ const getLatestFeeCSV = async (req, res) => {
       { key: 'first_name', header: 'First Name' },
       { key: 'fee_head_name', header: 'Fee Head' },
       { key: 'jan_total', header: 'January' },
-      { key: 'jan_paid', header: 'Jan Paid' },
+      { key: 'jan_total_paid', header: 'Jan Paid' },
       { key: 'feb_total', header: 'February' },
-      { key: 'feb_paid', header: 'Feb Paid' },
+      { key: 'feb_total_paid', header: 'Feb Paid' },
       { key: 'mar_total', header: 'March' },
-      { key: 'mar_paid', header: 'Mar Paid' },
+      { key: 'mar_total_paid', header: 'Mar Paid' },
       { key: 'apr_total', header: 'April' },
-      { key: 'apr_paid', header: 'Apr Paid' },
+      { key: 'apr_total_paid', header: 'Apr Paid' },
       { key: 'may_total', header: 'May' },
-      { key: 'may_paid', header: 'May Paid' },
+      { key: 'may_total_paid', header: 'May Paid' },
       { key: 'jun_total', header: 'June' },
-      { key: 'jun_paid', header: 'Jun Paid' },
+      { key: 'jun_total_paid', header: 'Jun Paid' },
       { key: 'jul_total', header: 'July' },
-      { key: 'jul_paid', header: 'Jul Paid' },
+      { key: 'jul_total_paid', header: 'Jul Paid' },
       { key: 'aug_total', header: 'August' },
-      { key: 'aug_paid', header: 'Aug Paid' },
+      { key: 'aug_total_paid', header: 'Aug Paid' },
       { key: 'sep_total', header: 'September' },
-      { key: 'sep_paid', header: 'Sep Paid' },
+      { key: 'sep_total_paid', header: 'Sep Paid' },
       { key: 'oct_total', header: 'October' },
-      { key: 'oct_paid', header: 'Oct Paid' },
+      { key: 'oct_total_paid', header: 'Oct Paid' },
       { key: 'nov_total', header: 'November' },
-      { key: 'nov_paid', header: 'Nov Paid' },
+      { key: 'nov_total_paid', header: 'Nov Paid' },
       { key: 'dec_total', header: 'December' },
-      { key: 'dec_paid', header: 'Dec Paid' }
+      { key: 'dec_total_paid', header: 'Dec Paid' }
     ];
 
     const output = await new Promise((resolve, reject) => {

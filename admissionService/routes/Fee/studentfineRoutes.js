@@ -5,6 +5,7 @@ const studentfineController = require('../../controllers/Fee/studentfineControll
 
 router.get('/', studentfineController.getAll);
 router.get('/:id', studentfineController.getById);
+router.post('/bulk', studentfineController.bulkCreate);
 router.post('/', studentfineController.create);
 router.put('/:id', studentfineController.update);
 router.delete('/:id', studentfineController.remove);

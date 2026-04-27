@@ -4,7 +4,7 @@ const ParmanentPersonalInformation = require('../controllers/parmanentPersonalIn
 
 router.post('/', ParmanentPersonalInformation.create);
 router.get('/', ParmanentPersonalInformation.getAll);
-router.get('/:id', ParmanentPersonalInformation.getById);
+router.get('/reg/:reg_no', ParmanentPersonalInformation.getByReg);
 router.put('/:id', ParmanentPersonalInformation.update);
 router.delete('/:id', ParmanentPersonalInformation.remove);
 

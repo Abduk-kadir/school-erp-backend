@@ -38,7 +38,8 @@ function buildRecord(i, j, z) {
   for (const m of months) {
     record[`${m}_total`] = MONTH_TOTAL;
     record[`${m}_paid`] = MONTH_PAID;
-    record[`${m}_due`] = MONTH_DUE;
+    record[`${m}_total_paid`] = MONTH_PAID;
+    record[`${m}_total_due`] = MONTH_DUE;
   }
 
   return record;

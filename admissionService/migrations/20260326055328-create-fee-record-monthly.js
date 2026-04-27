@@ -27,7 +27,10 @@ module.exports = {
       jan_paid: {
         type: Sequelize.DECIMAL
       },
-      jan_due: {
+      jan_total_paid: {
+        type: Sequelize.DECIMAL
+      },
+      jan_total_due: {
         type: Sequelize.DECIMAL
       },
       feb_total: {
@@ -36,7 +39,10 @@ module.exports = {
       feb_paid: {
         type: Sequelize.DECIMAL
       },
-      feb_due: {
+      feb_total_paid: {
+        type: Sequelize.DECIMAL
+      },
+      feb_total_due: {
         type: Sequelize.DECIMAL
       },
       mar_total: {
@@ -45,7 +51,10 @@ module.exports = {
       mar_paid: {
         type: Sequelize.DECIMAL
       },
-      mar_due: {
+      mar_total_paid: {
+        type: Sequelize.DECIMAL
+      },
+      mar_total_due: {
         type: Sequelize.DECIMAL
       },
       apr_total: {
@@ -54,7 +63,10 @@ module.exports = {
       apr_paid: {
         type: Sequelize.DECIMAL
       },
-      apr_due: {
+      apr_total_paid: {
+        type: Sequelize.DECIMAL
+      },
+      apr_total_due: {
         type: Sequelize.DECIMAL
       },
       may_total: {
@@ -63,7 +75,10 @@ module.exports = {
       may_paid: {
         type: Sequelize.DECIMAL
       },
-      may_due: {
+      may_total_paid: {
+        type: Sequelize.DECIMAL
+      },
+      may_total_due: {
         type: Sequelize.DECIMAL
       },
       jun_total: {
@@ -72,7 +87,10 @@ module.exports = {
       jun_paid: {
         type: Sequelize.DECIMAL
       },
-      jun_due: {
+      jun_total_paid: {
+        type: Sequelize.DECIMAL
+      },
+      jun_total_due: {
         type: Sequelize.DECIMAL
       },
       jul_total: {
@@ -81,7 +99,10 @@ module.exports = {
       jul_paid: {
         type: Sequelize.DECIMAL
       },
-      jul_due: {
+      jul_total_paid: {
+        type: Sequelize.DECIMAL
+      },
+      jul_total_due: {
         type: Sequelize.DECIMAL
       },
       aug_total: {
@@ -90,7 +111,10 @@ module.exports = {
       aug_paid: {
         type: Sequelize.DECIMAL
       },
-      aug_due: {
+      aug_total_paid: {
+        type: Sequelize.DECIMAL
+      },
+      aug_total_due: {
         type: Sequelize.DECIMAL
       },
       sep_total: {
@@ -99,7 +123,10 @@ module.exports = {
       sep_paid: {
         type: Sequelize.DECIMAL
       },
-      sep_due: {
+      sep_total_paid: {
+        type: Sequelize.DECIMAL
+      },
+      sep_total_due: {
         type: Sequelize.DECIMAL
       },
       oct_total: {
@@ -108,7 +135,10 @@ module.exports = {
       oct_paid: {
         type: Sequelize.DECIMAL
       },
-      oct_due: {
+      oct_total_paid: {
+        type: Sequelize.DECIMAL
+      },
+      oct_total_due: {
         type: Sequelize.DECIMAL
       },
       nov_total: {
@@ -117,7 +147,10 @@ module.exports = {
       nov_paid: {
         type: Sequelize.DECIMAL
       },
-      nov_due: {
+      nov_total_paid: {
+        type: Sequelize.DECIMAL
+      },
+      nov_total_due: {
         type: Sequelize.DECIMAL
       },
       dec_total: {
@@ -126,7 +159,10 @@ module.exports = {
       dec_paid: {
         type: Sequelize.DECIMAL
       },
-      dec_due: {
+      dec_total_paid: {
+        type: Sequelize.DECIMAL
+      },
+      dec_total_due: {
         type: Sequelize.DECIMAL
       },
       createdAt: {
