@@ -2,9 +2,11 @@ const express = require('express');
 const router = express.Router();
 
 const feeController = require('../../controllers/Fee/feeCollectionController');
+const studentFeeController = require('../../controllers/Fee/studentFeeController');
 
 // CRUD Routes
 router.post('/', feeController.createFee);
+router.post('/student-fee-collection', studentFeeController.createStudentFeeCollection);
 router.post('/fee-reciept-pdf', feeController.feeRecieptPDF);
 router.post('/student-copy-from-personal-to-par-personal', feeController.studentCopyFromPersonalToParPersonal);
 router.get('/', feeController.getAllFees);
