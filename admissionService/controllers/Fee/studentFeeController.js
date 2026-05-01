@@ -10,24 +10,13 @@ function pickFeeRecordMonthlyPayload(r, fee_table_id) {
 }
 
 function pickStudentFeeGroupDetailUpdatePayload(r) {
-  if (!r || typeof r !== 'object') return null;
-  const { reg_no, feeheadid, fee_head, id, createdAt, updatedAt, ...rest } = r;
-  // allow fee_head alias, but don't let it slip into update payload
-  void fee_head;
-  return { reg_no, feeheadid: feeheadid ?? fee_head, update: rest };
-}
+    if (!r || typeof r !== 'object') return null;
+    const { reg_no, feeheadid, fee_head, id, createdAt, updatedAt, ...rest } = r;
+    // allow fee_head alias, but don't let it slip into update payload
+    void fee_head;
+    return { reg_no, feeheadid: feeheadid ?? fee_head, update: rest };
+  }
 
-/**
- * Body shape:
- * {
- *   filteredstudentfees: Array<...StudentFeeGroupDetailPrice updates...>,
- *   feerecordmothlydata: Array<...FeeRecordMonthly rows...>,
- *   feecollection: { ...FeeCollection fields... }
- * }
- *
- * Creates one FeeCollection, bulk creates FeeRecordMonthly linked by fee_table_id,
- * and updates StudentFeeGroupDetailPrice by (reg_no, feeheadid).
- */
 exports.createStudentFeeCollection = async (req, res) => {
   const transaction = await sequelize.transaction();
   try {

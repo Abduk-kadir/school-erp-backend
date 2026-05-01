@@ -5,9 +5,10 @@ function globalError(err, req, res, _next) {
   void saveError(err, req, { status_code: status }).catch((e) =>
     console.error('saveError failed:', e)
   )
-  res
-    .status(status)
-    .json({ message: err?.message || 'Internal Server Error' });
+  res.status(status).json({
+    success: false,
+    message: err?.message || 'Internal Server Error',
+  });
   
 }
 

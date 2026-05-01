@@ -46,6 +46,7 @@ const feeHeadRoutes = require('./routes/Fee/Bank/feeHeadRoutes');
 const feeGroupRoutes = require('./routes/Fee/feeGroupRoutes');
 const feeCollectionRoutes = require('./routes/Fee/feeCollectionRoutes');
 const studentFeeRoutes = require('./routes/Fee/studentFeeRoutes');
+const studentFeeGroupDetailpriceSplitRoutes = require('./routes/Fee/studentFeeGroupDetailpriceSplitRoutes');
 const fineRoutes = require('./routes/Fee/fineRoutes');
 const fineAssignedRoutes = require('./routes/Fee/fineAssignedRoutes');
 const studentfineRoutes = require('./routes/Fee/studentfineRoutes');
@@ -58,6 +59,7 @@ app.use('/api/error',errorRoutes)
 //fee module routes
 app.use('/api/fees', feeCollectionRoutes);
 app.use('/api/student-fees', studentFeeRoutes);
+app.use('/api/student-fee-installment-splits', studentFeeGroupDetailpriceSplitRoutes);
 app.use('/api/fines', fineRoutes);
 app.use('/api/fine-assigned', fineAssignedRoutes);
 app.use('/api/student-fines', studentfineRoutes);

@@ -25,6 +25,11 @@ module.exports = (sequelize, DataTypes) => {
         as: 'parStudentPersonalInformation',
         constraints: false
       });
+
+      StudentFeeGroupDetailPrice.hasMany(models.studentfeegroupDetailpriceSplit, {
+        foreignKey: 'student_installment_id',
+        as: 'splitAmounts',
+      });
     }
   }
 
