@@ -21,6 +21,7 @@ module.exports = (sequelize, DataTypes) => {
     classId: DataTypes.INTEGER,
     semester: DataTypes.INTEGER,
     basketName: DataTypes.STRING,
+    studenttype: DataTypes.ENUM('added', 'unadded', 'both'),
     minChoices: DataTypes.INTEGER,
     maxChoices: DataTypes.INTEGER,
     exactChoices: DataTypes.INTEGER,

@@ -18,6 +18,11 @@ module.exports = {
       basketName: {
         type: Sequelize.STRING
       },
+      studenttype: {
+        type: Sequelize.ENUM('added', 'unadded', 'both'),
+        allowNull: true,
+        defaultValue: null
+      },
       minChoices: {
         type: Sequelize.INTEGER
       },

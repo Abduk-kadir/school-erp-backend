@@ -1,12 +1,12 @@
 const ExcelJS = require('exceljs');
-const { FeeCollection, PersonalInformation,par_student_personal_information, class_master, sequelize,classWiseSchool } = require('../../models');
+const { FeeCollection, PersonalInformation, par_student_personal_information, class_master, sequelize, classWiseSchool } = require('../../models');
 const { QueryTypes } = require('sequelize');
 const { academicOnlineAndOfflinePayDataTable } = require('../../helpers/academicOnlineAndOfflinePayHelper');
 const { academicSummaryPayDataTable } = require('../../helpers/academicSummaryPayHelper');
 const PDFDocument = require('pdfkit-table');
 const puppeteer = require('puppeteer');
-  const ejs = require('ejs');
-  const path = require('path');
+const ejs = require('ejs');
+const path = require('path');
 
 
 const FEE_EXPORT_COLUMNS = [
@@ -93,150 +93,150 @@ function feeRecordRowToPdfCells(r) {
     c(r.consession),
     c(r.consessionamount),
   ];
-  };
-   
+};
 
 
 
 
-  
-  
-  exports.feeRecieptPDF = async (req, res) => {
-    console.log('feeRecieptPDF is called***********************',req.body)
-      let browser;
-      try {
-          const { student,feerecords } = req.body;
-  
-        
-          let classid = student.class
-          let classwiseinst = await classWiseSchool.findOne({
-              where: {
-                  class_id: classid
-              },
-              raw: true
-  
-          })
-  
-          const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
-          classwiseinst.logo = classwiseinst?.logo ? `${baseUrl}${classwiseinst.logo}` : null;
-          console.log('classwise inst*************************', classwiseinst)
-         
-        
-          const renderData = {
-             data:feerecords,
-             student:student,
-             classwiseSchool: classwiseinst
 
-  
-          };
-  
-  
-  
-          const templatePath = path.join(__dirname, '../../views/printfeereciept.ejs');
-  
-          // 2. Render EJS → get HTML string
-          const html = await ejs.renderFile(templatePath, renderData, {
-              // Helps EJS find partials if you use <%- include('partial.ejs') %>
-              views: [path.join(__dirname, '../../views')],
-          });
-  
-          // 3. Launch puppeteer
-          browser = await puppeteer.launch({
-              headless: true,
-              args: [
-                  '--no-sandbox',
-                  '--disable-setuid-sandbox',
-                  '--disable-dev-shm-usage',
-                  '--font-render-hinting=medium',
-              ],
-          });
-  
-          const page = await browser.newPage();
-  
-          // 4. Load HTML into page
-          await page.setContent(html, {
-              waitUntil: ['networkidle0', 'load', 'domcontentloaded'],
-              timeout: 45000,
-          });
-  
-          // Wait for fonts (especially if using Devanagari/Marathi fonts)
-          await page.evaluate(() => document.fonts.ready);
-  
-          // 5. Generate PDF
-          const pdfBuffer = await page.pdf({
-              format: 'A4',
-              printBackground: true,       // Very important → shows borders, colors, images
-              margin: { top: '8mm', right: '6mm', bottom: '8mm', left: '6mm' },
-              scale: 0.92,                 // Tiny shrink often fixes overflow in dense forms
-              preferCSSPageSize: true,
-          });
-  
-          await browser.close();
-  
-         
-          // 6. Send PDF to frontend
-          res.setHeader('Content-Type', 'application/pdf');
-          res.setHeader(
-              'Content-Disposition',
-              `attachment; filename="admission-student-${student.frist_name || ''}.pdf"`
-          );
-          res.setHeader('Content-Length', pdfBuffer.length);
-  
-          // Send raw buffer and end response
-          res.end(pdfBuffer);
-  
-      } catch (err) {
-          if (browser) await browser.close().catch(() => { });
-          console.error('PDF Error:', err);
-          return res.status(500).json({
-              success: false,
-              message: 'PDF generation failed',
-              error: err.message,
-          });
+
+
+exports.feeRecieptPDF = async (req, res) => {
+  console.log('feeRecieptPDF is called***********************', req.body)
+  let browser;
+  try {
+    const { student, feerecords } = req.body;
+
+
+    let classid = student.class
+    let classwiseinst = await classWiseSchool.findOne({
+      where: {
+        class_id: classid
+      },
+      raw: true
+
+    })
+
+    const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
+    classwiseinst.logo = classwiseinst?.logo ? `${baseUrl}${classwiseinst.logo}` : null;
+    console.log('classwise inst*************************', classwiseinst)
+
+
+    const renderData = {
+      data: feerecords,
+      student: student,
+      classwiseSchool: classwiseinst
+
+
+    };
+
+
+
+    const templatePath = path.join(__dirname, '../../views/printfeereciept.ejs');
+
+    // 2. Render EJS → get HTML string
+    const html = await ejs.renderFile(templatePath, renderData, {
+      // Helps EJS find partials if you use <%- include('partial.ejs') %>
+      views: [path.join(__dirname, '../../views')],
+    });
+
+    // 3. Launch puppeteer
+    browser = await puppeteer.launch({
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--font-render-hinting=medium',
+      ],
+    });
+
+    const page = await browser.newPage();
+
+    // 4. Load HTML into page
+    await page.setContent(html, {
+      waitUntil: ['networkidle0', 'load', 'domcontentloaded'],
+      timeout: 45000,
+    });
+
+    // Wait for fonts (especially if using Devanagari/Marathi fonts)
+    await page.evaluate(() => document.fonts.ready);
+
+    // 5. Generate PDF
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      printBackground: true,       // Very important → shows borders, colors, images
+      margin: { top: '8mm', right: '6mm', bottom: '8mm', left: '6mm' },
+      scale: 0.92,                 // Tiny shrink often fixes overflow in dense forms
+      preferCSSPageSize: true,
+    });
+
+    await browser.close();
+
+
+    // 6. Send PDF to frontend
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="admission-student-${student.frist_name || ''}.pdf"`
+    );
+    res.setHeader('Content-Length', pdfBuffer.length);
+
+    // Send raw buffer and end response
+    res.end(pdfBuffer);
+
+  } catch (err) {
+    if (browser) await browser.close().catch(() => { });
+    console.error('PDF Error:', err);
+    return res.status(500).json({
+      success: false,
+      message: 'PDF generation failed',
+      error: err.message,
+    });
+  }
+};
+
+
+
+
+
+
+
+exports.studentCopyFromPersonalToParPersonal = async (req, res) => {
+  let transaction = await sequelize.transaction()
+  try {
+
+    let { reg_no } = req.body
+    let student = await par_student_personal_information.findOne({ where: { reg_no: reg_no } })
+    if (!student) {
+      let per = await PersonalInformation.findOne({ where: { reg_no: reg_no } })
+      if (!per) {
+        await transaction.rollback()
+        return res.status(404).json({ success: false, message: 'Personal information not found for this reg_no' })
       }
-  };
-
-
-
-
-
-
-
-exports.studentCopyFromPersonalToParPersonal=async(req,res)=>{
-  let transaction=await sequelize.transaction()
-  try{
-   
-  let {reg_no}=req.body
-  let student=await par_student_personal_information.findOne({where:{reg_no:reg_no}})
-  if(!student){
-   let per=await PersonalInformation.findOne({where:{reg_no:reg_no}})
-   if(!per){
-    await transaction.rollback()
-    return res.status(404).json({success:false,message:'Personal information not found for this reg_no'})
-   }
-   const classNum = per.class != null && String(per.class).trim() !== '' ? parseInt(per.class, 10) : null
-   const divisionNum = per.division != null && String(per.division).trim() !== '' ? parseInt(per.division, 10) : null
-   await par_student_personal_information.create({
-    reg_no,
-    first_name: per.first_name,
-    last_name: per.last_name,
-    father_name: per.father_name,
-    class: Number.isNaN(classNum) ? null : classNum,
-    division: Number.isNaN(divisionNum) ? null : divisionNum,
-    contact_number: per.contact_number,
-    dob: per.dob,
-    blood_groop: per.blood_group,
-    feegroupid: per.groupid,
-    password: per.password
-   },{transaction})
-   await PersonalInformation.destroy({where:{reg_no:reg_no}, transaction})
+      const classNum = per.class != null && String(per.class).trim() !== '' ? parseInt(per.class, 10) : null
+      const divisionNum = per.division != null && String(per.division).trim() !== '' ? parseInt(per.division, 10) : null
+      await par_student_personal_information.create({
+        reg_no,
+        first_name: per.first_name,
+        last_name: per.last_name,
+        father_name: per.father_name,
+        class: Number.isNaN(classNum) ? null : classNum,
+        division: Number.isNaN(divisionNum) ? null : divisionNum,
+        contact_number: per.contact_number,
+        dob: per.dob,
+        blood_groop: per.blood_group,
+        feegroupid: per.groupid,
+        password: per.password
+      }, { transaction })
+      await PersonalInformation.destroy({ where: { reg_no: reg_no }, transaction })
+    }
+    await transaction.commit()
+    return res.status(200).json({ success: true, message: 'student copied from personal to par personal successfully' })
   }
-  await transaction.commit()
-  return res.status(200).json({success:true,message:'student copied from personal to par personal successfully'})
-  }
-  catch(error){
+  catch (error) {
     await transaction.rollback()
-    return res.status(500).json({success:false,message:error.message})
+    return res.status(500).json({ success: false, message: error.message })
   }
 }
 
@@ -249,7 +249,7 @@ exports.studentCopyFromPersonalToParPersonal=async(req,res)=>{
 
 
 
-  
+
 exports.createFee = async (req, res) => {
   try {
     const data = await FeeCollection.create(req.body);
@@ -269,42 +269,80 @@ exports.createFee = async (req, res) => {
 
 // ✅ GET ALL (DataTable with filters: fromDate, toDate, batchId, divisionId, paymentStatus)
 exports.getAllFees = async (req, res) => {
+
+
   try {
-    const searchFields = ['reg_no', 'reciept_no', 'payment_mode'];
-    const classFilter = req.query['filter[className]'] || '';
-  
 
-    const include = [
-      {
-        model: PersonalInformation,
-        as: 'PeronalInformation',
-        required: !!(classFilter),
-        include: [
-          {
-            model: class_master,
-            as: 'classInfo',
-            attributes: ['id', 'class_name'],
-            required: false
-          }
-        ]
+    const draw = parseInt(req.query.draw) || 1;
+    const start = parseInt(req.query.start) || 0;
+    const length = parseInt(req.query.length) || 10;
+    const search = req.query['search[value]'] || req.query.search?.value || '';
+    const fromDate = req.query['filter[fromDate]'] || '';
+    const toDate = req.query['filter[toDate]'] || '';
+    const className = req.query['filter[className]'] || '';
+    const paymentStatus = req.query['filter[paymentStatus]'] || '';
+
+
+    const whereClause = [];
+    if (fromDate && toDate) {
+      whereClause.push(`DATE(fc.\`date\`) BETWEEN '${fromDate}' AND '${toDate}'`);
+    } else if (fromDate) {
+      whereClause.push(`DATE(fc.\`date\`) >= '${fromDate}'`);
+    } else if (toDate) {
+      whereClause.push(`DATE(fc.\`date\`) <= '${toDate}'`);
+    }
+
+    if (className !== undefined && className !== null && String(className).trim() !== '') {
+      const classId = parseInt(className, 10);
+      if (!Number.isNaN(classId)) {
+        whereClause.push(`p.\`class\` = ${classId}`);
       }
-    ];
+    }
+    if (paymentStatus) {
+      const safe = String(paymentStatus).replace(/'/g, "''");
+      whereClause.push(`\`payment_mode\`='${safe}'`);
+    }
+    const whereSql = whereClause.length ? ` where ${whereClause.join(' and ')}` : '';
+    const query = `select fc.*, p.first_name,p.class,p.division, c.class_name as className from feecollections as fc join par_student_personal_informations as p on fc.reg_no=p.reg_no
+join class_masters as c on c.id=p.class
+${whereSql}
+    
+      LIMIT ${length} OFFSET ${start}
 
-    const result = await academicOnlineAndOfflinePayDataTable(
-      req,
-      FeeCollection,
-      searchFields,
-      {},
-      include
-    );
+`;
 
-    return res.status(200).json(result);
+
+const result=await sequelize.query(query, {
+  type: QueryTypes.SELECT,
+  raw: true
+ });
+ return res.status(200).json({
+  success: true,
+  data: result,
+  draw: draw,
+  
+ });
+
+
+
+
+
+
+
+
+
+
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    res.send({
+      success: true,
+      message: error.message,
+    })
+
   }
+
+
+
+
 };
 
 exports.getAllFeesPDF = async (req, res) => {
@@ -334,26 +372,26 @@ exports.getAllFeesPDF = async (req, res) => {
     join class_masters as c on p.class=c.id`;
     const whereSql = whereClause.length ? ` where ${whereClause.join(' and ')}` : '';
 
-   const results = await sequelize.query(query + whereSql, {
-     type: QueryTypes.SELECT
-   });
+    const results = await sequelize.query(query + whereSql, {
+      type: QueryTypes.SELECT
+    });
 
-  res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader(
-    'Content-Disposition',
-    'attachment; filename=fee_collections_report.pdf'
-  );
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename=fee_collections_report.pdf'
+    );
 
-   const doc = new PDFDocument({
-    size: 'A4',
-    layout: 'landscape',
-    margin: 16,
-  });
+    const doc = new PDFDocument({
+      size: 'A4',
+      layout: 'landscape',
+      margin: 16,
+    });
 
-  doc.pipe(res);
+    doc.pipe(res);
 
-  doc.fontSize(13).text('Online and offline  Report', { align: 'center' });
-  doc.moveDown(0.4);
+    doc.fontSize(13).text('Online and offline  Report', { align: 'center' });
+    doc.moveDown(0.4);
 
     if (!results.length) {
       doc.fontSize(10).text('No records found.', { align: 'left' });
@@ -370,14 +408,14 @@ exports.getAllFeesPDF = async (req, res) => {
       columnsSize,
       padding: [5, 4],        // top/bottom, left/right
       columnSpacing: 3,
-    
+
       prepareHeader: () => doc.font('Helvetica-Bold').fontSize(6.5),
-    
+
       prepareRow: (row, indexColumn, indexRow, rectRow, rectCell) => {
         doc.font('Helvetica').fontSize(6);
-    
+
         const { x, y, width, height } = rectCell;
-    
+
         // Draw clean border for every cell
         doc
           .lineWidth(0.75)
@@ -385,7 +423,7 @@ exports.getAllFeesPDF = async (req, res) => {
           .rect(x, y, width, height)
           .stroke();
       },
-    
+
       divider: {
         header: { disabled: true },
         horizontal: { disabled: true },
@@ -457,7 +495,7 @@ exports.getAllFeesInExcel = async (req, res) => {
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet("Fee Collection");
     sheet.columns = FEE_EXPORT_COLUMNS;
-   sheet.addRows(result)
+    sheet.addRows(result)
     res.setHeader(
       "Content-Type",
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -467,15 +505,15 @@ exports.getAllFeesInExcel = async (req, res) => {
       "attachment; filename=feeCollection.xlsx"
     );
 
-    
-   await workbook.xlsx.write(res);
+
+    await workbook.xlsx.write(res);
 
     res.end();
-   
-   
-  
 
-   
+
+
+
+
   } catch (error) {
     console.error('getAllFeesInExcel:', error);
     if (!res.headersSent) {
@@ -637,7 +675,7 @@ exports.getAllFeeById = async (req, res) => {
 
     const data = await FeeCollection.findAll({
       where: { reg_no: String(reg_no).trim() },
-      
+
     });
 
     if (!data) {

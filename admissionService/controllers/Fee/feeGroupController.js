@@ -43,29 +43,16 @@ const feeGroupController = {
         });
        }
        
-       /*let studentfee=await sequelize.query(
+       let studentfee=await sequelize.query(
         `select sfp.*,fh.fee_head_name
          from studentfeegroupdetailprices as sfp
          join feeheads as fh on sfp.feeheadid=fh.id
          where reg_no = :reg_no`,
         { replacements: { reg_no }, type: sequelize.QueryTypes.SELECT }
       );
-      */
-     let studentfee=await StudentFeeGroupDetailPrice.findAll({
-      where:{reg_no:reg_no},
-      include:[{
-        model:studentfeegroupDetailpriceSplit,
-        as:'splitAmounts',
-        required: false
-      }]
-     })
-     studentfee=studentfee.map((elem)=>{
-      const plain = typeof elem?.get === 'function' ? elem.get({ plain: true }) : elem;
-      const split = Array.isArray(plain?.splitAmounts)
-        ? (plain.splitAmounts[0] ?? null)
-        : (plain?.splitAmounts ?? null);
-      return { ...plain, splitAmounts: split };
-     })
+      
+  
+     
        res.send({
         success:true,
         message:"student fee installment is fetched",
@@ -79,6 +66,64 @@ const feeGroupController = {
           })
       }
   },
+
+  async getfeeAssignedToStudentSplit(req, res) {
+    try{
+     const regNoParam = req.params.reg_no ?? req.params.regNo;
+     const reg_no = Number(regNoParam);
+     if (!Number.isFinite(reg_no)) {
+      return res.send({
+        message:"reg_no is required",
+        success: false,
+        
+      });
+     }
+
+     const isfeeassigned = await StudentFeeGroupDetailPrice.findOne({where:{reg_no:reg_no}})
+     if(!isfeeassigned){
+      return res.send({
+        message:"student fee installment is not assigned",
+        success: false,
+        
+      });
+     }
+     
+     /*let studentfee=await sequelize.query(
+      `select sfp.*,fh.fee_head_name
+       from studentfeegroupdetailprices as sfp
+       join feeheads as fh on sfp.feeheadid=fh.id
+       where reg_no = :reg_no`,
+      { replacements: { reg_no }, type: sequelize.QueryTypes.SELECT }
+    );
+    */
+   let studentfee=await StudentFeeGroupDetailPrice.findAll({
+    where:{reg_no:reg_no},
+    include:[{
+      model:studentfeegroupDetailpriceSplit,
+      as:'splitAmounts',
+      required: false
+    }]
+   })
+   studentfee=studentfee.map((elem)=>{
+    const plain = typeof elem?.get === 'function' ? elem.get({ plain: true }) : elem;
+    const split = Array.isArray(plain?.splitAmounts)
+      ? (plain.splitAmounts[0] ?? null)
+      : (plain?.splitAmounts ?? null);
+    return { ...plain, splitAmounts: split };
+   })
+     res.send({
+      success:true,
+      message:"student fee installment is fetched",
+      data:studentfee
+     })
+    }
+    catch(error){
+        res.send({
+          success:false,
+          message:error.message
+        })
+    }
+},
 
   async assignFeeToStudent(req,res){
     try{

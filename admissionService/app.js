@@ -52,8 +52,12 @@ const fineAssignedRoutes = require('./routes/Fee/fineAssignedRoutes');
 const studentfineRoutes = require('./routes/Fee/studentfineRoutes');
 const feeRecordMonthlyRoutes = require('./routes/feeRecordMonthlyRoutes');
 const errorRoutes=require('./routes/errorRoutes')
+const adminDashBoardRoutes = require('./routes/adminDashBoardRoutes');
+const staffRegistrationRoutes = require('./routes/staffRegistrationRoutes');
 
 app.use('/api/error',errorRoutes)
+app.use('/api/admin-dashboard', adminDashBoardRoutes);
+app.use('/api/staff', staffRegistrationRoutes);
 
 
 //fee module routes
@@ -105,6 +109,10 @@ app.use('/api/student-documents', studentDocumentRoutes);
 app.use(
   '/uploads/classwiseInstitutes/logos',
   express.static('E:/classwiseInstitutes/logos')
+);
+app.use(
+  '/uploads/institutes/logos',
+  express.static('E:/institutes/logos')
 );
 
 

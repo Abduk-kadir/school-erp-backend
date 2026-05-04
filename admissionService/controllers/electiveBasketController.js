@@ -75,6 +75,7 @@ exports.createElectiveBasket = async (req, res) => {
       classId,
       semester,
       basketName,
+      studenttype,
       minChoices =null,
       maxChoices = null,
       exactChoices = null,
@@ -96,6 +97,7 @@ exports.createElectiveBasket = async (req, res) => {
       minChoices,
       maxChoices,
       exactChoices,
+      studenttype,
       isMandatory,
       description,
     });
