@@ -11,7 +11,7 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
 
-      FeeCollection.belongsTo(models.PersonalInformation, { foreignKey: 'reg_no', targetKey: 'reg_no', as: 'PeronalInformation' });
+      //FeeCollection.belongsTo(models.PersonalInformation, { foreignKey: 'reg_no', targetKey: 'reg_no', as: 'PeronalInformation' });
       FeeCollection.belongsTo(models.par_student_personal_information, { foreignKey: 'reg_no' });
 
       FeeCollection.hasMany(models.FeeRecordMonthly, {

@@ -4,9 +4,11 @@ const {
   FeeGroupDetailPrice,
   FeeGroupHead,
   FeeHead,
+  FeesType,
   PersonalInformation,
   StudentFeeGroupDetailPrice,
   studentfeegroupDetailpriceSplit,
+  Subject,
   sequelize
  
 } = require('../../models');
@@ -125,6 +127,40 @@ const feeGroupController = {
     }
 },
 
+  async getfeeheadsbygroupid(req, res) {
+    try {
+      const groupIdParam = req.params.groupid ?? req.params.group_id ?? req.params.id;
+      const groupid = Number(groupIdParam);
+
+      if (!Number.isFinite(groupid)) {
+        return res.status(400).json({
+          success: false,
+          message: 'groupid is required'
+        });
+      }
+
+      const data = await sequelize.query(
+        `select fgh.feeheadid as id ,fh.fee_head_name
+         from feegroupheads as fgh
+         join feeheads as fh on fgh.feeheadid=fh.id
+         where fgh.groupid = :groupid;`,
+        { replacements: { groupid }, type: sequelize.QueryTypes.SELECT }
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: 'Fee heads fetched successfully',
+        data
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch fee heads',
+        error: error.message
+      });
+    }
+  },
+
   async assignFeeToStudent(req,res){
     try{
       let {reg_no,class_id}=req.body;
@@ -206,15 +242,7 @@ const feeGroupController = {
         });
       }
      
-      let headdata=groupPricingRecord.map(elem=>{
-        return {feeheadid:elem.feehead,groupid:groupdetails.feegroupid}
-      })
-      console.log('head data*****************************:',headdata)
-
-    await FeeGroupHead.bulkCreate(headdata, {
-        validate: true,
-        returning: true
-      });
+    
 
       // Step 1: Create Single FeeGroupDetail
     
@@ -305,7 +333,7 @@ const feeGroupController = {
 
   async createFeeGroup(req, res) {
     try {
-      const { groupname } = req.body;
+      const { groupname, selectedFeeHeadIds } = req.body;
 
       if (groupname == null || String(groupname).trim() === '') {
         return res.status(400).json({
@@ -314,8 +342,36 @@ const feeGroupController = {
         });
       }
 
-      const feeGroup = await FeeGroup.create({
-        groupname: String(groupname).trim()
+      if (selectedFeeHeadIds !== undefined && !Array.isArray(selectedFeeHeadIds)) {
+        return res.status(400).json({
+          success: false,
+          message: 'selectedFeeHeadIds must be an array'
+        });
+      }
+
+      const uniqueFeeHeadIds = Array.isArray(selectedFeeHeadIds)
+        ? [...new Set(selectedFeeHeadIds)]
+            .map((id) => Number(id))
+            .filter((id) => Number.isInteger(id) && id > 0)
+        : [];
+
+      const feeGroup = await sequelize.transaction(async (t) => {
+        const createdFeeGroup = await FeeGroup.create(
+          { groupname: String(groupname).trim() },
+          { transaction: t }
+        );
+
+        if (uniqueFeeHeadIds.length > 0) {
+          await FeeGroupHead.bulkCreate(
+            uniqueFeeHeadIds.map((feeheadid) => ({
+              groupid: createdFeeGroup.id,
+              feeheadid
+            })),
+            { validate: true, transaction: t }
+          );
+        }
+
+        return createdFeeGroup;
       });
 
       return res.status(201).json({
@@ -402,6 +458,46 @@ const feeGroupController = {
       return res.status(500).json({
         success: false,
         message: 'Failed to delete fee group',
+        error: error.message
+      });
+    }
+  },
+
+  async getAllFeeGroupDetails(req, res) {
+    try {
+      const feeGroupDetails = await FeeGroupDetail.findAll({
+        include: [
+          {
+            model: FeeGroup,
+            as: 'feeGroup',
+            attributes: ['groupname'],
+            required: false
+          },
+          {
+            model: FeesType,
+            as: 'feeType',
+            attributes: ['id', 'name'],
+            required: false
+          },
+          {
+            model: Subject,
+            as: 'subject',
+            attributes: ['value'],
+            required: false
+          }
+        ],
+
+        order: [['id', 'ASC']]
+      });
+
+      return res.status(200).json({
+        success: true,
+        data: feeGroupDetails
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch fee group details',
         error: error.message
       });
     }

@@ -30,10 +30,10 @@ const getDisabilityById = async (req, res) => {
 // ── Create new disability ────────────────────────────
 const createDisability = async (req, res) => {
   try {
-    const { name } = req.body;
-    if (!name) return res.status(400).json({ message: "Name is required" });
+    const { value } = req.body;
+    if (!value) return res.status(400).json({ message: "Name is required" });
 
-    const newDisability = await phyically_disable.create({ value:name});
+    const newDisability = await phyically_disable.create({ value:value});
     res.status(201).json(newDisability);
   } catch (error) {
     console.error(error);

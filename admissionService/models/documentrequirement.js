@@ -38,6 +38,7 @@ module.exports = (sequelize, DataTypes) => {
   }, {
     sequelize,
     modelName: 'DocumentRequirement',
+    tableName: 'document_requirements',
   });
   return DocumentRequirement;
 };

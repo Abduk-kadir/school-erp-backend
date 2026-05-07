@@ -22,6 +22,15 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'classid',
         as: 'class'
       });
+      FeeGroupDetail.belongsTo(models.Subject, {
+        foreignKey: 'subject_id',
+        as: 'subject'
+      });
+      FeeGroupDetail.belongsTo(models.FeesType, {
+        foreignKey: 'fee_for',
+        targetKey: 'id',
+        as: 'feeType'
+      });
       FeeGroupDetail.hasMany(models.FeeGroupDetailPrice, {
         foreignKey: 'groupdetailid',
         as: 'feeGroupDetailPrices'
@@ -40,11 +49,6 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: false
     },
-    iselectivesubject: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: false
-    },
     startmonth: {
       type: DataTypes.INTEGER,
       allowNull: true,
@@ -52,6 +56,22 @@ module.exports = (sequelize, DataTypes) => {
         min: 1,
         max: 12
       }
+    },
+    fee_for: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    is_elective: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    subject_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    isAdded_student: {
+      type: DataTypes.STRING,
+      allowNull: true
     },
     classid: {
       type: DataTypes.INTEGER,

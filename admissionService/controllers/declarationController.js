@@ -58,7 +58,7 @@ const getAllDeclarations = async (req, res) => {
         {
           model: class_master,
           as: 'class',
-          attributes: ['id', 'class_name', 'section'], // adjust fields as needed
+          attributes: ['id', 'class_name'], // adjust fields as needed
         },
       ],
       order: [['createdAt', 'DESC']],

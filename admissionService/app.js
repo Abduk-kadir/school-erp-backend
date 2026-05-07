@@ -54,6 +54,7 @@ const feeRecordMonthlyRoutes = require('./routes/feeRecordMonthlyRoutes');
 const errorRoutes=require('./routes/errorRoutes')
 const adminDashBoardRoutes = require('./routes/adminDashBoardRoutes');
 const staffRegistrationRoutes = require('./routes/staffRegistrationRoutes');
+const feesTypeRoutes = require('./routes/feesTypeRoutes');
 
 app.use('/api/error',errorRoutes)
 app.use('/api/admin-dashboard', adminDashBoardRoutes);
@@ -72,6 +73,7 @@ app.use('/api/fee-record-monthly', feeRecordMonthlyRoutes);
 
 app.use('/api/fee-heads', feeHeadRoutes);
 app.use('/api/fee-groups', feeGroupRoutes);
+app.use('/api/fees-types', feesTypeRoutes);
 
 app.use('/api/banks', banksRouter);
 app.use('/api/bank-details', bankDetailsRouter);

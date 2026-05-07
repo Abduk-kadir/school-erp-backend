@@ -5,11 +5,14 @@ const feeGroupController = require('../../controllers/Fee/feeGroupController');
 
 router.get('/', feeGroupController.getAllFeeGroups);
 router.post('/groupdetailandpricing', feeGroupController.creategroupDetailAndPricing);
+router.get('/group-details', feeGroupController.getAllFeeGroupDetails);
 router.get(
   '/student/:regNo/assigned-fees',
   feeGroupController.getfeeAssignedToStudent
 );
 router.post('/assign-fee-to-student', feeGroupController.assignFeeToStudent);
+
+router.get('/fee-heads/:groupid', feeGroupController.getfeeheadsbygroupid);
 
 router.get('/:id', feeGroupController.getFeeGroupById);
 router.post('/', feeGroupController.createFeeGroup);
