@@ -7,7 +7,7 @@ router.get('/', feeGroupController.getAllFeeGroups);
 router.post('/groupdetailandpricing', feeGroupController.creategroupDetailAndPricing);
 router.get('/group-details', feeGroupController.getAllFeeGroupDetails);
 router.get(
-  '/student/:regNo/assigned-fees',
+  '/student/feestype/:regNo/:feeFor/assigned-fees',
   feeGroupController.getfeeAssignedToStudent
 );
 router.post('/assign-fee-to-student', feeGroupController.assignFeeToStudent);

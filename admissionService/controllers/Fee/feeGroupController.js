@@ -12,6 +12,7 @@ const {
   sequelize
  
 } = require('../../models');
+const { Op } = require("sequelize");
 
 const feeGroupController = {
   /**
@@ -27,6 +28,8 @@ const feeGroupController = {
   async getfeeAssignedToStudent(req, res) {
       try{
        const regNoParam = req.params.reg_no ?? req.params.regNo;
+       let fee_for=req.params.fee_for??req.params.feeFor
+       fee_for=Number(fee_for)
        const reg_no = Number(regNoParam);
        if (!Number.isFinite(reg_no)) {
         return res.send({
@@ -46,11 +49,13 @@ const feeGroupController = {
        }
        
        let studentfee=await sequelize.query(
-        `select sfp.*,fh.fee_head_name
+        `select sfp.*,fh.fee_head_name,fgd.fee_for
          from studentfeegroupdetailprices as sfp
          join feeheads as fh on sfp.feeheadid=fh.id
-         where reg_no = :reg_no`,
-        { replacements: { reg_no }, type: sequelize.QueryTypes.SELECT }
+         join feegroupdetailprices as fgdp on fgdp.id=sfp.feegroupdetailpriceid
+         join feegroupdetails as fgd on fgd.id=fgdp.groupdetailid
+         where reg_no = :reg_no and fgd.fee_for = :fee_for`,
+        { replacements: { reg_no,fee_for }, type: sequelize.QueryTypes.SELECT }
       );
       
   
@@ -164,11 +169,33 @@ const feeGroupController = {
   async assignFeeToStudent(req,res){
     try{
       let {reg_no,class_id}=req.body;
-      let fgp=await FeeGroupDetail.findOne({where:{classid:class_id}})
-      let feegroupdetailid=fgp.id;
-      
-      let feegroupdetailprice=await FeeGroupDetailPrice.findAll({where:{groupdetailid:feegroupdetailid},raw:true})
+      let student=await PersonalInformation.findOne({where:{reg_no:reg_no}})
+      let gender=student?.gender
+      let cast=student?.cast
+      let student_type=student?.student_type
+      let cl=student?.class
+      let fgp = await FeeGroupDetail.findAll({
+        where: {
+          gender,
+          cast,
+          isAdded_student:student_type,
+          classid: cl
+        }
+      });
 
+      
+      let feegroupdetailid=fgp.map((elem)=>elem.id);
+      
+      let feegroupdetailprice = await FeeGroupDetailPrice.findAll({
+        where: {
+          groupdetailid: {
+            [Op.in]: feegroupdetailid
+          }
+        },
+        raw: true
+      });
+    
+     
       let allstudentFee = feegroupdetailprice.map((elem) => {
         const { id, groupdetailid,createdAt,updatedAt, ...rest } =elem;
       
@@ -219,12 +246,18 @@ const feeGroupController = {
         data:createdstudentfee
         
       })
-
+  
+ res.send({
+  data:feegroupdetailprice,
+  length:feegroupdetailprice.length,
+  
+ })
      
 
     }
     catch(error){
       res.send({
+        message:error.message,
         success:false,
       })
 

@@ -30,6 +30,9 @@ module.exports = {
       contact_number: {
         type: Sequelize.STRING
       },
+      cast:{
+        type:Sequelize.INTEGER
+      },
       password: {
         type: Sequelize.STRING
       },

@@ -41,6 +41,12 @@ module.exports = {
         allowNull: false,
         defaultValue: false
       },
+      cast:{
+        type:Sequelize.INTEGER
+      },
+      gender:{
+        type:Sequelize.STRING
+      },
       startmonth: {
         type: Sequelize.INTEGER,
         allowNull: true,

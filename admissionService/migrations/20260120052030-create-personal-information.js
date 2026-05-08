@@ -32,6 +32,9 @@ module.exports = {
       division: {
         type: Sequelize.STRING
       },
+      cast:{
+        type:Sequelize.INTEGER
+      },
       contact_number: {
         type: Sequelize.STRING
       },
