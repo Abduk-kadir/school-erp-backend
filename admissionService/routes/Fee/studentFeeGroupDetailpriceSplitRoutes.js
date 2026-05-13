@@ -7,7 +7,7 @@ const studentFeeGroupDetailpriceSplitController = require('../../controllers/Fee
 router.post('/', studentFeeGroupDetailpriceSplitController.create);
 
 // latest split row per installment for a student (reg_no on studentfeegroupdetailprices)
-router.get('/:reg_no', studentFeeGroupDetailpriceSplitController.getAll);
+router.get('/:reg_no/feefor/:fee_for', studentFeeGroupDetailpriceSplitController.getAll);
 
 module.exports = router;
 

@@ -77,12 +77,20 @@ const feeGroupController = {
   async getfeeAssignedToStudentSplit(req, res) {
     try{
      const regNoParam = req.params.reg_no ?? req.params.regNo;
+     let fee_for = req.params.fee_for ?? req.params.feeFor;
+     fee_for = Number(fee_for);
      const reg_no = Number(regNoParam);
      if (!Number.isFinite(reg_no)) {
       return res.send({
         message:"reg_no is required",
         success: false,
         
+      });
+     }
+     if (!Number.isFinite(fee_for)) {
+      return res.send({
+        message:"fee_for is required",
+        success: false,
       });
      }
 
@@ -95,29 +103,71 @@ const feeGroupController = {
       });
      }
      
-     /*let studentfee=await sequelize.query(
-      `select sfp.*,fh.fee_head_name
-       from studentfeegroupdetailprices as sfp
-       join feeheads as fh on sfp.feeheadid=fh.id
-       where reg_no = :reg_no`,
-      { replacements: { reg_no }, type: sequelize.QueryTypes.SELECT }
+     let studentfee=await sequelize.query(
+      ` select sfp.*,fh.fee_head_name,fgd.fee_for,
+        splitfee.student_installment_id,
+        splitfee.jan_total AS split_jan_total,
+        splitfee.jan_split1,
+        splitfee.jan_split2,
+
+        splitfee.feb_total AS split_feb_total,
+        splitfee.feb_split1,
+        splitfee.feb_split2,
+
+        splitfee.mar_total AS split_mar_total,
+        splitfee.mar_split1,
+        splitfee.mar_split2,
+
+        splitfee.apr_total AS split_apr_total,
+        splitfee.apr_split1,
+        splitfee.apr_split2,
+
+        splitfee.may_total AS split_may_total,
+        splitfee.may_split1,
+        splitfee.may_split2,
+
+        splitfee.jun_total AS split_jun_total,
+        splitfee.jun_split1,
+        splitfee.jun_split2,
+
+        splitfee.jul_total AS split_jul_total,
+        splitfee.jul_split1,
+        splitfee.jul_split2,
+
+        splitfee.aug_total AS split_aug_total,
+        splitfee.aug_split1,
+        splitfee.aug_split2,
+
+        splitfee.sep_total AS split_sep_total,
+        splitfee.sep_split1,
+        splitfee.sep_split2,
+
+        splitfee.oct_total AS split_oct_total,
+        splitfee.oct_split1,
+        splitfee.oct_split2,
+
+        splitfee.nov_total AS split_nov_total,
+        splitfee.nov_split1,
+        splitfee.nov_split2,
+
+        splitfee.dec_total AS split_dec_total,
+        splitfee.dec_split1,
+        splitfee.dec_split2
+         from studentfeegroupdetailprices as sfp
+         join feeheads as fh on sfp.feeheadid=fh.id
+         join feegroupdetailprices as fgdp on fgdp.id=sfp.feegroupdetailpriceid
+         join feegroupdetails as fgd on fgd.id=fgdp.groupdetailid
+         left join studentfeegroupdetailpricesplits as splitfee
+           on splitfee.id = (
+             select max(s2.id)
+             from studentfeegroupdetailpricesplits as s2
+             where s2.student_installment_id = sfp.id
+           )
+         where reg_no = :reg_no and fgd.fee_for = :fee_for`,
+      { replacements: { reg_no,fee_for }, type: sequelize.QueryTypes.SELECT }
     );
-    */
-   let studentfee=await StudentFeeGroupDetailPrice.findAll({
-    where:{reg_no:reg_no},
-    include:[{
-      model:studentfeegroupDetailpriceSplit,
-      as:'splitAmounts',
-      required: false
-    }]
-   })
-   studentfee=studentfee.map((elem)=>{
-    const plain = typeof elem?.get === 'function' ? elem.get({ plain: true }) : elem;
-    const split = Array.isArray(plain?.splitAmounts)
-      ? (plain.splitAmounts[0] ?? null)
-      : (plain?.splitAmounts ?? null);
-    return { ...plain, splitAmounts: split };
-   })
+    
+   
      res.send({
       success:true,
       message:"student fee installment is fetched",
@@ -168,7 +218,7 @@ const feeGroupController = {
 
   async assignFeeToStudent(req,res){
     try{
-      let {reg_no,class_id}=req.body;
+      let {reg_no}=req.body;
       let student=await PersonalInformation.findOne({where:{reg_no:reg_no}})
       let gender=student?.gender
       let cast=student?.cast
@@ -204,29 +254,29 @@ const feeGroupController = {
           reg_no:reg_no,
           feegroupdetailpriceid: id,
           jan_total_paid:0,
-          jan_total_due:0,
+          jan_total_due:rest.jan_total || 0,
           feb_total_paid:0,
-          feb_total_due:0,
+          feb_total_due:rest.feb_total || 0,
           mar_total_paid:0,
-          mar_total_due:0,
+          mar_total_due:rest.mar_total || 0,
           apr_total_paid:0,
-          apr_total_due:0,
+          apr_total_due:rest.apr_total || 0,
           may_total_paid:0,
-          may_total_due:0,
+          may_total_due:rest.may_total || 0,
           jun_total_paid:0,
-          jun_total_due:0,
+          jun_total_due:rest.jun_total || 0,
           jul_total_paid:0,
-          jul_total_due:0,
+          jul_total_due:rest.jul_total || 0,
           aug_total_paid:0,
-          aug_total_due:0,
+          aug_total_due:rest.aug_total || 0,
           sep_total_paid:0,
-          sep_total_due:0,
+          sep_total_due:rest.sep_total || 0,
           oct_total_paid:0,
-          oct_total_due:0,
+          oct_total_due:rest.oct_total || 0,
           nov_total_paid:0,
-          nov_total_due:0,
+          nov_total_due:rest.nov_total || 0,
           dec_total_paid:0,
-          dec_total_due:0
+          dec_total_due:rest.dec_total || 0
          
         };
       });

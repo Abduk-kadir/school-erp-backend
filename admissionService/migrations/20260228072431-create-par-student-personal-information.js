@@ -24,6 +24,10 @@ module.exports = {
       class: {
         type: Sequelize.INTEGER
       },
+      feegroupid:{
+        type: Sequelize.INTEGER
+
+      },
       division: {
         type: Sequelize.INTEGER
       },

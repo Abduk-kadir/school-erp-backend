@@ -43,6 +43,16 @@ const studentFeeGroupDetailpriceSplitController = {
       });
     }
 
+    const feeForParam = req.params.fee_for ?? req.params.feeFor;
+    const fee_for = Number(feeForParam);
+
+    if (!Number.isFinite(fee_for)) {
+      return res.status(400).json({
+        success: false,
+        message: 'fee_for is required in route params (numeric)',
+      });
+    }
+
     const months = [
       'jan',
       'feb',
@@ -75,6 +85,7 @@ const studentFeeGroupDetailpriceSplitController = {
           p.reg_no,
           p.feegroupdetailpriceid,
           p.feeheadid,
+          fgd.fee_for,
           ${parentMonthTotals},
           fh.fee_head_name,
           spl.id AS split_id,
@@ -85,6 +96,8 @@ const studentFeeGroupDetailpriceSplitController = {
           spl.updated_at AS split_updated_at
         FROM studentfeegroupdetailprices AS p
         LEFT JOIN feeheads AS fh ON fh.id = p.feeheadid
+        INNER JOIN feegroupdetailprices AS fgdp ON fgdp.id = p.feegroupdetailpriceid
+        INNER JOIN feegroupdetails AS fgd ON fgd.id = fgdp.groupdetailid
         LEFT JOIN (
           SELECT spl2.*
           FROM studentfeegroupdetailpricesplits AS spl2
@@ -97,11 +110,12 @@ const studentFeeGroupDetailpriceSplitController = {
             AND latest.max_id = spl2.id
         ) AS spl ON spl.student_installment_id = p.id
         WHERE p.reg_no = :reg_no
+          AND fgd.fee_for = :fee_for
         ORDER BY p.id ASC
       `;
 
     const rows = await sequelize.query(sql, {
-      replacements: { reg_no },
+      replacements: { reg_no, fee_for },
       type: Sequelize.QueryTypes.SELECT,
     });
 

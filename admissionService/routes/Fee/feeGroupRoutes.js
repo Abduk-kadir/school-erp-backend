@@ -10,6 +10,8 @@ router.get(
   '/student/feestype/:regNo/:feeFor/assigned-fees',
   feeGroupController.getfeeAssignedToStudent
 );
+
+router.get('/student/feestype/:regNo/:feeFor/assigned-fees-split', feeGroupController.getfeeAssignedToStudentSplit);
 router.post('/assign-fee-to-student', feeGroupController.assignFeeToStudent);
 
 router.get('/fee-heads/:groupid', feeGroupController.getfeeheadsbygroupid);
