@@ -43,6 +43,7 @@ const studentDownloadDataRoutes = require('./routes/studentDownloadDataRoute');
 const bankDetailsRouter = require('./routes/Fee/Bank/bankDetailRoutes');
 const banksRouter = require('./routes/Fee/Bank/bankRoutes');
 const feeHeadRoutes = require('./routes/Fee/Bank/feeHeadRoutes');
+const paymentSettingRoutes = require('./routes/Fee/Bank/paymentSettingRoutes');
 const feeGroupRoutes = require('./routes/Fee/feeGroupRoutes');
 const feeCollectionRoutes = require('./routes/Fee/feeCollectionRoutes');
 const studentFeeRoutes = require('./routes/Fee/studentFeeRoutes');
@@ -83,6 +84,7 @@ app.use('/api/fees-types', feesTypeRoutes);
 
 app.use('/api/banks', banksRouter);
 app.use('/api/bank-details', bankDetailsRouter);
+app.use('/api/payment-settings', paymentSettingRoutes);
 
 
 //fee module end here

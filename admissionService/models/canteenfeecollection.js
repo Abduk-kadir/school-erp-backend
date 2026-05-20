@@ -32,6 +32,7 @@ module.exports = (sequelize, DataTypes) => {
       transaction_no: DataTypes.STRING,
       failure_message: DataTypes.STRING,
       card_name: DataTypes.STRING,
+      payment_status:DataTypes.STRING,
       payment_mode: DataTypes.STRING,
       added_by: DataTypes.STRING,
       role_id: DataTypes.INTEGER,

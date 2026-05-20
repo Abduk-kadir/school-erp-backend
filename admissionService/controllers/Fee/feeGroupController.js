@@ -77,8 +77,7 @@ const feeGroupController = {
   async getfeeAssignedToStudentSplit(req, res) {
     try{
      const regNoParam = req.params.reg_no ?? req.params.regNo;
-     let fee_for = req.params.fee_for ?? req.params.feeFor;
-     fee_for = Number(fee_for);
+     
      const reg_no = Number(regNoParam);
      if (!Number.isFinite(reg_no)) {
       return res.send({
@@ -87,12 +86,7 @@ const feeGroupController = {
         
       });
      }
-     if (!Number.isFinite(fee_for)) {
-      return res.send({
-        message:"fee_for is required",
-        success: false,
-      });
-     }
+    
 
      const isfeeassigned = await StudentFeeGroupDetailPrice.findOne({where:{reg_no:reg_no}})
      if(!isfeeassigned){
@@ -104,7 +98,7 @@ const feeGroupController = {
      }
      
      let studentfee=await sequelize.query(
-      ` select sfp.*,fh.fee_head_name,fgd.fee_for,
+      ` select sfp.*,fh.fee_head_name,fgd.fee_for,scheduletype,
         splitfee.student_installment_id,
         splitfee.jan_total AS split_jan_total,
         splitfee.jan_split1,
@@ -163,8 +157,8 @@ const feeGroupController = {
              from studentfeegroupdetailpricesplits as s2
              where s2.student_installment_id = sfp.id
            )
-         where reg_no = :reg_no and fgd.fee_for = :fee_for`,
-      { replacements: { reg_no,fee_for }, type: sequelize.QueryTypes.SELECT }
+         where reg_no = :reg_no`,
+      { replacements: { reg_no}, type: sequelize.QueryTypes.SELECT }
     );
     
    

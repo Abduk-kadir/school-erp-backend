@@ -35,6 +35,10 @@ module.exports = {
       cast:{
         type:Sequelize.INTEGER
       },
+      groupid:{
+        type:Sequelize.INTEGER,
+
+      },
       contact_number: {
         type: Sequelize.STRING
       },

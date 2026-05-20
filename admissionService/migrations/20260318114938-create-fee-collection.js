@@ -68,6 +68,9 @@ module.exports = {
       payment_type: {
         type: Sequelize.STRING
       },
+      payment_status: {
+        type: Sequelize.STRING
+      },
       dd_number: {
         type: Sequelize.STRING
       },

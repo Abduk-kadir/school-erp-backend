@@ -38,6 +38,9 @@ module.exports = {
         payment_mode: {
           type: Sequelize.STRING,
         },
+        payment_status: {
+          type: Sequelize.STRING,
+        },
         added_by: {
           type: Sequelize.STRING,
         },
