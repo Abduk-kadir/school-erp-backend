@@ -4,7 +4,7 @@
  *
  * Run from admissionService: node seedPersonalInformation.js
  */
-const { PersonalInformation, sequelize } = require('./models');
+const { PersonalInformation,par_student_personal_information, sequelize } = require('./models');
 
 const REG_START = 1;
 const REG_END = 9090;
@@ -22,7 +22,7 @@ function buildRow(i) {
     last_name: `L${i}`,
     father_name: `F${i}`,
     class: classForIndex(i),
-    division: 'A',
+    division: 1,
     contact_number: `900000${String(i).padStart(4, '0')}`.slice(0, 15),
     email: `student${i}@dummy.local`,
     password: 'dummy',
@@ -45,7 +45,7 @@ async function seed() {
     for (let i = REG_START; i <= REG_END; i += 1) {
       buffer.push(buildRow(i));
       if (buffer.length >= BATCH_SIZE) {
-        await PersonalInformation.bulkCreate(buffer);
+        await par_student_personal_information.bulkCreate(buffer);
         inserted += buffer.length;
         buffer = [];
         console.log(`Inserted ${inserted} / ${total}`);

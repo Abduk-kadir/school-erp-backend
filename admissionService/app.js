@@ -59,6 +59,11 @@ const errorRoutes=require('./routes/errorRoutes')
 const adminDashBoardRoutes = require('./routes/adminDashBoardRoutes');
 const staffRegistrationRoutes = require('./routes/staffRegistrationRoutes');
 const feesTypeRoutes = require('./routes/feesTypeRoutes');
+const inOutAttendanceRoutes = require('./routes/attendance/inOutAttendanceRoutes');
+
+
+app.use('/api/in-out-attendance',inOutAttendanceRoutes)
+
 
 app.use('/api/error',errorRoutes)
 app.use('/api/admin-dashboard', adminDashBoardRoutes);
