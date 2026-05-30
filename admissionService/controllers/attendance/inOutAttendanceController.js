@@ -29,6 +29,7 @@ function mapInOutAttendanceRow(row) {
 
 const inOutAttendanceController = {
   create: asyncHandler(async (req, res) => {
+    console.log('hitting bulk create*********************************************************************')
     const rows = getRowsFromBody(req.body);
     if (!rows || rows.length === 0) {
       return res.status(400).json({
@@ -48,16 +49,47 @@ const inOutAttendanceController = {
       throw err;
     }
 
-    const created = await InOutAttendance.bulkCreate(payload, {
-      validate: true,
-      ignoreDuplicates: true,
+    /*
+     * Chunk into batches of 500 to avoid MySQL max_allowed_packet limits
+     * on large payloads (e.g. 1285 rows from a full class day).
+     * updateOnDuplicate: existing (reg_no + attendance_date) rows get
+     * updated instead of skipped.
+     * MySQL bulkCreate never fills auto-increment id on composite PKs,
+     * so we re-fetch after all batches complete.
+     */
+  
+    const { Op } = require('sequelize');
+    const BATCH_SIZE = 500;
+
+    for (let i = 0; i < payload.length; i += BATCH_SIZE) {
+      const chunk = payload.slice(i, i + BATCH_SIZE);
+      await InOutAttendance.bulkCreate(chunk, {
+        validate: true,
+        updateOnDuplicate: [
+          'in_time',
+          'in_time_notification_flag',
+          'out_time',
+          'out_time_notification_flag',
+          'updatedAt',
+        ],
+      });
+    }
+
+    const conditions = payload.map((r) => ({
+      reg_no: r.reg_no,
+      attendance_date: r.attendance_date,
+    }));
+
+    const data = await InOutAttendance.findAll({
+      where: { [Op.or]: conditions },
+      order: [['reg_no', 'ASC'], ['attendance_date', 'ASC']],
     });
 
     return res.status(201).json({
       success: true,
       message: 'In/out attendance created',
-      count: created.length,
-      data: created,
+      count: data.length,
+      data,
     });
   }),
 

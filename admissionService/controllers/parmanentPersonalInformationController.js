@@ -59,7 +59,7 @@ const ParmanentPersonalInformation = {
       const rows = await par_student_personal_information.findAll({
         where: Object.keys(where).length ? where : {},
       });
-      res.status(200).json({ data: rows });
+      res.status(200).json({success:true,message:"data fetched successfully", data: rows });
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: 'Server error', error: error.message });

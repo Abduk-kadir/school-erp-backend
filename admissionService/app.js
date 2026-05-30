@@ -3,7 +3,8 @@ const sequelize = require('./models').sequelize; // From models/index.js
 const cors=require('cors')
 const app = express();
 const path = require('path');
-app.use(express.json());
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ limit: '100mb', extended: true }));
 app.use(cors()); 
 
 const roleRoutes = require('./routes/roleRoutes');
@@ -60,9 +61,10 @@ const adminDashBoardRoutes = require('./routes/adminDashBoardRoutes');
 const staffRegistrationRoutes = require('./routes/staffRegistrationRoutes');
 const feesTypeRoutes = require('./routes/feesTypeRoutes');
 const inOutAttendanceRoutes = require('./routes/attendance/inOutAttendanceRoutes');
+const attendanceLecturewiseRoutes = require('./routes/attendance/attendanceLecturewiseRoutes');
 
-
-app.use('/api/in-out-attendance',inOutAttendanceRoutes)
+app.use('/api/in-out-attendance', inOutAttendanceRoutes);
+app.use('/api/attendance-lecturewise', attendanceLecturewiseRoutes);
 
 
 app.use('/api/error',errorRoutes)
