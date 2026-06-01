@@ -1,0 +1,13 @@
+const express = require('express');
+const router = express.Router();
+const { uploadNotification } = require('../../middlewares/multerConfig');
+const studentnotificationController = require('../../controllers/studentnotification/studentnotificationController');
+
+router.post(
+  '/',
+  uploadNotification.single('notification'),
+  studentnotificationController.create
+);
+router.get('/', studentnotificationController.getAll);
+
+module.exports = router;

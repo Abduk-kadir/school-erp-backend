@@ -83,8 +83,7 @@ const attendanceLecturewiseController = {
   })
    ,lecturewiseReport:asyncHandler(async(req,res)=>{
     let allsubject=await sequelize.query(`select id,value from subjects;`,{type:sequelize.QueryTypes.SELECT});
-    let query=`select * from  attendance_lecturewises;
-select sts.id,st.reg_no,st.first_name,st.class,st.division,sts.subject_id,sts.semester,sub.value,att.attendance_date,att.attendance,att.staffid,staff.firstname
+    let query=`select sts.id,st.reg_no,st.first_name,st.class,st.division,sts.subject_id,sts.semester,sub.value,att.attendance_date,att.attendance,att.staffid,staff.firstname
 from  par_student_subjects as sts left join par_student_personal_informations as st  on st.reg_no=sts.student_reg_no 
 join subjects as sub on sub.id=sts.subject_id
 LEFT JOIN attendance_lecturewises as att on att.subjectid=sts.subject_id
@@ -109,7 +108,6 @@ left join staffregistrations as staff on staff.id=att.staffid
 
   })
 };
-
 
 
 module.exports = attendanceLecturewiseController;

@@ -10,6 +10,12 @@ app.use(cors());
 const roleRoutes = require('./routes/roleRoutes');
 const employeeRoutes = require('./routes/employeeRoutes');
 const classRoutes = require('./routes/classRoutes');
+const batchRoutes = require('./routes/batchRoutes');
+const timetableRoutes = require('./routes/timetable/timetableRoutes');
+const assignmentRoutes = require('./routes/assignment/assignmentRoutes');
+const notesRoutes = require('./routes/notes/notesRoutes');
+const diaryRoutes = require('./routes/diary/diaryRoutes');
+const studentnotificationRoutes = require('./routes/studentnotification/studentnotificationRoutes');
 const casteRoutes = require('./routes/casteRoutes');
 const divisionRoutes = require('./routes/divisionRoutes');
 const physicallyDisableRoutes = require('./routes/phisallyDisableRoute');
@@ -131,6 +137,26 @@ app.use(
   '/uploads/institutes/logos',
   express.static('E:/institutes/logos')
 );
+app.use(
+  '/uploads/timetable',
+  express.static('E:/timetable')
+);
+app.use(
+  '/uploads/assignment',
+  express.static('E:/assignment')
+);
+app.use(
+  '/uploads/notes',
+  express.static('E:/notes')
+);
+app.use(
+  '/uploads/diary',
+  express.static('E:/diary')
+);
+app.use(
+  '/uploads/notification',
+  express.static('E:/notification')
+);
 
 
 
@@ -145,6 +171,12 @@ app.use('/api/parmanent-personal-information', parmanentPersonalInformationRoute
 app.use('/api/physically-disable', physicallyDisableRoutes);
 app.use('/api/divisions', divisionRoutes);
 app.use('/api/castes', casteRoutes);
+app.use('/api/batches', batchRoutes);
+app.use('/api/timetables', timetableRoutes);
+app.use('/api/assignments', assignmentRoutes);
+app.use('/api/notes', notesRoutes);
+app.use('/api/diaries', diaryRoutes);
+app.use('/api/student-notifications', studentnotificationRoutes);
 app.use('/api/classes', classRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/roles', roleRoutes);
