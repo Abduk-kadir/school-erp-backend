@@ -9,7 +9,11 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   batch.init({
-    batch_name: DataTypes.STRING
+    batch_name: DataTypes.STRING,
+    starttime: DataTypes.TIME,
+    endtime: DataTypes.TIME,
+    personname: DataTypes.STRING,
+    contactperson: DataTypes.BIGINT,
   }, {
     sequelize,
     modelName: 'batch',

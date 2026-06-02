@@ -12,6 +12,22 @@ module.exports = {
       batch_name: {
         type: Sequelize.STRING
       },
+      starttime: {
+        type: Sequelize.TIME,
+        allowNull: true
+      },
+      endtime: {
+        type: Sequelize.TIME,
+        allowNull: true
+      },
+      personname: {
+        type: Sequelize.STRING,
+        allowNull: true
+      },
+      contactperson: {
+        type: Sequelize.BIGINT,
+        allowNull: true
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE

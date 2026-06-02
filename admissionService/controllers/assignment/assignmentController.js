@@ -1,11 +1,6 @@
 const asyncHandler = require('express-async-handler');
-const {
-  assignment,
-  batch,
-  class_master,
-  division_master,
-  Subject,
-} = require('../../models');
+const { QueryTypes } = require('sequelize');
+const { assignment, sequelize } = require('../../models');
 
 const assignmentController = {
   create: asyncHandler(async (req, res) => {
@@ -59,36 +54,52 @@ const assignmentController = {
   }),
 
   getAll: asyncHandler(async (req, res) => {
-    const assignments = await assignment.findAll({
-      include: [
-        {
-          model: batch,
-          as: 'batchInfo',
-          attributes: ['id', 'batch_name'],
-        },
-        {
-          model: class_master,
-          as: 'classInfo',
-          attributes: ['id', 'class_name', 'class_code'],
-        },
-        {
-          model: division_master,
-          as: 'divisionInfo',
-          attributes: ['id', 'division_name', 'division_code'],
-        },
-        {
-          model: Subject,
-          as: 'subjectInfo',
-          attributes: ['id', 'value', 'subject_code', 'abbreviation_name'],
-        },
-      ],
-      order: [['id', 'DESC']],
+    const draw = parseInt(req.query.draw) || 1;
+    const start = parseInt(req.query.start) || 0;
+    const length = parseInt(req.query.length) || 10;
+    const search = req.query['search[value]'] || req.query.search?.value || '';
+    const fromDate = req.query['filter[fromDate]'] || '';
+    const toDate = req.query['filter[toDate]'] || '';
+    const className = req.query['filter[className]'] || '';
+    const division = req.query['filter[division]'] || '';
+    const batch = req.query['filter[batch]'] || '';
+
+    const whereClause = [];
+    if (fromDate && toDate) {
+      whereClause.push(`DATE(asg.\`createdAt\`) BETWEEN '${fromDate}' AND '${toDate}'`);
+    } else if (fromDate) {
+      whereClause.push(`DATE(asg.\`createdAt\`) >= '${fromDate}'`);
+    } else if (toDate) {
+      whereClause.push(`DATE(asg.\`createdAt\`) <= '${toDate}'`);
+    }
+    if (className) {
+      whereClause.push(`cm.\`class_name\` LIKE '%${className}%'`);
+    }
+    if (division) {
+      whereClause.push(`asg.\`division\` = ${division}`);
+    }
+    if (batch) {
+      whereClause.push(`asg.\`batch\` = ${batch}`);
+    }
+    const whereSql = whereClause.length ? ` where ${whereClause.join(' and ')}` : '';
+    const query = `select asg.*, bt.batch_name, cm.class_name, dv.division_name, sb.value as subject_name from assignments
+   as asg join batches as bt on asg.batch=bt.id
+   join division_masters as dv on asg.division= dv.id
+   join class_masters as cm on asg.class = cm.id
+   join Subjects as sb on asg.subject = sb.id
+   ${whereSql}
+   LIMIT ${length} OFFSET ${start}`;
+
+    const result = await sequelize.query(query, {
+      type: QueryTypes.SELECT,
+      raw: true,
     });
 
     return res.status(200).json({
       success: true,
-      count: assignments.length,
-      data: assignments,
+      count: result.length,
+      data: result,
+      draw,
     });
   }),
 };
