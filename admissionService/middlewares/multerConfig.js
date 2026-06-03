@@ -68,11 +68,16 @@ const uploadNotes = createUploader(
   1 * 1024 * 1024
 );
 
+const NOTIFICATION_ALLOWED_TYPES = /jpeg|jpg|png|pdf/;
+
 const uploadNotification = createUploader(
   NOTIFICATION_UPLOAD_ROOT,
-  /jpeg|jpg|png|pdf/,
+  NOTIFICATION_ALLOWED_TYPES,
   1 * 1024 * 1024
 );
+
+
+
 
 const uploadDiary = createUploader(
   DIARY_UPLOAD_ROOT,
@@ -92,6 +97,7 @@ module.exports = {
   uploadTimetable,
   uploadNotes,
   uploadNotification,
+ 
   uploadDiary,
   uploadAssignment,
 };
