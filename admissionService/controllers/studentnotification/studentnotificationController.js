@@ -2,6 +2,8 @@ const asyncHandler = require('express-async-handler');
 const fs = require('fs');
 const { QueryTypes } = require('sequelize');
 const { studentnotification, sequelize } = require('../../models');
+const filterStudent = require('../../utils/filterStudent');
+const { sendBulkNotification } = require('../../services/notificationService');
 
 const DOCUMENT_FIELD_NAMES = [
   'document',
@@ -128,6 +130,24 @@ const studentnotificationController = {
         validate: true,
       });
       await transaction.commit();
+      //start sending notification
+    for (let i = 0; i < recordsToCreate.length; i++) {
+      const row = recordsToCreate[i];
+      const students = await filterStudent(row);
+      console.log('students is***********:', students);
+      await sendBulkNotification(students, 'notification is sent',
+        'notification is sent',
+        {
+          type: 'exam',
+          examId: '12345',
+          url: '/notification-diary',
+          click_action: 'FLUTTER_NOTIFICATION_CLICK',
+        }
+      );
+    }
+    //end sending notification
+
+
       return res.status(201).json({
         success: true,
         message: 'notifications are created',

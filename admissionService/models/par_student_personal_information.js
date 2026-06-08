@@ -31,6 +31,7 @@ module.exports = (sequelize, DataTypes) => {
   }
   par_student_personal_information.init({
     reg_no: DataTypes.BIGINT,
+    email:DataTypes.STRING,
     first_name: DataTypes.STRING,
     last_name: DataTypes.STRING,
     father_name: DataTypes.STRING,

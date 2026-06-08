@@ -69,6 +69,26 @@ const feesTypeRoutes = require('./routes/feesTypeRoutes');
 const inOutAttendanceRoutes = require('./routes/attendance/inOutAttendanceRoutes');
 const attendanceLecturewiseRoutes = require('./routes/attendance/attendanceLecturewiseRoutes');
 
+// In your app.js or server.js
+                 // Ensure Redis connects first
+const worker = require('./workers/notificationWorker.js');
+
+// Optional: Add more event listeners
+worker.on('completed', (job) => {
+  console.log(`✅ Job ${job.id} completed successfully`);
+});
+
+worker.on('failed', (job, err) => {
+  console.error(`❌ Job ${job.id} failed:`, err.message);
+});
+
+worker.on('error', (err) => {
+  console.error('Worker Error:', err);
+});
+
+console.log('🚀 Notification Worker Started Successfully');
+
+
 app.use('/api/in-out-attendance', inOutAttendanceRoutes);
 app.use('/api/attendance-lecturewise', attendanceLecturewiseRoutes);
 

@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 const { Op } = require('sequelize');
-const { StaffRegistration } = require('../../models');
+const { StaffRegistration,staffFcmtoken } = require('../../models');
 const generateToken = require('../../utils/generateToken');
 
 function hashPassword(plain) {
@@ -97,38 +97,39 @@ const registration = async (req, res) => {
   }
 };
 
-/**
- * Login with email OR mobile number and password.
- * Body: { identifier, password } or { email, password } or { mobile_number, password }.
- */
 const login = async (req, res) => {
   try {
-    const { identifier, email, mobile_number, password } = req.body;
+    const { email, mobile_number, password, fcmToken} = req.body;
 
-    const id =
-      (identifier && String(identifier).trim()) ||
-      (email && String(email).trim()) ||
-      (mobile_number && String(mobile_number).trim()) ||
-      '';
-
-    if (!id || !password) {
+    if ((!email && !mobile_number) || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Provide identifier (email or mobile) and password, or email/mobile_number with password'
+        message: 'email or mobile_number and password are required'
       });
     }
 
-    const staff = await StaffRegistration.findOne({
-      where: {
-        [Op.or]: [{ email: id }, { mobile_number: id }]
-      }
-    });
+    const where = email
+      ? { email: String(email).trim() }
+      : { mobile_number: String(mobile_number).trim() };
+
+    const staff = await StaffRegistration.findOne({ where });
 
     if (!staff || !verifyPassword(password, staff.password)) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or mobile number or password'
+        message: 'Invalid credentials'
       });
+    }
+
+    if (fcmToken) {
+      const existing = await staffFcmtoken.findOne({
+        where: { staffid: staff.id },
+      });
+      if (existing) {
+        await existing.update({ token: fcmToken });
+      } else {
+        await staffFcmtoken.create({ staffid: staff.id, token: fcmToken });
+      }
     }
 
     const token = generateToken({

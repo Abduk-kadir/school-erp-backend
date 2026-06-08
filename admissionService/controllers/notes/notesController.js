@@ -1,6 +1,8 @@
 const asyncHandler = require('express-async-handler');
 const { QueryTypes } = require('sequelize');
 const { notes, sequelize } = require('../../models');
+const filterStudent = require('../../utils/filterStudent');
+const { sendBulkNotification } = require('../../services/notificationService');
 
 const notesController = {
   create: asyncHandler(async (req, res) => {
@@ -37,6 +39,21 @@ const notesController = {
       url,
       notes_url,
     });
+
+    
+      const row = {class:classId,division,subject};
+      const students = await filterStudent(row);
+      console.log('students is***********:', students);
+      await sendBulkNotification(students, 'Diaryyyy',
+        'notes  are sent',
+        {
+          type: 'notes',
+          examId: '12345',
+          url: '/notification-diary',
+          click_action: 'FLUTTER_NOTIFICATION_CLICK',
+        }
+      );
+    
 
     return res.status(201).json({
       success: true,

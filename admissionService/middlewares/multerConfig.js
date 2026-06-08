@@ -97,7 +97,6 @@ module.exports = {
   uploadTimetable,
   uploadNotes,
   uploadNotification,
- 
   uploadDiary,
   uploadAssignment,
 };

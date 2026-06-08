@@ -134,9 +134,9 @@ const getPersonalInformationbyRegNO = async (req, res) => {
 // Get a single academic year by ID
 const login = async (req, res) => {
   try {
-    const {email,reg_no} = req.body;
-    const data = await PersonalInformation.findOne({where:{[Op.and]:[{ email: email },{ reg_no: reg_no }]},raw: true});
-    if (!data) return res.status(404).json({ message: "personal detail not found" });
+    const {email,reg_no,password,} = req.body;
+    const data = await PersonalInformation.findOne({where:{[Op.and]:[{ email: email },{ reg_no: reg_no },{password:password}]},raw: true});
+    if (!data) return res.status(404).json({ message: "email or passwor is not correct" });
     console.log('data is********',data)
     let token=generateToken({reg_no:data?.id})
     res.status(200).json({ success:true,token:token,reg_no: data.reg_no});

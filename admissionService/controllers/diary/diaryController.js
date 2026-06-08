@@ -1,8 +1,9 @@
 const asyncHandler = require('express-async-handler');
 const fs = require('fs');
 const { QueryTypes } = require('sequelize');
-const { diary, sequelize } = require('../../models');
-
+const { diary, sequelize,studentFcmtoken} = require('../../models');
+const {sendBulkNotification} = require('../../services/notificationService');
+const filterStudent = require('../../utils/filterStudent');
 const DOCUMENT_FIELD_NAMES = [
   'diary',
   'document',
@@ -130,22 +131,41 @@ const diaryController = {
     }
 
     const transaction = await sequelize.transaction();
+    let records;
     try {
-      const records = await diary.bulkCreate(recordsToCreate, {
+      records = await diary.bulkCreate(recordsToCreate, {
         transaction,
         validate: true,
       });
       await transaction.commit();
-      return res.status(201).json({
-        success: true,
-        message: 'Diaries are created',
-        count: records.length,
-        data: records,
-      });
     } catch (err) {
       await transaction.rollback();
       throw err;
     }
+
+    //start sending notification
+    for (let i = 0; i < recordsToCreate.length; i++) {
+      const row = recordsToCreate[i];
+      const students = await filterStudent(row);
+      console.log('students is***********:', students);
+      await sendBulkNotification(students, 'Diaryyyy',
+        'Today hhhh diary is sent',
+        {
+          type: 'exam',
+          examId: '12345',
+          url: '/notification-diary',
+          click_action: 'FLUTTER_NOTIFICATION_CLICK',
+        }
+      );
+    }
+    //end sending notification
+
+    return res.status(201).json({
+      success: true,
+      message: 'Diaries are created',
+      count: records.length,
+      data: records,
+    });
   }),
 
   getAll: asyncHandler(async (req, res) => {
