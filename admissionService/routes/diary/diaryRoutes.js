@@ -4,6 +4,7 @@ const { uploadDiary } = require('../../middlewares/multerConfig');
 const diaryController = require('../../controllers/diary/diaryController');
 
 router.post('/', uploadDiary.any(), diaryController.create);
+router.get('/student/:reg_no', diaryController.getDiaryStudent);
 router.get('/', diaryController.getAll);
 
 module.exports = router;

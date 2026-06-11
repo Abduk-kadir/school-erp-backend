@@ -1,7 +1,7 @@
 const asyncHandler = require('express-async-handler');
 const fs = require('fs');
 const { QueryTypes } = require('sequelize');
-const { diary, sequelize,studentFcmtoken} = require('../../models');
+const { diary, sequelize,studentFcmtoken,par_student_personal_information,student_subject} = require('../../models');
 const {sendBulkNotification} = require('../../services/notificationService');
 const filterStudent = require('../../utils/filterStudent');
 const DOCUMENT_FIELD_NAMES = [
@@ -220,6 +220,29 @@ const diaryController = {
       draw,
     });
   }),
+  getDiaryStudent:asyncHandler(async(req,res)=>{
+    let {reg_no}=req.params;
+    let student=await par_student_personal_information.findOne({where:{reg_no:reg_no},raw:true})
+    let classId=student.class;
+    let division=student.division
+    let student_subjects=await student_subject.findAll({where:{student_reg_no:reg_no},raw:true})
+    let subjects=student_subjects.map(subject=>subject.subject_id)
+    console.log('student subjects is:***********:',subjects)
+    const subjectsSql = subjects.length ? subjects.join(',') : 'null';
+    const query = `select dr.*, cm.class_name, dv.division_name, sb.value as subject_name from diaries
+   as dr join division_masters as dv on dr.division = dv.id
+   join class_masters as cm on dr.class = cm.id
+   join Subjects as sb on dr.subject = sb.id
+   where dr.class = ${classId} and dr.division = ${division} and dr.subject in (${subjectsSql})`;
+    const diaries = await sequelize.query(query, {
+      type: QueryTypes.SELECT,
+      raw: true,
+    });
+    return res.status(200).json({
+      success: true,
+      data: diaries,
+    })
+  })
 };
 
 module.exports = diaryController;

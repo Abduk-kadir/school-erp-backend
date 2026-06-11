@@ -1,6 +1,6 @@
 const asyncHandler = require('express-async-handler');
 const { QueryTypes } = require('sequelize');
-const { timetable, batch, class_master, division_master, sequelize } = require('../../models');
+const { timetable, batch, class_master, division_master, sequelize, par_student_personal_information } = require('../../models');
 const filterStudent = require('../../utils/filterStudent');
 const { sendBulkNotification } = require('../../services/notificationService');
 const timetableController = {
@@ -103,6 +103,25 @@ const timetableController = {
       count: result.length,
       data: result,
       draw,
+    });
+  }),
+
+  getTimetableStudent: asyncHandler(async (req, res) => {
+    let { reg_no } = req.params;
+    let student = await par_student_personal_information.findOne({ where: { reg_no: reg_no }, raw: true });
+    let classId = student.class;
+    let division = student.division;
+    const query = `select tm.*, cm.class_name, dv.division_name from timetables
+   as tm join division_masters as dv on tm.division = dv.id
+   join class_masters as cm on tm.class = cm.id
+   where tm.class = ${classId} and tm.division = ${division}`;
+    const timetables = await sequelize.query(query, {
+      type: QueryTypes.SELECT,
+      raw: true,
+    });
+    return res.status(200).json({
+      success: true,
+      data: timetables,
     });
   }),
 };

@@ -1,7 +1,7 @@
 const asyncHandler = require('express-async-handler');
 const fs = require('fs');
 const { QueryTypes } = require('sequelize');
-const { studentnotification, sequelize } = require('../../models');
+const { studentnotification, sequelize, par_student_personal_information } = require('../../models');
 const filterStudent = require('../../utils/filterStudent');
 const { sendBulkNotification } = require('../../services/notificationService');
 
@@ -209,6 +209,25 @@ const studentnotificationController = {
       count: result.length,
       data: result,
       draw,
+    });
+  }),
+
+  getNotificationStudent: asyncHandler(async (req, res) => {
+    let { reg_no } = req.params;
+    let student = await par_student_personal_information.findOne({ where: { reg_no: reg_no }, raw: true });
+    let classId = student.class;
+    let division = student.division;
+    const query = `select sn.*, cm.class_name, dv.division_name from student_notifications
+   as sn join division_masters as dv on sn.division = dv.id
+   join class_masters as cm on sn.class = cm.id
+   where sn.class = ${classId} and sn.division = ${division}`;
+    const notifications = await sequelize.query(query, {
+      type: QueryTypes.SELECT,
+      raw: true,
+    });
+    return res.status(200).json({
+      success: true,
+      data: notifications,
     });
   }),
 };

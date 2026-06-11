@@ -4,6 +4,7 @@ const { uploadAssignment } = require('../../middlewares/multerConfig');
 const assignmentController = require('../../controllers/assignment/assignmentController');
 
 router.post('/', uploadAssignment.single('assignment'), assignmentController.create);
+router.get('/student/:reg_no', assignmentController.getAssignmentStudent);
 router.get('/', assignmentController.getAll);
 
 module.exports = router;

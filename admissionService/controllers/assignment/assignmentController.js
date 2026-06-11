@@ -1,6 +1,6 @@
 const asyncHandler = require('express-async-handler');
 const { QueryTypes } = require('sequelize');
-const { assignment, sequelize } = require('../../models');
+const { assignment, sequelize, par_student_personal_information, student_subject } = require('../../models');
 const filterStudent = require('../../utils/filterStudent');
 const { sendBulkNotification } = require('../../services/notificationService');
 
@@ -113,6 +113,30 @@ const assignmentController = {
       count: result.length,
       data: result,
       draw,
+    });
+  }),
+
+  getAssignmentStudent: asyncHandler(async (req, res) => {
+    let { reg_no } = req.params;
+    let student = await par_student_personal_information.findOne({ where: { reg_no: reg_no }, raw: true });
+    let classId = student.class;
+    let division = student.division;
+    let student_subjects = await student_subject.findAll({ where: { student_reg_no: reg_no }, raw: true });
+    let subjects = student_subjects.map((subject) => subject.subject_id);
+    console.log('student subjects is:***********:',subjects)
+    const subjectsSql = subjects.length ? subjects.join(',') : 'null';
+    const query = `select asg.*, cm.class_name, dv.division_name, sb.value as subject_name from assignments
+   as asg join division_masters as dv on asg.division = dv.id
+   join class_masters as cm on asg.class = cm.id
+   join Subjects as sb on asg.subject = sb.id
+   where asg.class = ${classId} and asg.division = ${division} and asg.subject in (${subjectsSql})`;
+    const assignments = await sequelize.query(query, {
+      type: QueryTypes.SELECT,
+      raw: true,
+    });
+    return res.status(200).json({
+      success: true,
+      data: assignments,
     });
   }),
 };

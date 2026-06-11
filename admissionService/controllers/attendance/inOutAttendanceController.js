@@ -93,6 +93,76 @@ const inOutAttendanceController = {
     });
   }),
 
+  getattendancebyRegAndDate: asyncHandler(async (req, res) => {
+    const reg_no =Number(req.params.reg_no);
+    const date = req.params.date;
+
+    if (!Number.isFinite(reg_no) || !date) {
+      const err = new Error('reg_no and date are required');
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const data = await InOutAttendance.findOne({
+      where: { reg_no, attendance_date: date },
+    });
+
+    return res.status(200).json({
+      success: true,
+      data,
+    });
+  }),
+  
+  getattendancebyRegAndMonth: asyncHandler(async (req, res) => {
+    const { Op } = require('sequelize');
+    const reg_no = Number(req.user?.reg_no) || Number(req.params.reg_no);
+    const month = req.params.month ?? req.query.month;
+
+    if (!Number.isFinite(reg_no) || !month) {
+      const err = new Error('reg_no and month are required');
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const monthMatch = /^(\d{4})-(\d{2})$/.exec(String(month));
+    if (!monthMatch) {
+      const err = new Error('month must be YYYY-MM');
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const year = Number(monthMatch[1]);
+    const monthNum = Number(monthMatch[2]);
+    if (monthNum < 1 || monthNum > 12) {
+      const err = new Error('month must be YYYY-MM');
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const mm = String(monthNum).padStart(2, '0');
+    const from = `${year}-${mm}-01`;
+    const lastDay = new Date(year, monthNum, 0).getDate();
+    const to = `${year}-${mm}-${String(lastDay).padStart(2, '0')}`;
+    const data = await InOutAttendance.findAll({
+      where: {
+        reg_no,
+        attendance_date: { [Op.between]: [from, to] },
+      },
+      order: [['attendance_date', 'ASC']],
+    });
+
+    return res.status(200).json({
+      success: true,
+      reg_no,
+      month: `${year}-${mm}`,
+      from,
+      to,
+      count: data.length,
+      data,
+    });
+  }),
+  
+
   /** report-detail: reg_no, name, class, div, roll_no, date (time range) */
   getDetailReport: asyncHandler(async (req, res) => {
     const draw = parseInt(req.query.draw) || 1;
