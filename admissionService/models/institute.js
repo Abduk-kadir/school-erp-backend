@@ -16,7 +16,10 @@ module.exports = (sequelize, DataTypes) => {
   institute.init({
     name: DataTypes.STRING,
     code: DataTypes.INTEGER,
-    logo: DataTypes.STRING
+    logo: DataTypes.STRING,
+    support_number: DataTypes.BIGINT,
+    support_statement:DataTypes.STRING
+
   }, {
     sequelize,
     modelName: 'institute',

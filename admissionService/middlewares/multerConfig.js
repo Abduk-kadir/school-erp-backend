@@ -43,6 +43,7 @@ const NOTES_UPLOAD_ROOT = 'E:\\notes';
 const NOTIFICATION_UPLOAD_ROOT = 'E:\\notification';
 const DIARY_UPLOAD_ROOT = 'E:\\diary';
 const ASSIGNMENT_UPLOAD_ROOT = 'E:\\assignment';
+const ABOUT_INSTITUTE_IMAGE_UPLOAD_ROOT = 'E:\\aboutInstituteImage';
 
 const uploadInstituteLogo = createUploader(
   LOGO_UPLOAD_ROOT,
@@ -76,9 +77,6 @@ const uploadNotification = createUploader(
   1 * 1024 * 1024
 );
 
-
-
-
 const uploadDiary = createUploader(
   DIARY_UPLOAD_ROOT,
   /jpeg|jpg|png|pdf/,
@@ -91,6 +89,12 @@ const uploadAssignment = createUploader(
   1 * 1024 * 1024
 );
 
+const uploadAboutInstituteImage=createUploader(
+  ABOUT_INSTITUTE_IMAGE_UPLOAD_ROOT,
+  /jpeg|jpg|png/,
+  1 * 1024 * 1024
+)
+
 module.exports = {
   uploadInstituteLogo,
   uploadClasswiseInstituteLogo,
@@ -99,4 +103,5 @@ module.exports = {
   uploadNotification,
   uploadDiary,
   uploadAssignment,
+  uploadAboutInstituteImage,
 };

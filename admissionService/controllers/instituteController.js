@@ -97,10 +97,7 @@ async update(req, res) {
 },
  async getAll(req, res) {
     try {
-      const institutes = await institute.findAll({
-        attributes: ['id', 'name', 'code', 'logo', 'createdAt'],
-        order: [['name', 'ASC']],
-      });
+      const institutes = await institute.findAll();
 
       // Optional: make logo URLs absolute
       const baseUrl = process.env.BASE_URL || 'http://localhost:5000';

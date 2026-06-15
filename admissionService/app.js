@@ -68,9 +68,13 @@ const staffRegistrationRoutes = require('./routes/staffRegistrationRoutes');
 const feesTypeRoutes = require('./routes/feesTypeRoutes');
 const inOutAttendanceRoutes = require('./routes/attendance/inOutAttendanceRoutes');
 const attendanceLecturewiseRoutes = require('./routes/attendance/attendanceLecturewiseRoutes');
+const holidarmasterRoutes = require('./routes/holidarmaster/holidarmasterRoutes');
+const eventmasterRoutes = require('./routes/eventmaster/eventmasterRoutes');
+const aboutInstituteRoute = require('./routes/aboutinstitute/aboutInstituteRoute');
 
 // In your app.js or server.js
                  // Ensure Redis connects first
+                 /*
 const worker = require('./workers/notificationWorker.js');
 
 // Optional: Add more event listeners
@@ -87,10 +91,13 @@ worker.on('error', (err) => {
 });
 
 console.log('🚀 Notification Worker Started Successfully');
-
+*/
 
 app.use('/api/in-out-attendance', inOutAttendanceRoutes);
 app.use('/api/attendance-lecturewise', attendanceLecturewiseRoutes);
+app.use('/api/holiday-masters', holidarmasterRoutes);
+app.use('/api/event-masters', eventmasterRoutes);
+app.use('/api/about-institute', aboutInstituteRoute);
 
 
 app.use('/api/error',errorRoutes)
@@ -176,6 +183,10 @@ app.use(
 app.use(
   '/uploads/notification',
   express.static('E:/notification')
+);
+app.use(
+  '/uploads/aboutInstituteImage',
+  express.static('E:/aboutInstituteImage')
 );
 
 

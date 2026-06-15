@@ -46,10 +46,10 @@ module.exports = {
         type: Sequelize.DATE
       }
     });
-     await queryInterface.addConstraint('ProgramSubjects', {
+    await queryInterface.addConstraint('ProgramSubjects', {
       fields: ['classId'],
       type: 'foreign key',
-      name: 'fk_class_masters_class',
+      name: 'fk_programsubjects_class',
       references: {
         table: 'class_masters',
         field: 'id',
@@ -60,41 +60,36 @@ module.exports = {
     await queryInterface.addConstraint('ProgramSubjects', {
       fields: ['programId'],
       type: 'foreign key',
-      name: 'fk_programs_program',
+      name: 'fk_programsubjects_program',
       references: {
-        table: 'programs',
+        table: 'Programs',
         field: 'id',
       },
       onDelete: 'CASCADE',
       onUpdate: 'CASCADE',
     });
-     await queryInterface.addConstraint('ProgramSubjects', {
+    await queryInterface.addConstraint('ProgramSubjects', {
       fields: ['subjectId'],
       type: 'foreign key',
-      name: 'fk_subjects_subject',
+      name: 'fk_programsubjects_subject',
       references: {
-        table: 'subjects',
+        table: 'Subjects',
         field: 'id',
       },
       onDelete: 'CASCADE',
       onUpdate: 'CASCADE',
     });
-
-     await queryInterface.addConstraint('ProgramSubjects', {
+    await queryInterface.addConstraint('ProgramSubjects', {
       fields: ['basketId'],
       type: 'foreign key',
-      name: 'fk_baskets_basket',
+      name: 'fk_programsubjects_basket',
       references: {
-        table: 'electivebaskets',
+        table: 'ElectiveBaskets',
         field: 'id',
       },
       onDelete: 'CASCADE',
       onUpdate: 'CASCADE',
     });
-
-
-
-
   },
   async down(queryInterface, Sequelize) {
     await queryInterface.dropTable('ProgramSubjects');

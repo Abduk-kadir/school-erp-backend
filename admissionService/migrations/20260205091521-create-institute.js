@@ -18,6 +18,12 @@ module.exports = {
       logo: {
         type: Sequelize.STRING
       },
+      support_number: {
+        type: Sequelize.BIGINT
+      },
+      support_statement: {
+        type: Sequelize.STRING
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE
