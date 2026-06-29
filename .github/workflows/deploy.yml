@@ -6,20 +6,22 @@ on:
       - main
 
 jobs:
-  test:
+  deploy:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: deploy by ssh
+      - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
         with:
-         host: ${{ secrets.HOST }}
-         username: ${{ secrets.USER }}
-         key: ${{ secrets.PRIVATE_KEY }}
-         script: |
-            cd /var/www/myapp
-            git pull
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER }}
+          key: ${{ secrets.PRIVATE_KEY }}
+          port: 22
+          script: |
+            cd /home/ddserp/public_html/testt.dds-erp.com/schoolbackend
+            git pull origin main
             npm install
             npm start
