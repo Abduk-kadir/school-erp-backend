@@ -1,11 +1,19 @@
 const express = require('express');
 const sequelize = require('./models').sequelize; // From models/index.js
+
 const cors=require('cors')
 const app = express();
 const path = require('path');
+
+//const dbSwitcher = require('./middlewares/dbSwitcher');
+//const dbRoutes = require('./routes/dbRoutes');
+
 app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ limit: '100mb', extended: true }));
 app.use(cors()); 
+
+//app.use(dbSwitcher);
+
 
 const roleRoutes = require('./routes/roleRoutes');
 const employeeRoutes = require('./routes/employeeRoutes');
@@ -74,7 +82,7 @@ const aboutInstituteRoute = require('./routes/aboutinstitute/aboutInstituteRoute
 
 // In your app.js or server.js
                  // Ensure Redis connects first
-                 /*
+                 
 const worker = require('./workers/notificationWorker.js');
 
 // Optional: Add more event listeners
@@ -91,8 +99,8 @@ worker.on('error', (err) => {
 });
 
 console.log('🚀 Notification Worker Started Successfully');
-*/
 
+//app.use('/api/db', dbRoutes);
 app.use('/api/in-out-attendance', inOutAttendanceRoutes);
 app.use('/api/attendance-lecturewise', attendanceLecturewiseRoutes);
 app.use('/api/holiday-masters', holidarmasterRoutes);
@@ -224,6 +232,7 @@ app.use(globalError);
 
 
 // Sync DB and start (for dev; use migrations in prod)
+
 sequelize.sync().then(() => {
   console.log('DB connected');
 }).catch(err => console.error('DB error:', err));

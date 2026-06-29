@@ -1,0 +1,25 @@
+name: deploy my id card server
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: deploy by ssh
+        uses: appleboy/ssh-action@v1
+        with:
+         host: ${{ secrets.HOST }}
+         username: ${{ secrets.USER }}
+         key: ${{ secrets.PRIVATE_KEY }}
+         script: |
+            cd /var/www/myapp
+            git pull
+            npm install
+            npm start
