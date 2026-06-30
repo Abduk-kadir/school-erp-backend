@@ -60,7 +60,7 @@ module.exports = {
     await queryInterface.addConstraint('DocumentRequirements', {
       fields: ['document_type_id'],
       type: 'foreign key',
-      name: 'fk_documentrequirements_document_type_id',
+      name: 'fk_documentrequirements_documenttype_v5',
       references: {
         table: 'document_types',
         field: 'id',
@@ -72,7 +72,8 @@ module.exports = {
     await queryInterface.addConstraint('DocumentRequirements', {
       fields: ['class_id'],
       type: 'foreign key',
-      name: 'fk_documentrequirements_class_id',
+      name: 'fk_documentrequirements_class_v5',
+      
       references: {
         table: 'class_masters',
         field: 'id',
@@ -84,7 +85,7 @@ module.exports = {
     await queryInterface.addConstraint('DocumentRequirements', {
       fields: ['category_id'],
       type: 'foreign key',
-      name: 'fk_documentrequirements_category_id',
+      name: 'fk_documentrequirements_category_v5',
       references: {
         table: 'categories',
         field: 'id',
@@ -93,20 +94,20 @@ module.exports = {
       onUpdate: 'CASCADE',
     });
 
-    // Unique constraint ensures one rule per document/class/category combination.
+    // Unique constraint (you already had this – good!)
     await queryInterface.addConstraint('DocumentRequirements', {
       fields: ['document_type_id', 'class_id', 'category_id'],
       type: 'unique',
-      name: 'unique_documentrequirements_document_type_class_category',
+      name: 'unique_document_rule5',
     });
   },
 
   async down(queryInterface, Sequelize) {
     // Drop in reverse order
-    await queryInterface.removeConstraint('DocumentRequirements', 'fk_documentrequirements_document_type_id');
-    await queryInterface.removeConstraint('DocumentRequirements', 'fk_documentrequirements_class_id');
-    await queryInterface.removeConstraint('DocumentRequirements', 'fk_documentrequirements_category_id');
-    await queryInterface.removeConstraint('DocumentRequirements', 'unique_documentrequirements_document_type_class_category');
+    await queryInterface.removeConstraint('DocumentRequirements', 'fk_documentrequirements_documenttype');
+    await queryInterface.removeConstraint('DocumentRequirements', 'fk_documentrequirements_class');
+    await queryInterface.removeConstraint('DocumentRequirements', 'fk_documentrequirements_category');
+    await queryInterface.removeConstraint('DocumentRequirements', 'unique_document_rule');
     await queryInterface.dropTable('DocumentRequirements');
   }
 };
