@@ -2,7 +2,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('DocumentRequirements', {
+    await queryInterface.createTable('document_requirements', {
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -57,7 +57,7 @@ module.exports = {
     });
 
     // ── Add real foreign key constraints ────────────────────────────────
-    await queryInterface.addConstraint('DocumentRequirements', {
+    await queryInterface.addConstraint('document_requirements', {
       fields: ['document_type_id'],
       type: 'foreign key',
       name: 'fk_documentrequirements_documenttype_v5',
@@ -69,7 +69,7 @@ module.exports = {
       onUpdate: 'CASCADE',
     });
 
-    await queryInterface.addConstraint('DocumentRequirements', {
+    await queryInterface.addConstraint('document_requirements', {
       fields: ['class_id'],
       type: 'foreign key',
       name: 'fk_documentrequirements_class_v5',
@@ -82,12 +82,12 @@ module.exports = {
       onUpdate: 'CASCADE',
     });
 
-    await queryInterface.addConstraint('DocumentRequirements', {
+    await queryInterface.addConstraint('document_requirements', {
       fields: ['category_id'],
       type: 'foreign key',
       name: 'fk_documentrequirements_category_v5',
       references: {
-        table: 'categories',
+        table: 'Categories',
         field: 'id',
       },
       onDelete: 'SET NULL',
@@ -95,7 +95,7 @@ module.exports = {
     });
 
     // Unique constraint (you already had this – good!)
-    await queryInterface.addConstraint('DocumentRequirements', {
+    await queryInterface.addConstraint('document_requirements', {
       fields: ['document_type_id', 'class_id', 'category_id'],
       type: 'unique',
       name: 'unique_document_rule5',
@@ -104,10 +104,10 @@ module.exports = {
 
   async down(queryInterface, Sequelize) {
     // Drop in reverse order
-    await queryInterface.removeConstraint('DocumentRequirements', 'fk_documentrequirements_documenttype');
-    await queryInterface.removeConstraint('DocumentRequirements', 'fk_documentrequirements_class');
-    await queryInterface.removeConstraint('DocumentRequirements', 'fk_documentrequirements_category');
-    await queryInterface.removeConstraint('DocumentRequirements', 'unique_document_rule');
-    await queryInterface.dropTable('DocumentRequirements');
+    await queryInterface.removeConstraint('document_requirements', 'fk_documentrequirements_documenttype_v5');
+    await queryInterface.removeConstraint('document_requirements', 'fk_documentrequirements_class_v5');
+    await queryInterface.removeConstraint('document_requirements', 'fk_documentrequirements_category_v5');
+    await queryInterface.removeConstraint('document_requirements', 'unique_document_rule5');
+    await queryInterface.dropTable('document_requirements');
   }
 };
