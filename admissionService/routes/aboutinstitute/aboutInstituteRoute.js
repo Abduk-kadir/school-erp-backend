@@ -5,6 +5,7 @@ const aboutInstituteController = require('../../controllers/aboutinstitute/about
 
 router.post('/', uploadAboutInstituteImage.array('images', 10), aboutInstituteController.create);
 router.get('/', aboutInstituteController.getAll);
+router.delete('/:id', aboutInstituteController.delete);
 
 
 

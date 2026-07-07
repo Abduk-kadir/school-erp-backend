@@ -109,6 +109,24 @@ const eventmasterController = {
       data,
     });
   }),
+
+  delete: asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    const record = await eventmaster.findByPk(id);
+    if (!record) {
+      const err = new Error('Event not found');
+      err.statusCode = 404;
+      throw err;
+    }
+
+    await record.destroy();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Event deleted',
+    });
+  }),
 };
 
 module.exports = eventmasterController;

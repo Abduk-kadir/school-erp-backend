@@ -1,80 +1,66 @@
+const asyncHandler = require('express-async-handler');
 const { institute } = require('../models');
 const path = require('path');
-const fs=require('fs')
+const fs = require('fs');
 
 const instituteController = {
+  create: asyncHandler(async (req, res) => {
+    const { name, code } = req.body;
 
-async create(req, res) {
-    try {
-      const { name, code } = req.body;
-
-      if (!name || !code) {
-        return res.status(400).json({ message: 'name and code are required' });
-      }
-
-      let logoPath = null;
-
-      if (req.file) {
-        // Save relative path or full URL depending on your frontend needs
-        logoPath = `/uploads/institutes/logos/${req.file.filename}`;
-        // or: logoPath = `${process.env.BASE_URL}/uploads/logos/${req.file.filename}`;
-      }
-      console.log('path is:', req.file)
-
-      const inst = await institute.create({
-        name,
-        code,
-        logo: logoPath,
-      });
-     
-      return res.status(201).json({
-        message: 'institute created successfully',
-        data: inst,
-      });
-    } catch (error) {
-      console.error(error);
-      if (error.name === 'SequelizeUniqueConstraintError') {
-        return res.status(409).json({ message: 'institute name or code already exists' });
-      }
-      return res.status(500).json({ message: 'Server error', error: error.message });
+    if (!name || !code) {
+      return res.status(400).json({ message: 'name and code are required' });
     }
-  },
-async update(req, res) {
-  try {
+
+    let logoPath = null;
+
+    if (req.file) {
+      logoPath = `/uploads/institutes/logos/${req.file.filename}`;
+    }
+    console.log('path is:', req.file);
+
+    const inst = await institute.create({
+      name,
+      code,
+      logo: logoPath,
+    });
+
+    return res.status(201).json({
+      message: 'institute created successfully',
+      data: inst,
+    });
+  }),
+
+  update: asyncHandler(async (req, res) => {
     const { id } = req.params;
     const { name, code } = req.body;
 
     const inst = await institute.findByPk(id);
     if (!inst) {
-      return res.status(404).json({ message: 'institute not found' });
+      const err = new Error('institute not found');
+      err.statusCode = 404;
+      throw err;
     }
 
-    let logoPath = inst.logo;           // default: keep old
-    let oldLogoFullPath = null;         // for deletion
+    let logoPath = inst.logo;
+    let oldLogoFullPath = null;
 
-    if (req.file) {                     // new file was uploaded
+    if (req.file) {
       logoPath = `/uploads/institutes/logos/${req.file.filename}`;
 
-      // Prepare to delete old file (only if there was one before)
       if (inst.logo) {
-        // Build full disk path — IMPORTANT: match your actual save location
-        // This example assumes files are saved in E:\institutes\logos
-        // and DB path starts with /uploads/institutes/logos/...
         oldLogoFullPath = path.join(
           'E:\\institutes\\logos',
-          path.basename(inst.logo)   // extracts just the filename
+          path.basename(inst.logo)
         );
       }
     }
 
-    // Update database
     await inst.update({
       name: name || inst.name,
       code: code || inst.code,
       logo: logoPath,
     });
 
-    // Delete old file AFTER database is updated (safer)
     if (oldLogoFullPath && fs.existsSync(oldLogoFullPath)) {
       fs.unlink(oldLogoFullPath, (err) => {
         if (err) {
@@ -85,54 +71,72 @@ async update(req, res) {
       });
     }
 
-   
-    
-
     return res.json({ message: 'institute updated', data: inst });
+  }),
 
-  } catch (error) {
-    console.error('Update error:', error);
-    return res.status(500).json({ message: 'Server error' });
-  }
-},
- async getAll(req, res) {
-    try {
-      const institutes = await institute.findAll();
+  getAll: asyncHandler(async (req, res) => {
+    const institutes = await institute.findAll();
 
-      // Optional: make logo URLs absolute
-      const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
-      const institutesWithFullLogo = institutes.map(inst => ({
-        ...inst.toJSON(),
-        logo: inst.logo ? `${baseUrl}${inst.logo}` : null,
-      }));
+    const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
+    const institutesWithFullLogo = institutes.map((inst) => ({
+      ...inst.toJSON(),
+      logo: inst.logo ? `${baseUrl}${inst.logo}` : null,
+    }));
 
-      return res.json({success:true,data:institutesWithFullLogo});
-    } catch (error) {
-      return res.status(500).json({ message: 'Server error' });
+    return res.json({ success: true, data: institutesWithFullLogo });
+  }),
+
+  getOne: asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    const inst = await institute.findByPk(id);
+    if (!inst) {
+      const err = new Error('institute not found');
+      err.statusCode = 404;
+      throw err;
     }
-  },
-   async getOne(req, res) {
-    try {
-      const { id } = req.params;
 
-      const institute = await institute.findByPk(id);
-      if (!institute) {
-        return res.status(404).json({ message: 'institute not found' });
-      }
+    const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
+    const response = {
+      ...inst.toJSON(),
+      logo: inst.logo ? `${baseUrl}${inst.logo}` : null,
+    };
 
-      const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
-      const response = {
-        ...institute.toJSON(),
-        logo: institute.logo ? `${baseUrl}${institute.logo}` : null,
-      };
+    return res.json(response);
+  }),
 
-      return res.json(response);
-    } catch (error) {
-      return res.status(500).json({ message: 'Server error' });
+  delete: asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    const inst = await institute.findByPk(id);
+    if (!inst) {
+      const err = new Error('institute not found');
+      err.statusCode = 404;
+      throw err;
     }
-  },
 
+    let logoFullPath = null;
+    if (inst.logo) {
+      logoFullPath = path.join(
+        'E:\\institutes\\logos',
+        path.basename(inst.logo)
+      );
+    }
 
+    await inst.destroy();
+
+    if (logoFullPath && fs.existsSync(logoFullPath)) {
+      fs.unlink(logoFullPath, (err) => {
+        if (err) {
+          console.error('Failed to delete logo file:', err.message);
+        } else {
+          console.log('Logo deleted successfully:', logoFullPath);
+        }
+      });
+    }
+
+    return res.json({ message: 'institute deleted successfully' });
+  }),
 };
 
 module.exports = instituteController;

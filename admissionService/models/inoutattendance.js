@@ -41,6 +41,10 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
         defaultValue: false,
       },
+      machine_id:{
+        type:DataTypes.STRING,
+        allowNull:true,
+      }
     },
     {
       sequelize,

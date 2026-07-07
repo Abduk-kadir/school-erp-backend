@@ -21,5 +21,10 @@ router.patch(
   instituteController.update
 );
 
+router.delete(
+  '/:id',
+  instituteController.delete
+);
+
 module.exports = router;
 

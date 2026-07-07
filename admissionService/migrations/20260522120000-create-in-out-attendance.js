@@ -43,6 +43,7 @@ module.exports = {
         in_time_notification_flag TINYINT NOT NULL DEFAULT 0 COMMENT '0=pending, 1=sent',
         out_time TIME NULL,
         out_time_notification_flag TINYINT NOT NULL DEFAULT 0 COMMENT '0=pending, 1=sent',
+        machine_id VARCHAR(255) NULL,
         createdAt DATETIME NOT NULL,
         updatedAt DATETIME NOT NULL,
         PRIMARY KEY (id, attendance_date),

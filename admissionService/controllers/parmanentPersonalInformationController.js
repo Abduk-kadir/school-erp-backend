@@ -1,5 +1,5 @@
 const asyncHandler = require('express-async-handler');
-const { par_student_personal_information, studentFcmtoken } = require('../models');
+const { par_student_personal_information, studentFcmtoken, sequelize } = require('../models');
 const { Op } = require('sequelize');
 const generateToken = require('../utils/generateToken');
 
@@ -146,6 +146,78 @@ const ParmanentPersonalInformation = {
     await row.destroy();
     res.status(200).json({ message: 'Deleted' });
   }),
+
+  getAllColumns: asyncHandler(async (req, res) => {
+    console.log('get all coluns is called***********************')
+    const tableName = par_student_personal_information.getTableName();
+    const columns = await sequelize.query(
+      `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = :tableName AND TABLE_SCHEMA = DATABASE()`,
+      { replacements: { tableName }, type: sequelize.QueryTypes.SELECT }
+    );
+
+    const columnNames = columns.map(col => col.COLUMN_NAME).filter(name => name !== 'id');
+
+    return res.status(200).json({
+      success: true,
+      data: columnNames
+    });
+  }),
+
+  bulkUpdatePersonalInformation: asyncHandler(async (req, res) => {
+    const transaction = await sequelize.transaction();
+    try {
+      const { records } = req.body;
+
+      if (!Array.isArray(records) || records.length === 0) {
+        return res.status(400).json({ success: false, message: 'records array is required and must not be empty' });
+      }
+
+      let updatedCount = 0;
+
+      for (const record of records) {
+        const { reg_no, ...updateData } = record;
+
+        if (!reg_no) continue;
+
+        const columns = Object.keys(updateData);
+        if (columns.length === 0) continue;
+
+        const setClause = columns.map(c => `\`${c}\` = ?`).join(', ');
+        const values = columns.map(c => updateData[c]);
+        values.push(reg_no);
+
+        const updateQuery = `
+          UPDATE \`${par_student_personal_information.getTableName()}\`
+          SET ${setClause}
+          WHERE \`reg_no\` = ?
+        `;
+
+        const [result] = await sequelize.query(updateQuery, {
+          replacements: values,
+          type: sequelize.QueryTypes.UPDATE,
+          transaction
+        });
+
+        updatedCount += result;
+      }
+
+      await transaction.commit();
+
+      return res.status(200).json({
+        success: true,
+        message: `${updatedCount} record(s) updated successfully`
+      });
+    } catch (error) {
+      await transaction.rollback();
+      console.error('Bulk update error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Server error while bulk updating records',
+        error: error.message
+      });
+    }
+  }),
+
 };
 
 module.exports = ParmanentPersonalInformation;

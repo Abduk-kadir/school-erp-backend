@@ -4,6 +4,8 @@ const ParmanentPersonalInformation = require('../controllers/parmanentPersonalIn
 
 router.post('/', ParmanentPersonalInformation.create);
 router.get('/', ParmanentPersonalInformation.getAll);
+router.get('/columns', ParmanentPersonalInformation.getAllColumns);
+router.put('/bulk-update', ParmanentPersonalInformation.bulkUpdatePersonalInformation);
 router.get('/reg/:reg_no', ParmanentPersonalInformation.getByReg);
 router.get('/email/:email',ParmanentPersonalInformation.getByEmail);
 router.post('/login',ParmanentPersonalInformation.login);

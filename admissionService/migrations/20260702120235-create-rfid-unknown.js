@@ -2,26 +2,15 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('class_masters', {
+    await queryInterface.createTable('RfidUnknowns', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      class_name: {
-        type: Sequelize.STRING
-      },
-      class_code: {
-        type: Sequelize.STRING,
-        unique: true
-      },
-      
-      status: {
-        type: Sequelize.BOOLEAN
-      },
-      admission_form_fee: {
-        type: Sequelize.INTEGER
+      data: {
+        type: Sequelize.TEXT
       },
       createdAt: {
         allowNull: false,
@@ -34,6 +23,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('class_masters');
+    await queryInterface.dropTable('RfidUnknowns');
   }
 };

@@ -110,5 +110,23 @@ const holidarmasterController = {
       data,
     });
   }),
+
+  delete: asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    const record = await holidarmaster.findByPk(id);
+    if (!record) {
+      const err = new Error('Holiday not found');
+      err.statusCode = 404;
+      throw err;
+    }
+
+    await record.destroy();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Holiday deleted',
+    });
+  }),
 };
 module.exports = holidarmasterController;

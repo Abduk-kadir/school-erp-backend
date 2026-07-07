@@ -12,6 +12,6 @@ router.get('/', banksController.getActiveBanks);
 router.get('/all', banksController.getAllBanks);
 router.post('/', banksController.createBank);
 router.patch('/:id', banksController.updateBank);
-// Optional: router.delete('/:id', ...) → usually not recommended for master data
+router.delete('/:id', banksController.deleteBank);
 
 module.exports = router;

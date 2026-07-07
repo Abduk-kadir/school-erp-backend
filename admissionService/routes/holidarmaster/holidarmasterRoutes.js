@@ -6,4 +6,5 @@ const holidarmasterController = require('../../controllers/holidarmaster/holidar
 router.post('/', holidarmasterController.create);
 router.get('/student/:reg_no', holidarmasterController.getHolidayMasterStudent);
 router.get('/', holidarmasterController.getAll);
+router.delete('/:id', holidarmasterController.delete);
 module.exports = router;

@@ -85,6 +85,27 @@ const batchController = {
     });
   }),
 
+  delete: asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    const existingBatch = await batch.findByPk(id);
+    if (!existingBatch) {
+      const err = new Error('Batch not found');
+      err.statusCode = 404;
+      throw err;
+    }
+
+    await sequelize.transaction(async (t) => {
+      await batchmaster.destroy({ where: { batchid: id }, transaction: t });
+      await existingBatch.destroy({ transaction: t });
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Batch deleted',
+    });
+  }),
+
   
 
   getBatchRelations: asyncHandler(async (req, res) => {

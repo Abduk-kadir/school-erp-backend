@@ -22,8 +22,10 @@ module.exports = (sequelize, DataTypes) => {
   }
   class_master.init({
     class_name: DataTypes.STRING,
-    class_code: DataTypes.STRING,
-    fall_in_category: DataTypes.STRING,
+    class_code: {
+      type: DataTypes.STRING,
+      unique: true,
+    },
     status: DataTypes.BOOLEAN,
     admission_form_fee: DataTypes.INTEGER
   }, {
