@@ -170,23 +170,39 @@ const inOutAttendanceController = {
     const length = parseInt(req.query.length) || 10;
     const search = req.query['search[value]'] || req.query.search?.value || '';
 
-    const attendance_date =req.query['filter[date]'] || '';
-    const className = req.query['filter[className]'] || '';
-    const division = req.query['filter[division]'] || '';
+    // Express may parse as filter[key] string keys or nested filter object
+    const filter = req.query.filter || {};
+    const attendance_date =
+      req.query['filter[date]'] || filter.date || '';
+    const classId =
+      req.query['filter[className]'] ||
+      req.query['filter[classId]'] ||
+      filter.className ||
+      filter.classId ||
+      '';
+    const divisionId =
+      req.query['filter[divisionId]'] ||
+      req.query['filter[division]'] ||
+      filter.divisionId ||
+      filter.division ||
+      '';
 
-    const whereClause = [];
-    if(className){
-      whereClause.push(`p.class LIKE '%${className}%'`);
-    }
-    if(division){
-      whereClause.push(`p.division='${division}'`)
-    }
-   if(attendance_date){
-    whereClause.push(`a.attendance_date='${attendance_date}'`)
-   }
-   
+    // p.class / p.division are INTEGER FKs — match by id, not LIKE name
+    const whereClause = ['1 = 1'];
+    const replacements = { length, start };
 
-   const whereSql = whereClause.length ? ` AND ${whereClause.join(' AND ')}` : '';
+    if (classId) {
+      whereClause.push('p.class = :classId');
+      replacements.classId = Number(classId);
+    }
+    if (divisionId) {
+      whereClause.push('p.division = :divisionId');
+      replacements.divisionId = Number(divisionId);
+    }
+    if (attendance_date) {
+      whereClause.push('a.attendance_date = :attendance_date');
+      replacements.attendance_date = attendance_date;
+    }
 
     const sql = `
       SELECT
@@ -203,20 +219,19 @@ const inOutAttendanceController = {
       LEFT JOIN division_masters dm ON dm.id = p.division
       LEFT JOIN in_out_attendances a
         ON a.reg_no = p.reg_no
-      ${whereSql}
+      WHERE ${whereClause.join(' AND ')}
       ORDER BY p.reg_no ASC
-      limit ${length} offset ${start}
+      LIMIT :length OFFSET :start
     `;
 
     const data = await sequelize.query(sql, {
-      
+      replacements,
       type: Sequelize.QueryTypes.SELECT,
       raw: true,
+     
     });
 
-   
-
-    return res.status(200).json({ success: true, count: data.length, data });
+    return res.status(200).json({ success: true, count: data.length, data ,draw});
   }),
 
   /** report-summ: class, div, total student, present count, absent count */
@@ -225,23 +240,24 @@ const inOutAttendanceController = {
     const start = parseInt(req.query.start) || 0;
     const length = parseInt(req.query.length) || 10;
     const search = req.query['search[value]'] || req.query.search?.value || '';
-    const from = req.query['filter[fromDate]'] || '2026-01-01';
-    const to = req.query['filter[toDate]'] || '2026-01-01';
+    const today = new Date().toISOString().slice(0, 10);
+    const attendance_date = req.query['filter[date]'] || today;
     const className = req.query['filter[className]'] || '';
-    const division = req.query['filter[division]'] || '';
-
+    const division = req.query['filter[divisionId]'] || '';
+    
     const studentFilters = [];
-    const replacements = { from, to, length, start };
+    const replacements = { attendance_date, length, start };
+
+    const attendanceDateSql = 'AND a.attendance_date = :attendance_date';
 
     if (className) {
-      studentFilters.push(`p.class LIKE :className`);
-      replacements.className = `%${className}%`;
+      studentFilters.push(`p.class = :className`);
+      replacements.className = Number(className);
     }
     if (division) {
       studentFilters.push(`p.division = :division`);
-      replacements.division = division;
+      replacements.division = Number(division);
     }
-    
 
     const studentWhere = studentFilters.length
       ? ` AND ${studentFilters.join(' AND ')}`
@@ -252,19 +268,14 @@ const inOutAttendanceController = {
         cm.class_name AS class,
         dm.division_name AS \`div\`,
         COUNT(DISTINCT p.reg_no) AS total_student,
-        COUNT(DISTINCT ap.reg_no) AS present_count,
-        COUNT(DISTINCT p.reg_no) - COUNT(DISTINCT ap.reg_no) AS absent_count
+        COUNT(DISTINCT CASE WHEN a.in_time IS NOT NULL AND a.in_time > '00:00:00' THEN a.reg_no END) AS present_count,
+        COUNT(DISTINCT CASE WHEN a.attendance_date IS NOT NULL AND (a.in_time IS NULL OR a.in_time <= '00:00:00') THEN a.reg_no END) AS absent_count
       FROM par_student_personal_informations p
       LEFT JOIN class_masters cm ON cm.id = p.class
       LEFT JOIN division_masters dm ON dm.id = p.division
-      LEFT JOIN (
-        SELECT reg_no
-        FROM in_out_attendances
-        WHERE attendance_date >= :from
-          AND attendance_date <= :to
-          AND in_time IS NOT NULL
-        GROUP BY reg_no
-      ) ap ON ap.reg_no = p.reg_no
+      LEFT JOIN in_out_attendances a
+        ON a.reg_no = p.reg_no
+        ${attendanceDateSql}
       WHERE 1 = 1
       ${studentWhere}
       GROUP BY p.class, p.division, cm.class_name, dm.division_name
@@ -292,8 +303,8 @@ const inOutAttendanceController = {
     const start = parseInt(req.query.start) || 0;
     const length = parseInt(req.query.length) || 10;
     const search = req.query['search[value]'] || req.query.search?.value || '';
-    const from = req.query['filter[fromDate]'] || '2026-01-01';
-    const to = req.query['filter[toDate]']||'2026-02-28';
+    const from = req.query['filter[fromDate]'] || '';
+    const to = req.query['filter[toDate]'] || '';
     const className = req.query['filter[className]'] || '';
     const division = req.query['filter[division]'] || '';
 
@@ -339,10 +350,18 @@ const inOutAttendanceController = {
       return dates;
     };
 
-    const rangeDates = allDatesBetween(from, to);
-
     const studentFilters = [];
-    const replacements = { from, to, length, start };
+    const replacements = { length, start };
+
+    if (from) replacements.from = from;
+    if (to) replacements.to = to;
+
+    const attendanceDateSql = [
+      from ? 'AND a.attendance_date >= :from' : '',
+      to ? 'AND a.attendance_date <= :to' : '',
+    ]
+      .filter(Boolean)
+      .join('\n       ');
 
     if (className) {
       studentFilters.push(`p.class LIKE :className`);
@@ -371,17 +390,16 @@ const inOutAttendanceController = {
         dm.division_name AS \`div\`,
         p.reg_no AS roll_no,
         COUNT(a.attendance_date) AS total_working_days,
-        SUM(CASE WHEN a.in_time IS NOT NULL THEN 1 ELSE 0 END) AS total_present,
+        SUM(CASE WHEN a.in_time IS NOT NULL AND a.in_time > '00:00:00' THEN 1 ELSE 0 END) AS total_present,
         SUM(
-          CASE WHEN a.attendance_date IS NOT NULL AND a.in_time IS NULL THEN 1 ELSE 0 END
+          CASE WHEN a.attendance_date IS NOT NULL AND (a.in_time IS NULL OR a.in_time <= '00:00:00') THEN 1 ELSE 0 END
         ) AS total_absent
       FROM par_student_personal_informations p
       LEFT JOIN class_masters cm ON cm.id = p.class
       LEFT JOIN division_masters dm ON dm.id = p.division
       LEFT JOIN in_out_attendances a
         ON a.reg_no = p.reg_no
-       AND a.attendance_date >= :from
-       AND a.attendance_date <= :to
+       ${attendanceDateSql}
       WHERE 1 = 1
       ${studentWhere}
       GROUP BY
@@ -403,7 +421,9 @@ const inOutAttendanceController = {
       ${studentWhere}
     `;
 
-    const filterOnly = { from, to };
+    const filterOnly = {};
+    if (from) filterOnly.from = from;
+    if (to) filterOnly.to = to;
     if (className) filterOnly.className = replacements.className;
     if (division) filterOnly.division = replacements.division;
     if (search) filterOnly.search = replacements.search;
@@ -433,9 +453,8 @@ const inOutAttendanceController = {
         INNER JOIN par_student_personal_informations p ON p.reg_no = a.reg_no
         LEFT JOIN class_masters cm ON cm.id = p.class
         LEFT JOIN division_masters dm ON dm.id = p.division
-        WHERE a.attendance_date >= :from
-          AND a.attendance_date <= :to
-          AND a.reg_no IN (:regNos)
+        WHERE a.reg_no IN (:regNos)
+        ${attendanceDateSql}
         ${studentWhere}
         ORDER BY a.reg_no ASC, a.attendance_date ASC
       `;
@@ -459,6 +478,17 @@ const inOutAttendanceController = {
           out_time: row.out_time,
         });
       }
+    }
+
+    let rangeDates;
+    if (from && to) {
+      rangeDates = allDatesBetween(from, to);
+    } else {
+      rangeDates = [
+        ...new Set(attendanceRows.map((row) => toDateKey(row.attendance_date))),
+      ]
+        .filter(Boolean)
+        .sort();
     }
 
     const recordsTotal = Number(countStudentsRow?.total ?? 0);
@@ -558,7 +588,7 @@ const inOutAttendanceController = {
         DATE_FORMAT(attendance_date, '%Y-%m') AS month_key,
         DATE_FORMAT(attendance_date, '%b %Y') AS month_label,
         COUNT(*) AS working_days,
-        SUM(CASE WHEN in_time IS NOT NULL THEN 1 ELSE 0 END) AS present_days
+        SUM(CASE WHEN in_time IS NOT NULL AND in_time > '00:00:00' THEN 1 ELSE 0 END) AS present_days
       FROM in_out_attendances
       WHERE reg_no = :reg_no
         AND attendance_date >= :from

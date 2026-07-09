@@ -35,6 +35,7 @@ function mapNotificationRow(row) {
     class: row.class ?? row.classId,
     batch: row.batch ?? row.batchId,
     division: row.division ?? row.divisionId,
+    staffid: row.staffid ?? row.staffId,
     message: row.message,
   };
 }
@@ -192,10 +193,11 @@ const studentnotificationController = {
     const whereSql = whereClause.length
       ? ` where ${whereClause.join(' and ')}`
       : '';
-    const query = `select sn.*, bt.batch_name, cm.class_name, dv.division_name from student_notifications
+    const query = `select sn.*, bt.batch_name, cm.class_name, dv.division_name, CONCAT_WS(' ', sf.surname, sf.firstname, sf.lastname) as staff_name from student_notifications
    as sn join batches as bt on sn.batch=bt.id
    join division_masters as dv on sn.division= dv.id
    join class_masters as cm on sn.class = cm.id
+   left join StaffRegistrations as sf on sn.staffid = sf.id
    ${whereSql}
    LIMIT ${length} OFFSET ${start}`;
 

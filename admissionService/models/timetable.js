@@ -16,6 +16,10 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'division',
         as: 'divisionInfo',
       });
+      timetable.belongsTo(models.StaffRegistration, {
+        foreignKey: 'staffid',
+        as: 'staffInfo',
+      });
     }
   }
 
@@ -24,6 +28,7 @@ module.exports = (sequelize, DataTypes) => {
       batch: DataTypes.INTEGER,
       class: DataTypes.INTEGER,
       division: DataTypes.INTEGER,
+      staffid: DataTypes.INTEGER,
       valid_from: DataTypes.DATEONLY,
       timetable_url: DataTypes.STRING,
     },

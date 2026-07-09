@@ -10,6 +10,7 @@ const assignmentController = {
     const classId = req.body.class ?? req.body.classId;
     const division = req.body.division ?? req.body.divisionId;
     const subject = req.body.subject ?? req.body.subjectId;
+    const staffid = req.body.staffid ?? req.body.staffId;
     const { submission_date, submission_time, title } = req.body;
 
     if (
@@ -42,6 +43,7 @@ const assignmentController = {
       batch: batchId,
       division,
       subject,
+      staffid,
       submission_date,
       submission_time,
       title,
@@ -95,11 +97,12 @@ const assignmentController = {
       whereClause.push(`asg.\`batch\` = ${batch}`);
     }
     const whereSql = whereClause.length ? ` where ${whereClause.join(' and ')}` : '';
-    const query = `select asg.*, bt.batch_name, cm.class_name, dv.division_name, sb.value as subject_name from assignments
+    const query = `select asg.*, bt.batch_name, cm.class_name, dv.division_name, sb.value as subject_name, CONCAT_WS(' ', sf.surname, sf.firstname, sf.lastname) as staff_name from assignments
    as asg join batches as bt on asg.batch=bt.id
    join division_masters as dv on asg.division= dv.id
    join class_masters as cm on asg.class = cm.id
    join Subjects as sb on asg.subject = sb.id
+   left join StaffRegistrations as sf on asg.staffid = sf.id
    ${whereSql}
    LIMIT ${length} OFFSET ${start}`;
 

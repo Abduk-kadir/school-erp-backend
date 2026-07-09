@@ -46,6 +46,15 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'SET NULL',
       },
+      staffid: {
+        type: Sequelize.INTEGER,
+        references: {
+          model: 'StaffRegistrations',
+          key: 'id',
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL',
+      },
       submission_date: {
         type: Sequelize.DATEONLY,
       },

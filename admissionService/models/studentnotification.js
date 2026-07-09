@@ -16,7 +16,10 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'division',
         as: 'divisionInfo',
       });
-     
+      studentnotification.belongsTo(models.StaffRegistration, {
+        foreignKey: 'staffid',
+        as: 'staffInfo',
+      });
     }
   }
 
@@ -25,6 +28,7 @@ module.exports = (sequelize, DataTypes) => {
       class: DataTypes.INTEGER,
       batch: DataTypes.INTEGER,
       division: DataTypes.INTEGER,
+      staffid: DataTypes.INTEGER,
       
       message: DataTypes.STRING,
       document_url: DataTypes.STRING,

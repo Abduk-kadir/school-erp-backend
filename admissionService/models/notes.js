@@ -20,6 +20,10 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'subject',
         as: 'subjectInfo',
       });
+      notes.belongsTo(models.StaffRegistration, {
+        foreignKey: 'staffid',
+        as: 'staffInfo',
+      });
     }
   }
 
@@ -29,6 +33,7 @@ module.exports = (sequelize, DataTypes) => {
       batch: DataTypes.INTEGER,
       division: DataTypes.INTEGER,
       subject: DataTypes.INTEGER,
+      staffid: DataTypes.INTEGER,
       topic: DataTypes.STRING,
       notes_url: DataTypes.STRING,
       chapter: DataTypes.STRING,

@@ -1,5 +1,9 @@
 const asyncHandler = require('express-async-handler');
-const { batch, batchmaster, class_master, division_master, sequelize } = require('../models');
+const { batch, batchmaster, class_master, division_master, sequelize, Sequelize } = require('../models');
+
+function toNullIfEmpty(value) {
+  return value === '' || value == null ? null : value;
+}
 
 function getRowsFromBody(body) {
   if (Array.isArray(body)) return body;
@@ -25,13 +29,10 @@ const batchController = {
     if (rows && rows.length > 0) {
       const invalidRow = rows.find((r) => {
         const classid = r.classid ?? r.classId ?? r.class;
-        const divisionid = r.divisionid ?? r.divisionId ?? r.division ?? r.div ?? r.divId;
-        return !classid || !divisionid;
+        return !classid;
       });
       if (invalidRow) {
-        const err = new Error(
-          'Each batchmaster row requires classid/classId/class and divisionid/divisionId/division'
-        );
+        const err = new Error('Each batchmaster row requires classid/classId/class');
         err.statusCode = 400;
         throw err;
       }
@@ -41,10 +42,10 @@ const batchController = {
       const newBatch = await batch.create(
         {
           batch_name,
-          starttime: starttime ?? null,
-          endtime: endtime ?? null,
-          personname: personname ?? null,
-          contactperson: contactperson ?? null,
+          starttime: toNullIfEmpty(starttime),
+          endtime: toNullIfEmpty(endtime),
+          personname: toNullIfEmpty(personname),
+          contactperson: toNullIfEmpty(contactperson),
         },
         { transaction: t }
       );
@@ -56,7 +57,7 @@ const batchController = {
           return {
             batchid: newBatch.id,
             classid,
-            divisionid,
+            divisionid: divisionid ?? null,
           };
         });
 
@@ -74,8 +75,35 @@ const batchController = {
   }),
 
   getAll: asyncHandler(async (req, res) => {
-    const batches = await batch.findAll({
-      order: [['id', 'ASC']],
+    const query = `
+      SELECT
+        bt.id,
+        bt.batch_name,
+        bt.starttime,
+        bt.endtime,
+        bt.personname,
+        bt.contactperson,
+        GROUP_CONCAT(DISTINCT cl.class_name ORDER BY cl.class_name SEPARATOR ', ') AS class_names,
+        GROUP_CONCAT(DISTINCT d.division_name ORDER BY d.division_name SEPARATOR ', ') AS division_names
+      FROM batch_masters AS bm
+      JOIN class_masters AS cl
+        ON bm.classid = cl.id
+      LEFT JOIN division_masters AS d
+        ON d.id = bm.divisionid
+      JOIN batches AS bt
+        ON bt.id = bm.batchid
+      GROUP BY
+        bt.id,
+        bt.batch_name,
+        bt.starttime,
+        bt.endtime,
+        bt.personname,
+        bt.contactperson
+      ORDER BY bt.id ASC
+    `;
+
+    const batches = await sequelize.query(query, {
+      type: Sequelize.QueryTypes.SELECT,
     });
 
     return res.status(200).json({

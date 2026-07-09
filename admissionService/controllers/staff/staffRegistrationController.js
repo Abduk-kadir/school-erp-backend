@@ -142,6 +142,33 @@ const login = async (req, res) => {
       success: true,
       message: 'Login successful',
       token,
+      //data: toPublicStaff(staff)
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+const staffDetail = async (req, res) => {
+  try {
+    const staff = await StaffRegistration.findByPk(req.staff, {
+      attributes: { exclude: ['password'] }
+    });
+
+    if (!staff) {
+      return res.status(404).json({
+        success: false,
+        message: 'Staff not found'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
       data: toPublicStaff(staff)
     });
   } catch (error) {
@@ -182,4 +209,4 @@ const allStaff = async (req, res) => {
   }
 };
 
-module.exports = { registration, login, allStaff };
+module.exports = { registration, login, staffDetail, allStaff };
