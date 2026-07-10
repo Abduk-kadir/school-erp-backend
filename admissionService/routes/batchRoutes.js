@@ -8,4 +8,6 @@ router.delete('/:id', batchController.delete);
 
 router.get('/:batchId/relations', batchController.getBatchRelations);
 
+router.get('/student/:reg_no', batchController.getBachByStudentId);
+
 module.exports = router;

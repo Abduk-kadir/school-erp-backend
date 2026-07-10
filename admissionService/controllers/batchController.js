@@ -1,5 +1,5 @@
 const asyncHandler = require('express-async-handler');
-const { batch, batchmaster, class_master, division_master, sequelize, Sequelize } = require('../models');
+const { batch, batchmaster, class_master, division_master, par_student_personal_information, sequelize, Sequelize } = require('../models');
 
 function toNullIfEmpty(value) {
   return value === '' || value == null ? null : value;
@@ -134,7 +134,59 @@ const batchController = {
     });
   }),
 
-  
+  getBachByStudentId: asyncHandler(async (req, res) => {
+    const studentId = req.params.reg_no ?? req.params.id;
+
+    if (!studentId) {
+      return res.status(400).json({
+        success: false,
+        message: 'student id is required in route params',
+      });
+    }
+
+    const student = await par_student_personal_information.findOne({
+      where: { reg_no: studentId },
+      attributes: ['reg_no', 'class', 'division'],
+      raw: true,
+    });
+
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: 'Student not found',
+      });
+    }
+
+    const classid = student.class;
+    const divisionid = student.division;
+
+    const query = `
+      SELECT DISTINCT
+        bt.id,
+        bt.batch_name,
+        bt.starttime,
+        bt.endtime,
+        bt.personname,
+        bt.contactperson
+      FROM batch_masters AS bm
+      JOIN batches AS bt
+        ON bt.id = bm.batchid
+      WHERE bm.classid = :classid
+        AND bm.divisionid = :divisionid
+      ORDER BY bt.id ASC
+    `;
+
+    const batches = await sequelize.query(query, {
+      replacements: { classid, divisionid },
+      type: Sequelize.QueryTypes.SELECT,
+    });
+
+    return res.status(200).json({
+      success: true,
+      count: batches.length,
+      data: batches,
+    });
+  }),
 
   getBatchRelations: asyncHandler(async (req, res) => {
     const batchId = req.params.batchId ?? req.params.id;
@@ -176,6 +228,9 @@ const batchController = {
       class: Array.from(classMap.values()),
     });
   }),
+
+
+
 };
 
 module.exports = batchController;

@@ -114,6 +114,8 @@ const timetableController = {
     let student = await par_student_personal_information.findOne({ where: { reg_no: reg_no }, raw: true });
     let classId = student.class;
     let division = student.division;
+    console.log('classId is**********:',classId)
+    console.log('division is**********:',division)
     const query = `select tm.*, cm.class_name, dv.division_name from timetables
    as tm join division_masters as dv on tm.division = dv.id
    join class_masters as cm on tm.class = cm.id
