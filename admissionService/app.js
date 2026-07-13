@@ -80,6 +80,8 @@ const attendanceLecturewiseRoutes = require('./routes/attendance/attendanceLectu
 const holidarmasterRoutes = require('./routes/holidarmaster/holidarmasterRoutes');
 const eventmasterRoutes = require('./routes/eventmaster/eventmasterRoutes');
 const aboutInstituteRoute = require('./routes/aboutinstitute/aboutInstituteRoute');
+const designationRoutes = require('./routes/designationRoutes');
+const departmentRoutes = require('./routes/departmentRoutes');
 
 // In your app.js or server.js
                  // Ensure Redis connects first
@@ -107,6 +109,8 @@ app.use('/api/attendance-lecturewise', attendanceLecturewiseRoutes);
 app.use('/api/holiday-masters', holidarmasterRoutes);
 app.use('/api/event-masters', eventmasterRoutes);
 app.use('/api/about-institute', aboutInstituteRoute);
+app.use('/api/designations', designationRoutes);
+app.use('/api/departments', departmentRoutes);
 
 
 app.use('/api/error',errorRoutes)
@@ -196,6 +200,10 @@ app.use(
 app.use(
   '/uploads/aboutInstituteImage',
   express.static('E:/aboutInstituteImage')
+);
+app.use(
+  '/uploads/staffDocument',
+  express.static('E:/staffDocument')
 );
 
 

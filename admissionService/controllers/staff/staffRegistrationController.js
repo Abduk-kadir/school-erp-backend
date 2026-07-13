@@ -1,7 +1,26 @@
 const crypto = require('crypto');
+const path = require('path');
+const fs = require('fs');
 const { Op } = require('sequelize');
-const { StaffRegistration,staffFcmtoken } = require('../../models');
+const { StaffRegistration, staffFcmtoken, department, designation } = require('../../models');
 const generateToken = require('../../utils/generateToken');
+
+const STAFF_DOCUMENT_ROOT = 'E:\\staffDocument';
+
+function saveStaffFileWithId(file, staffId, typeMarker) {
+  if (!file) return null;
+  const originalName = file.originalname.replace(/\s+/g, '_');
+  const newName = `${staffId}-${typeMarker}-${originalName}`;
+  const oldPath = path.join(STAFF_DOCUMENT_ROOT, file.filename);
+  const newPath = path.join(STAFF_DOCUMENT_ROOT, newName);
+  try {
+    fs.renameSync(oldPath, newPath);
+  } catch (err) {
+    console.error('Failed to move staff file:', err.message);
+    return `/uploads/staffDocument/${file.filename}`;
+  }
+  return `/uploads/staffDocument/${newName}`;
+}
 
 function hashPassword(plain) {
   const salt = crypto.randomBytes(16).toString('hex');
@@ -37,8 +56,8 @@ const registration = async (req, res) => {
       gender,
       email,
       mobile_number,
-      department,
-      designation,
+      departmentid,
+      designationid,
       userType,
       address,
       date_of_join,
@@ -73,14 +92,24 @@ const registration = async (req, res) => {
       gender,
       email: email.trim(),
       mobile_number: String(mobile_number).trim(),
-      department,
-      designation,
+      departmentid: departmentid ?? null,
+      designationid: designationid ?? null,
       userType,
       address,
       date_of_join,
       emergency_contact_number,
       password: hashPassword(password)
     });
+
+    const photoFile = req.files?.staff_photo?.[0] || null;
+    const signatureFile = req.files?.staff_sig_photo?.[0] || null;
+
+    const staff_photo = saveStaffFileWithId(photoFile, staff.id, 'p');
+    const staff_sig_photo = saveStaffFileWithId(signatureFile, staff.id, 's');
+
+    if (staff_photo || staff_sig_photo) {
+      await staff.update({ staff_photo, staff_sig_photo });
+    }
 
     return res.status(201).json({
       success: true,
@@ -157,7 +186,19 @@ const login = async (req, res) => {
 const staffDetail = async (req, res) => {
   try {
     const staff = await StaffRegistration.findByPk(req.staff, {
-      attributes: { exclude: ['password'] }
+      attributes: { exclude: ['password'] },
+      include: [
+        {
+          model: department,
+          as: 'departmentInfo',
+          attributes: ['id', 'department_name'],
+        },
+        {
+          model: designation,
+          as: 'designationInfo',
+          attributes: ['id', 'designation_name'],
+        },
+      ],
     });
 
     if (!staff) {
@@ -185,6 +226,18 @@ const allStaff = async (req, res) => {
   try {
     const rows = await StaffRegistration.findAll({
       attributes: { exclude: ['password'] },
+      include: [
+        {
+          model: department,
+          as: 'departmentInfo',
+          attributes: ['id', 'department_name'],
+        },
+        {
+          model: designation,
+          as: 'designationInfo',
+          attributes: ['id', 'designation_name'],
+        },
+      ],
       order: [
         ['surname', 'ASC'],
         ['firstname', 'ASC'],

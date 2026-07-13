@@ -40,10 +40,6 @@ module.exports = {
   },
 
   async down(queryInterface) {
-    await queryInterface.removeIndex(
-      'staff_fcmtokens',
-      'idx_staff_fcmtokens_staffid'
-    );
     await queryInterface.dropTable('staff_fcmtokens');
   },
 };

@@ -4,7 +4,16 @@ const { Model } = require('sequelize');
 
 module.exports = (sequelize, DataTypes) => {
   class StaffRegistration extends Model {
-    static associate() {}
+    static associate(models) {
+      StaffRegistration.belongsTo(models.department, {
+        foreignKey: 'departmentid',
+        as: 'departmentInfo',
+      });
+      StaffRegistration.belongsTo(models.designation, {
+        foreignKey: 'designationid',
+        as: 'designationInfo',
+      });
+    }
   }
 
   StaffRegistration.init(
@@ -24,8 +33,8 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
         unique: true
       },
-      department: DataTypes.STRING,
-      designation: DataTypes.STRING,
+      departmentid: DataTypes.INTEGER,
+      designationid: DataTypes.INTEGER,
       userType: DataTypes.STRING,
       address: DataTypes.TEXT,
       date_of_join: DataTypes.DATEONLY,
@@ -33,7 +42,9 @@ module.exports = (sequelize, DataTypes) => {
       password: {
         type: DataTypes.STRING,
         allowNull: false
-      }
+      },
+      staff_photo: DataTypes.STRING,
+      staff_sig_photo: DataTypes.STRING
     },
     {
       sequelize,

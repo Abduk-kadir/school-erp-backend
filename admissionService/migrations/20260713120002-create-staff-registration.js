@@ -40,13 +40,25 @@ module.exports = {
         allowNull: false,
         unique: true
       },
-      department: {
-        type: Sequelize.STRING,
-        allowNull: true
+      departmentid: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        references: {
+          model: 'departments',
+          key: 'id',
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL',
       },
-      designation: {
-        type: Sequelize.STRING,
-        allowNull: true
+      designationid: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        references: {
+          model: 'designations',
+          key: 'id',
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL',
       },
       userType: {
         type: Sequelize.STRING,
@@ -67,6 +79,14 @@ module.exports = {
       password: {
         type: Sequelize.STRING,
         allowNull: false
+      },
+      staff_photo: {
+        type: Sequelize.STRING,
+        allowNull: true
+      },
+      staff_sig_photo: {
+        type: Sequelize.STRING,
+        allowNull: true
       },
       createdAt: {
         allowNull: false,

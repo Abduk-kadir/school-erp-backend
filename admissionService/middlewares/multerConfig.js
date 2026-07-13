@@ -44,6 +44,7 @@ const NOTIFICATION_UPLOAD_ROOT = 'E:\\notification';
 const DIARY_UPLOAD_ROOT = 'E:\\diary';
 const ASSIGNMENT_UPLOAD_ROOT = 'E:\\assignment';
 const ABOUT_INSTITUTE_IMAGE_UPLOAD_ROOT = 'E:\\aboutInstituteImage';
+const STAFF_DOCUMENT_UPLOAD_ROOT = 'E:\\staffDocument';
 
 const uploadInstituteLogo = createUploader(
   LOGO_UPLOAD_ROOT,
@@ -95,6 +96,12 @@ const uploadAboutInstituteImage=createUploader(
   1 * 1024 * 1024
 )
 
+const uploadStaffDocument=createUploader(
+  STAFF_DOCUMENT_UPLOAD_ROOT,
+  /jpeg|jpg|png/,
+  1 * 1024 * 1024
+)
+
 module.exports = {
   uploadInstituteLogo,
   uploadClasswiseInstituteLogo,
@@ -104,4 +111,5 @@ module.exports = {
   uploadDiary,
   uploadAssignment,
   uploadAboutInstituteImage,
+  uploadStaffDocument
 };
