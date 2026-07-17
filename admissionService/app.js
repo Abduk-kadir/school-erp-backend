@@ -19,6 +19,7 @@ const roleRoutes = require('./routes/roleRoutes');
 const employeeRoutes = require('./routes/employeeRoutes');
 const classRoutes = require('./routes/classRoutes');
 const classDivMapMasterRoutes = require('./routes/classDivMapMasterRoutes');
+const staffclassmapRoutes = require('./routes/staffclassmapRoutes');
 const batchRoutes = require('./routes/batchRoutes');
 const timetableRoutes = require('./routes/timetable/timetableRoutes');
 const assignmentRoutes = require('./routes/assignment/assignmentRoutes');
@@ -80,6 +81,7 @@ const attendanceLecturewiseRoutes = require('./routes/attendance/attendanceLectu
 const holidarmasterRoutes = require('./routes/holidarmaster/holidarmasterRoutes');
 const eventmasterRoutes = require('./routes/eventmaster/eventmasterRoutes');
 const aboutInstituteRoute = require('./routes/aboutinstitute/aboutInstituteRoute');
+const carsoulRoutes = require('./routes/carsoul/carsoulRoutes');
 const designationRoutes = require('./routes/designationRoutes');
 const departmentRoutes = require('./routes/departmentRoutes');
 
@@ -109,6 +111,7 @@ app.use('/api/attendance-lecturewise', attendanceLecturewiseRoutes);
 app.use('/api/holiday-masters', holidarmasterRoutes);
 app.use('/api/event-masters', eventmasterRoutes);
 app.use('/api/about-institute', aboutInstituteRoute);
+app.use('/api/carsoul', carsoulRoutes);
 app.use('/api/designations', designationRoutes);
 app.use('/api/departments', departmentRoutes);
 
@@ -205,6 +208,10 @@ app.use(
   '/uploads/staffDocument',
   express.static('E:/staffDocument')
 );
+app.use(
+  '/uploads/carsoslide',
+  express.static('E:/carsoslide')
+);
 
 
 
@@ -227,6 +234,7 @@ app.use('/api/diaries', diaryRoutes);
 app.use('/api/student-notifications', studentnotificationRoutes);
 app.use('/api/classes', classRoutes);
 app.use('/api/class-div-map-masters', classDivMapMasterRoutes);
+app.use('/api/staff-class-maps', staffclassmapRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api',formRoutes);
