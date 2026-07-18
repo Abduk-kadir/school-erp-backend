@@ -2,8 +2,7 @@ const asyncHandler = require('express-async-handler');
 const path = require('path');
 const fs = require('fs');
 const { carsoul } = require('../../models');
-
-const CARSOSLIDE_UPLOAD_ROOT = 'E:\\carsoslide';
+const { CARSOSLIDE_UPLOAD_ROOT } = require('../../middlewares/multerConfig');
 
 function saveCarsoulImageWithId(file, carsoulId) {
   if (!file) return null;

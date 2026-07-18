@@ -173,47 +173,8 @@ app.use('/api/program-subjects', programSubjectRoutes);
 app.use('/api/programs', programRoutes);
 
 app.use('/api/student-documents', studentDocumentRoutes);
-//app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use(
-  '/uploads/classwiseInstitutes/logos',
-  express.static('E:/classwiseInstitutes/logos')
-);
-app.use(
-  '/uploads/institutes/logos',
-  express.static('E:/institutes/logos')
-);
-app.use(
-  '/uploads/timetable',
-  express.static('E:/timetable')
-);
-app.use(
-  '/uploads/assignment',
-  express.static('E:/assignment')
-);
-app.use(
-  '/uploads/notes',
-  express.static('E:/notes')
-);
-app.use(
-  '/uploads/diary',
-  express.static('E:/diary')
-);
-app.use(
-  '/uploads/notification',
-  express.static('E:/notification')
-);
-app.use(
-  '/uploads/aboutInstituteImage',
-  express.static('E:/aboutInstituteImage')
-);
-app.use(
-  '/uploads/staffDocument',
-  express.static('E:/staffDocument')
-);
-app.use(
-  '/uploads/carsoslide',
-  express.static('E:/carsoslide')
-);
+const { UPLOAD_ROOT } = require('./middlewares/multerConfig');
+app.use('/uploads', express.static(UPLOAD_ROOT));
 
 
 

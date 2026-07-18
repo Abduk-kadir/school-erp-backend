@@ -2,6 +2,7 @@ const {classWiseSchool,class_master} = require('../models');
 const path = require('path');
 const fs=require('fs');
 const { json } = require('sequelize');
+const { CLASSWISE_LOGO_UPLOAD_ROOT } = require('../middlewares/multerConfig');
 
 const classwiseSchoolController = {
 
@@ -101,8 +102,8 @@ async update(req, res) {
         // This example assumes files are saved in E:\classWiseSchools\logos
         // and DB path starts with /uploads/classWiseSchools/logos/...
         oldLogoFullPath = path.join(
-          'E:\\classWiseSchools\\logos',
-          path.basename(inst.logo)   // extracts just the filename
+          CLASSWISE_LOGO_UPLOAD_ROOT,
+          path.basename(inst.logo)
         );
       }
     }

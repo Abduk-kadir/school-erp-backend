@@ -4,8 +4,9 @@ const fs = require('fs');
 const { Op, QueryTypes } = require('sequelize');
 const { StaffRegistration, staffFcmtoken, department, designation, sequelize } = require('../../models');
 const generateToken = require('../../utils/generateToken');
+const { STAFF_DOCUMENT_UPLOAD_ROOT } = require('../../middlewares/multerConfig');
 
-const STAFF_DOCUMENT_ROOT = 'E:\\staffDocument';
+const STAFF_DOCUMENT_ROOT = STAFF_DOCUMENT_UPLOAD_ROOT;
 
 function saveStaffFileWithId(file, staffId, typeMarker) {
   if (!file) return null;

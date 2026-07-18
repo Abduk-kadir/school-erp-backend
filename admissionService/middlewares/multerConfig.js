@@ -36,7 +36,7 @@ function createUploader(destinationFolder, allowedTypes = /jpeg|jpg|png/, maxSiz
   });
 }
 
-const LOGO_UPLOAD_ROOT = 'E:\\institutes\\logos';
+/*const LOGO_UPLOAD_ROOT = 'E:\\institutes\\logos';
 const CLASSWISE_LOGO_UPLOAD_ROOT = 'E:\\classwiseInstitutes\\logos';
 const TIMETABLE_UPLOAD_ROOT = 'E:\\timetable';
 const NOTES_UPLOAD_ROOT = 'E:\\notes';
@@ -46,6 +46,24 @@ const ASSIGNMENT_UPLOAD_ROOT = 'E:\\assignment';
 const ABOUT_INSTITUTE_IMAGE_UPLOAD_ROOT = 'E:\\aboutInstituteImage';
 const STAFF_DOCUMENT_UPLOAD_ROOT = 'E:\\staffDocument';
 const CARSOSLIDE_UPLOAD_ROOT = 'E:\\carsoslide';
+*/
+
+
+
+const UPLOAD_ROOT = path.join(__dirname, "../../uploads");
+
+const LOGO_UPLOAD_ROOT = path.join(UPLOAD_ROOT, "institutes/logos");
+const CLASSWISE_LOGO_UPLOAD_ROOT = path.join(UPLOAD_ROOT, "classwiseInstitutes/logos");
+const TIMETABLE_UPLOAD_ROOT = path.join(UPLOAD_ROOT, "timetable");
+const NOTES_UPLOAD_ROOT = path.join(UPLOAD_ROOT, "notes");
+const NOTIFICATION_UPLOAD_ROOT = path.join(UPLOAD_ROOT, "notification");
+const DIARY_UPLOAD_ROOT = path.join(UPLOAD_ROOT, "diary");
+const ASSIGNMENT_UPLOAD_ROOT = path.join(UPLOAD_ROOT, "assignment");
+const ABOUT_INSTITUTE_IMAGE_UPLOAD_ROOT = path.join(UPLOAD_ROOT, "aboutInstituteImage");
+const STAFF_DOCUMENT_UPLOAD_ROOT = path.join(UPLOAD_ROOT, "staffDocument");
+const CARSOSLIDE_UPLOAD_ROOT = path.join(UPLOAD_ROOT, "carsoslide");
+
+
 
 const uploadInstituteLogo = createUploader(
   LOGO_UPLOAD_ROOT,
@@ -110,6 +128,17 @@ const uploadCarsolSlide = createUploader(
 );
 
 module.exports = {
+  UPLOAD_ROOT,
+  LOGO_UPLOAD_ROOT,
+  CLASSWISE_LOGO_UPLOAD_ROOT,
+  TIMETABLE_UPLOAD_ROOT,
+  NOTES_UPLOAD_ROOT,
+  NOTIFICATION_UPLOAD_ROOT,
+  DIARY_UPLOAD_ROOT,
+  ASSIGNMENT_UPLOAD_ROOT,
+  ABOUT_INSTITUTE_IMAGE_UPLOAD_ROOT,
+  STAFF_DOCUMENT_UPLOAD_ROOT,
+  CARSOSLIDE_UPLOAD_ROOT,
   uploadInstituteLogo,
   uploadClasswiseInstituteLogo,
   uploadTimetable,

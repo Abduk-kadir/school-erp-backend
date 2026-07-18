@@ -2,6 +2,7 @@ const asyncHandler = require('express-async-handler');
 const path = require('path');
 const fs = require('fs');
 const { aboutInstitute, aboutinstituteimage } = require('../../models');
+const { ABOUT_INSTITUTE_IMAGE_UPLOAD_ROOT } = require('../../middlewares/multerConfig');
 const aboutInstituteController = {
   create: asyncHandler(async (req, res) => {
     const { text } = req.body;
@@ -47,7 +48,7 @@ const aboutInstituteController = {
     }
 
     const imagePaths = (record.images || []).map((img) =>
-      path.join('E:\\aboutInstituteImage', path.basename(img.image))
+      path.join(ABOUT_INSTITUTE_IMAGE_UPLOAD_ROOT, path.basename(img.image))
     );
 
     await record.destroy();

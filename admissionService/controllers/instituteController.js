@@ -2,6 +2,7 @@ const asyncHandler = require('express-async-handler');
 const { institute } = require('../models');
 const path = require('path');
 const fs = require('fs');
+const { LOGO_UPLOAD_ROOT } = require('../middlewares/multerConfig');
 
 const instituteController = {
   create: asyncHandler(async (req, res) => {
@@ -49,7 +50,7 @@ const instituteController = {
 
       if (inst.logo) {
         oldLogoFullPath = path.join(
-          'E:\\institutes\\logos',
+          LOGO_UPLOAD_ROOT,
           path.basename(inst.logo)
         );
       }
@@ -118,7 +119,7 @@ const instituteController = {
     let logoFullPath = null;
     if (inst.logo) {
       logoFullPath = path.join(
-        'E:\\institutes\\logos',
+        LOGO_UPLOAD_ROOT,
         path.basename(inst.logo)
       );
     }
