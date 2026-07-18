@@ -1,4 +1,4 @@
-name: deploy my id card server
+name: Deploy School ERP Backend
 
 on:
   push:
@@ -11,7 +11,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
@@ -21,9 +21,9 @@ jobs:
           key: ${{ secrets.PRIVATE_KEY }}
           port: 22
           script: |
-            cd /home/ddserp/public_html/testt.dds-erp.com/school-erp-backend
+            cd /var/www/apps/school-erp-backend
 
-            git config --global --add safe.directory /home/ddserp/public_html/testt.dds-erp.com/school-erp-backend
+            git config --global --add safe.directory /var/www/apps/school-erp-backend
 
             git pull origin main
 
@@ -31,4 +31,6 @@ jobs:
 
             npm install
 
-            node app.js
+            npx sequelize db:migrate
+
+            pm2 restart admission-api
