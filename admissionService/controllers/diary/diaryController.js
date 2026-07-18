@@ -201,7 +201,7 @@ const diaryController = {
     const whereSql = whereClause.length
       ? ` where ${whereClause.join(' and ')}`
       : '';
-    const query = `select dr.*, bt.batch_name, cm.class_name, dv.division_name, sb.value as subject_name, CONCAT_WS(' ', sf.surname, sf.firstname, sf.lastname) as staff_name from diaries
+    const query = `select dr.*, bt.batch_name, cm.class_name, dv.division_name, sb.value as subject_name, CONCAT_WS(' ', sf.surname, sf.firstname) as staff_name from diaries
    as dr join batches as bt on dr.batch=bt.id
    join division_masters as dv on dr.division= dv.id
    join class_masters as cm on dr.class = cm.id

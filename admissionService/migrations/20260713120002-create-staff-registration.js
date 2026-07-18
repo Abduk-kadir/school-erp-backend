@@ -18,9 +18,23 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: true
       },
-      lastname: {
+      mother_name: {
         type: Sequelize.STRING,
         allowNull: true
+      },
+      father_name: {
+        type: Sequelize.STRING,
+        allowNull: true
+      },
+      title: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        references: {
+          model: 'titles',
+          key: 'id',
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL',
       },
       dob: {
         type: Sequelize.DATEONLY,

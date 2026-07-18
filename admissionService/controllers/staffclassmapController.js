@@ -39,7 +39,7 @@ const staffclassmapController = {
         {
           model: StaffRegistration,
           as: 'staffInfo',
-          attributes: ['id', 'surname', 'firstname', 'lastname', 'email'],
+          attributes: ['id', 'surname', 'firstname', 'mother_name', 'father_name', 'title', 'email'],
         },
         {
           model: class_master,

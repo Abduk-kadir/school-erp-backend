@@ -193,7 +193,7 @@ const studentnotificationController = {
     const whereSql = whereClause.length
       ? ` where ${whereClause.join(' and ')}`
       : '';
-    const query = `select sn.*, bt.batch_name, cm.class_name, dv.division_name, CONCAT_WS(' ', sf.surname, sf.firstname, sf.lastname) as staff_name from student_notifications
+    const query = `select sn.*, bt.batch_name, cm.class_name, dv.division_name, CONCAT_WS(' ', sf.surname, sf.firstname) as staff_name from student_notifications
    as sn join batches as bt on sn.batch=bt.id
    join division_masters as dv on sn.division= dv.id
    join class_masters as cm on sn.class = cm.id

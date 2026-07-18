@@ -80,7 +80,9 @@ const registration = async (req, res) => {
     const {
       surname,
       firstname,
-      lastname,
+      mother_name,
+      father_name,
+      title,
       dob,
       gender,
       email,
@@ -116,7 +118,9 @@ const registration = async (req, res) => {
     const staff = await StaffRegistration.create({
       surname,
       firstname,
-      lastname,
+      mother_name,
+      father_name,
+      title: title ?? null,
       dob,
       gender,
       email: email.trim(),
@@ -260,7 +264,9 @@ const staffDetailById = async (req, res) => {
         sr.id,
         sr.surname,
         sr.firstname,
-        sr.lastname,
+        sr.mother_name,
+        sr.father_name,
+        sr.title,
         sr.dob,
         sr.gender,
         sr.password,
@@ -275,10 +281,12 @@ const staffDetailById = async (req, res) => {
         sr.staff_photo,
         sr.staff_sig_photo,
         dp.department_name,
-        dg.designation_name
+        dg.designation_name,
+        t.title AS title_name
       FROM StaffRegistrations AS sr
       LEFT JOIN departments AS dp ON sr.departmentid = dp.id
       LEFT JOIN designations AS dg ON sr.designationid = dg.id
+      LEFT JOIN titles AS t ON sr.title = t.id
       WHERE sr.id = :id
       LIMIT 1`,
       {
@@ -329,7 +337,9 @@ const editStaff = async (req, res) => {
     const {
       surname,
       firstname,
-      lastname,
+      mother_name,
+      father_name,
+      title,
       dob,
       gender,
       email,
@@ -367,7 +377,9 @@ const editStaff = async (req, res) => {
     const updates = {};
     if (surname !== undefined) updates.surname = surname;
     if (firstname !== undefined) updates.firstname = firstname;
-    if (lastname !== undefined) updates.lastname = lastname;
+    if (mother_name !== undefined) updates.mother_name = mother_name;
+    if (father_name !== undefined) updates.father_name = father_name;
+    if (title !== undefined) updates.title = title ?? null;
     if (dob !== undefined) updates.dob = dob;
     if (gender !== undefined) updates.gender = gender;
     if (email !== undefined) updates.email = email.trim();

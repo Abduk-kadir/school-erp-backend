@@ -13,6 +13,10 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'designationid',
         as: 'designationInfo',
       });
+      StaffRegistration.belongsTo(models.title, {
+        foreignKey: 'title',
+        as: 'titleInfo',
+      });
     }
   }
 
@@ -20,7 +24,9 @@ module.exports = (sequelize, DataTypes) => {
     {
       surname: DataTypes.STRING,
       firstname: DataTypes.STRING,
-      lastname: DataTypes.STRING,
+      mother_name: DataTypes.STRING,
+      father_name: DataTypes.STRING,
+      title: DataTypes.INTEGER,
       dob: DataTypes.DATEONLY,
       gender: DataTypes.STRING,
       email: {

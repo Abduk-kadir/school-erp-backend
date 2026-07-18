@@ -84,6 +84,7 @@ const aboutInstituteRoute = require('./routes/aboutinstitute/aboutInstituteRoute
 const carsoulRoutes = require('./routes/carsoul/carsoulRoutes');
 const designationRoutes = require('./routes/designationRoutes');
 const departmentRoutes = require('./routes/departmentRoutes');
+const titleRoutes = require('./routes/titleRoutes');
 
 // In your app.js or server.js
                  // Ensure Redis connects first
@@ -114,6 +115,7 @@ app.use('/api/about-institute', aboutInstituteRoute);
 app.use('/api/carsoul', carsoulRoutes);
 app.use('/api/designations', designationRoutes);
 app.use('/api/departments', departmentRoutes);
+app.use('/api/titles', titleRoutes);
 
 
 app.use('/api/error',errorRoutes)

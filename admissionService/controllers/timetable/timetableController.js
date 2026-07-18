@@ -88,7 +88,7 @@ const timetableController = {
       whereClause.push(`tm.\`batch\` = ${batch}`);
     }
     const whereSql = whereClause.length ? ` where ${whereClause.join(' and ')}` : '';
-    const query = `select tm.*, bt.batch_name, cm.class_name, dv.division_name, CONCAT_WS(' ', sf.surname, sf.firstname, sf.lastname) as staff_name from timetables
+    const query = `select tm.*, bt.batch_name, cm.class_name, dv.division_name, CONCAT_WS(' ', sf.surname, sf.firstname) as staff_name from timetables
    as tm join batches as bt on tm.batch=bt.id
    join division_masters as dv on tm.division= dv.id
    join class_masters as cm on tm.class = cm.id
