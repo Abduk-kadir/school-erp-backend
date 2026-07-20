@@ -12,6 +12,11 @@ const createClass = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: "Class name and Class code are required" });
   }
 
+  const existingClass = await class_master.findOne({ where: { class_code } });
+  if (existingClass) {
+    return res.status(400).json({ message: "Class code already exists" });
+  }
+
   const newClass = await class_master.create({
     class_name,
     class_code,
