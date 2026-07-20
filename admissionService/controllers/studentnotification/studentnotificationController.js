@@ -77,13 +77,6 @@ const studentnotificationController = {
   create: asyncHandler(async (req, res) => {
     const documentFile = getDocumentFile(req);
 
-    if (!documentFile) {
-      return res.status(400).json({
-        success: false,
-        message: 'Document file is required',
-      });
-    }
-
     const rowsResult = parseRowsInput(req);
     if (!rowsResult) {
       return res.status(400).json({
@@ -107,7 +100,9 @@ const studentnotificationController = {
       });
     }
 
-    const document_url = `/uploads/notification/${documentFile.filename}`;
+    const document_url = documentFile
+      ? `/uploads/notification/${documentFile.filename}`
+      : null;
     const recordsToCreate = rows.map((elem) => ({
       ...mapNotificationRow(elem),
       document_url,

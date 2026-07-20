@@ -83,13 +83,6 @@ const diaryController = {
   create: asyncHandler(async (req, res) => {
     const documentFile = getDocumentFile(req);
 
-    if (!documentFile) {
-      return res.status(400).json({
-        success: false,
-        message: 'Diary file is required',
-      });
-    }
-
     const rowsResult = parseRowsInput(req);
     if (!rowsResult) {
       return res.status(400).json({
@@ -113,7 +106,9 @@ const diaryController = {
       });
     }
 
-    const diary_url = `/uploads/diary/${documentFile.filename}`;
+    const diary_url = documentFile
+      ? `/uploads/diary/${documentFile.filename}`
+      : null;
     const recordsToCreate = rows.map((elem) => ({
       ...mapDiaryRow(elem),
       diary_url,
