@@ -80,6 +80,7 @@ const ParmanentPersonalInformation = {
 
     const rows = await par_student_personal_information.findAll({
       where: Object.keys(where).length ? where : {},
+      
     });
     res.status(200).json({ success: true, message: 'data fetched successfully', data: rows });
   }),

@@ -14,8 +14,9 @@ let allColumnOfTable = async (req, res) => {
         const sub = await sequelize.getQueryInterface().describeTable('student_subjects');
         const trans = await sequelize.getQueryInterface().describeTable('studenttransports');
 
-        // Helper function to filter out 'id' and 'reg_no'
-        const filterColumns = (columns) => Object.keys(columns).filter(col => col !== 'id' && col !== 'reg_no');
+        // Helper function to filter out 'id', 'reg_no', and timestamps
+        const excludeCols = ['id', 'reg_no', 'createdAt', 'updatedAt', 'created_at', 'updated_at'];
+        const filterColumns = (columns) => Object.keys(columns).filter(col => !excludeCols.includes(col));
 
         res.send({
             message: "Columns fetched successfully",

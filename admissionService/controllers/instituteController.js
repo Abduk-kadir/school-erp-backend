@@ -78,13 +78,7 @@ const instituteController = {
   getAll: asyncHandler(async (req, res) => {
     const institutes = await institute.findAll();
 
-    const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
-    const institutesWithFullLogo = institutes.map((inst) => ({
-      ...inst.toJSON(),
-      logo: inst.logo ? `${baseUrl}${inst.logo}` : null,
-    }));
-
-    return res.json({ success: true, data: institutesWithFullLogo });
+    return res.json({ success: true, data: institutes });
   }),
 
   getOne: asyncHandler(async (req, res) => {
