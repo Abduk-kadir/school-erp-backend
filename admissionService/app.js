@@ -82,6 +82,7 @@ const holidarmasterRoutes = require('./routes/holidarmaster/holidarmasterRoutes'
 const eventmasterRoutes = require('./routes/eventmaster/eventmasterRoutes');
 const aboutInstituteRoute = require('./routes/aboutinstitute/aboutInstituteRoute');
 const carsoulRoutes = require('./routes/carsoul/carsoulRoutes');
+const othercrousalRoutes = require('./routes/othercrousal/othercrousalRoutes');
 const designationRoutes = require('./routes/designationRoutes');
 const departmentRoutes = require('./routes/departmentRoutes');
 const titleRoutes = require('./routes/titleRoutes');
@@ -113,6 +114,7 @@ app.use('/api/holiday-masters', holidarmasterRoutes);
 app.use('/api/event-masters', eventmasterRoutes);
 app.use('/api/about-institute', aboutInstituteRoute);
 app.use('/api/carsoul', carsoulRoutes);
+app.use('/api/othercrousal', othercrousalRoutes);
 app.use('/api/designations', designationRoutes);
 app.use('/api/departments', departmentRoutes);
 app.use('/api/titles', titleRoutes);

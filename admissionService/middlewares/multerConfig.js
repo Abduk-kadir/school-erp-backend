@@ -62,6 +62,7 @@ const ASSIGNMENT_UPLOAD_ROOT = path.join(UPLOAD_ROOT, "assignment");
 const ABOUT_INSTITUTE_IMAGE_UPLOAD_ROOT = path.join(UPLOAD_ROOT, "aboutInstituteImage");
 const STAFF_DOCUMENT_UPLOAD_ROOT = path.join(UPLOAD_ROOT, "staffDocument");
 const CARSOSLIDE_UPLOAD_ROOT = path.join(UPLOAD_ROOT, "carsoslide");
+const OTHERCARSOSLIDE_UPLOAD_ROOT = path.join(UPLOAD_ROOT, "othercarsoslide");
 
 
 
@@ -127,6 +128,12 @@ const uploadCarsolSlide = createUploader(
   1 * 1024 * 1024
 );
 
+const uploadOtherCarsolSlide = createUploader(
+  OTHERCARSOSLIDE_UPLOAD_ROOT,
+  /jpeg|jpg|png/,
+  1 * 1024 * 1024
+);
+
 module.exports = {
   UPLOAD_ROOT,
   LOGO_UPLOAD_ROOT,
@@ -139,6 +146,7 @@ module.exports = {
   ABOUT_INSTITUTE_IMAGE_UPLOAD_ROOT,
   STAFF_DOCUMENT_UPLOAD_ROOT,
   CARSOSLIDE_UPLOAD_ROOT,
+  OTHERCARSOSLIDE_UPLOAD_ROOT,
   uploadInstituteLogo,
   uploadClasswiseInstituteLogo,
   uploadTimetable,
@@ -149,4 +157,5 @@ module.exports = {
   uploadAboutInstituteImage,
   uploadStaffDocument,
   uploadCarsolSlide,
+  uploadOtherCarsolSlide,
 };

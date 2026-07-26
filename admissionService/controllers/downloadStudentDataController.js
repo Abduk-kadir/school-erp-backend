@@ -40,6 +40,62 @@ let allColumnOfTable = async (req, res) => {
 
 
 
+let  importStudentData= async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(req.file.buffer);
+    let datafromexcel={}
+    
+
+    workbook.eachSheet((worksheet) => {
+      const tableName = worksheet.name.trim();
+      //console.log('tableName is:',tableName)
+      if (tableName === 'Instructions') return;
+
+      const rows = worksheet.getSheetValues();
+      if (rows.length < 2) return;
+
+      const headers = rows[1].slice(1); // Remove empty first cell if any
+      const allrows = rows.slice(2);
+      //console.log('headers is:',headers)
+      //console.log('dataRows is:',dataRows)
+
+       const records=allrows.map(row => {
+           
+           let record={}
+           headers.forEach((header, i) => {
+            
+              record[header] = row[i + 1];
+            
+           })
+           return record
+        })
+        datafromexcel[tableName]=records
+       
+    });
+
+    console.log('datafrom excel is:',datafromexcel)
+
+    // Example: Insert into database (adapt to your ORM)
+    // for (const [tableName, records] of Object.entries(importData)) {
+    //   await db(tableName).insert(records);   // or your model
+    // }
+
+    res.json({
+      message: "Data parsed successfully",
+      
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Import failed", error: error.message });
+  }
+};
+
+
+
 
 
 const exportAllStudentData = async (req, res) => {
@@ -187,6 +243,7 @@ const exportAllStudentData = async (req, res) => {
 
 module.exports = {
     allColumnOfTable,
-    exportAllStudentData
+    exportAllStudentData,
+    importStudentData
 
 }
