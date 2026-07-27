@@ -1,11 +1,11 @@
+const asyncHandler = require('express-async-handler');
 const db = require('../models')
 const sequelize = db.sequelize;
 const ExcelJS = require('exceljs');
-const { student_subject, PersonalInformation, class_master, Program, Subject, ElectiveBasket } = require('../models');
+const { student_subject, PersonalInformation, class_master, Program, Subject, ElectiveBasket,division_master,caste_master,ParentParticular,EducationDetail,OtherInformation,institute } = require('../models');
 
 
-let allColumnOfTable = async (req, res) => {
-    try {
+let allColumnOfTable = asyncHandler(async (req, res) => {
         const personal = await sequelize.getQueryInterface().describeTable('personalinformations');
         const parentPar = await sequelize.getQueryInterface().describeTable('parentparticulars');
         const edu = await sequelize.getQueryInterface().describeTable('educationdetails');
@@ -30,24 +30,32 @@ let allColumnOfTable = async (req, res) => {
                 "Transport": filterColumns(trans)
             }
         });
-    } catch (err) {
-        res.status(500).send({
-            message: "Columns not fetched successfully",
-            data: null
-        });
-    }
-};
+});
 
 
 
-let  importStudentData= async (req, res) => {
-  try {
+let  importStudentData= asyncHandler(async (req, res) => {
     if (!req.file) return res.status(400).json({ message: "No file uploaded" });
 
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(req.file.buffer);
     let datafromexcel={}
+    const [allClasses, allDivisions,allCasts,allParentPar,allEduDetails] = await Promise.all([
+        class_master.findAll({ raw: true }),
+        division_master.findAll({ raw: true }),
+        caste_master.findAll({ raw: true }),
+        //ParentParticular.findAll({ raw: true }),
+        //EducationDetail.findAll({ raw: true }),
+        //OtherInformation.findAll({ raw: true })
+    ]);
+    //console.log('allClasses is:',allClasses)
+    //console.log('allDivisions is:',allDivisions)
+   //console.log('allCasts is:',allCasts)
+   //console.log('allParentPar is:',allParentPar)
+   //console.log('allEduDetails is:',allEduDetails)
+   //console.log('allOtherInfo is:',allOtherInfo)
     
+
 
     workbook.eachSheet((worksheet) => {
       const tableName = worksheet.name.trim();
@@ -76,32 +84,128 @@ let  importStudentData= async (req, res) => {
        
     });
 
-    console.log('datafrom excel is:',datafromexcel)
-
-    // Example: Insert into database (adapt to your ORM)
-    // for (const [tableName, records] of Object.entries(importData)) {
-    //   await db(tableName).insert(records);   // or your model
-    // }
-
-    res.json({
-      message: "Data parsed successfully",
-      
+    //console.log('datafrom excel is:',datafromexcel)
+    const classMap = new Map(
+        allClasses.map(c => [c.class_name, c.id])
+    );
+    
+    const divisionMap = new Map(
+        allDivisions.map(d => [d.division_name, d.id])
+    );
+    
+    const casteMap = new Map(
+        allCasts.map(c => [c.value, c.id])
+    );
+    let incorrectPersonal=[]
+    let incorrectParentParticulars=[]
+    let incorrectEduDetails=[]
+    let incorrectOtherInfo=[]
+    let correctPersonal = datafromexcel['Personal Infromation'].filter(item => {
+        if (
+            classMap.has(item.class) &&
+            divisionMap.has(item.division) &&
+            casteMap.has(item.cast)
+        ) {
+            // Replace text with IDs
+            item.class = classMap.get(item.class);
+            item.division = divisionMap.get(item.division);
+            item.cast = casteMap.get(item.cast);
+    
+            return true;
+        } else {
+            incorrectPersonal.push(item);
+            return false;
+        }
     });
 
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Import failed", error: error.message });
-  }
-};
+const correctPersonalidset = new Set(correctPersonal.map(c => c.id));
+let correctParentParticulars=datafromexcel['Parent Particulars'].filter((item)=>{
+    if(correctPersonalidset.has(item.id)){
+        return true;
+    }
+    else{
+        incorrectParentParticulars.push(item)
+        return false
+    }
+})
+const correctEduDetails=datafromexcel['Educational Details'].filter((item)=>{
+    if(correctPersonalidset.has(item.id)){
+        return true;
+    }
+    else{
+        incorrectEduDetails.push(item)
+        return false
+    }
+})
+
+const correctOtherInfo=datafromexcel['Other Infromation'].filter((item)=>{
+    if(correctPersonalidset.has(item.id)){
+        return true;
+    }
+    else{
+        incorrectOtherInfo.push(item)
+        return false
+    }
+})
+//console.log('datafromexcel is:',datafromexcel)
+console.log('correctPersonal information is:',correctPersonal)
+console.log('incorrectPersonal information is:',incorrectPersonal)
+console.log('correctParentParticulars is:',correctParentParticulars)
+console.log('incorrectParentParticulars is:',incorrectParentParticulars)
+console.log('correctEduDetails is:',correctEduDetails)
+console.log('incorrectEduDetails is:',incorrectEduDetails)
+console.log('correctOtherInfo is:',correctOtherInfo)
+console.log('incorrectOtherInfo is:',incorrectOtherInfo)
+
+    const inst = await institute.findOne();
+    const yy = String(new Date().getFullYear()).slice(-2);
+    const excelToReg = {};
+
+    await sequelize.transaction(async (t) => {
+      // 1. personal bulk insert (excel id not inserted)
+      const created = await PersonalInformation.bulkCreate(
+        correctPersonal.map(({ id, reg_no, ...data }) => data),
+        { transaction: t }
+      );
+
+      // generate reg_no; excel id only links related sheets
+      for (let i = 0; i < created.length; i++) {
+        const reg_no = Number(`${yy}${inst.code}${String(created[i].id).padStart(4, '0')}`);
+        excelToReg[correctPersonal[i].id] = reg_no;
+        await created[i].update({ reg_no }, { transaction: t });
+      }
+
+      // excel id dropped; only reg_no kept for insert
+      const now = new Date();
+      const forInsert = (rows) =>
+        rows.map(({ id, ...data }) => ({ ...data, reg_no: excelToReg[id], createdAt: now, updatedAt: now }));
+
+      // 2. parent  3. education  4. other
+      if (correctParentParticulars.length)
+        await sequelize.getQueryInterface().bulkInsert('parentparticulars', forInsert(correctParentParticulars), { transaction: t });
+      if (correctEduDetails.length)
+        await sequelize.getQueryInterface().bulkInsert('educationdetails', forInsert(correctEduDetails), { transaction: t });
+      if (correctOtherInfo.length)
+        await sequelize.getQueryInterface().bulkInsert('otherinformations', forInsert(correctOtherInfo), { transaction: t });
+    });
+
+    res.json({
+      message: `${correctPersonal.length} from ${datafromexcel['Personal Infromation']?.length || 0} personal information imported successfully`,
+      workbook: req.file.originalname,
+      incorrect: {
+        "Personal Infromation": incorrectPersonal,
+        "Parent Particulars": incorrectParentParticulars,
+        "Educational Details": incorrectEduDetails,
+        "Other Infromation": incorrectOtherInfo
+      }
+    });
+});
 
 
 
 
 
-const exportAllStudentData = async (req, res) => {
-    try {
-
-
+const exportAllStudentData = asyncHandler(async (req, res) => {
         // Get selected columns from request body
         let {
             "Personal Infromation": personal = {},
@@ -224,17 +328,7 @@ const exportAllStudentData = async (req, res) => {
         await workbook.xlsx.write(res);
 
         res.end();
-
-
-
-    } catch (err) {
-        console.error('Export error:', err);
-        res.status(500).json({
-            message: "Error generating Excel file",
-            error: err.message || 'Unknown error'
-        });
-    }
-};
+});
 
 
 
