@@ -38,11 +38,7 @@ const saveattendancebyrfid = asyncHandler(async (req, res) => {
     }
   }
 
-  res.status(200).json({
-    success: true,
-    message: 'RFID attendance data saved successfully',
-    total: allRows.length
-  });
+  res.send("Done")
 });
 
 module.exports = {

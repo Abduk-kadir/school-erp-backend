@@ -4,7 +4,7 @@ async function getDataTable(req, model, searchFields = [], extraWhere = {},inclu
     console.log('hello')
   const draw = parseInt(req.query.draw) || 1;
   const start = parseInt(req.query.start) || 0;
-  const length = parseInt(req.query.length) || 10;
+  const length = parseInt(req.query.length) || 30;
  const search = req.query['search[value]'] || req.query.search?.value || "";
  const classFilter = req.query['filter[className]'] || '';
 
