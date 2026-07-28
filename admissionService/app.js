@@ -86,6 +86,7 @@ const othercrousalRoutes = require('./routes/othercrousal/othercrousalRoutes');
 const designationRoutes = require('./routes/designationRoutes');
 const departmentRoutes = require('./routes/departmentRoutes');
 const titleRoutes = require('./routes/titleRoutes');
+const rfidRoutes = require('./routes/rfidRoutes');
 
 // In your app.js or server.js
                  // Ensure Redis connects first
@@ -118,6 +119,7 @@ app.use('/api/othercrousal', othercrousalRoutes);
 app.use('/api/designations', designationRoutes);
 app.use('/api/departments', departmentRoutes);
 app.use('/api/titles', titleRoutes);
+app.use('/api/rfid', rfidRoutes);
 
 
 app.use('/api/error',errorRoutes)

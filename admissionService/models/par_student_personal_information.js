@@ -42,6 +42,7 @@ module.exports = (sequelize, DataTypes) => {
     feegroupid: DataTypes.INTEGER,
     division: DataTypes.INTEGER,
     contact_number: DataTypes.STRING,
+    rfid: DataTypes.STRING,
     password: DataTypes.STRING,
     dob: DataTypes.STRING,
     blood_groop: DataTypes.STRING

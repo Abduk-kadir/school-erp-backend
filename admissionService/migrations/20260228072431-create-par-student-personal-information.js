@@ -34,6 +34,9 @@ module.exports = {
       contact_number: {
         type: Sequelize.STRING
       },
+      rfid: {
+        type: Sequelize.STRING
+      },
       cast:{
         type:Sequelize.INTEGER
       },
