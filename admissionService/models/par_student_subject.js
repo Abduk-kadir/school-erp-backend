@@ -30,6 +30,10 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'elective_bbasket_id',
         as: 'electiveBasket',
       });
+      par_student_subject.belongsTo(models.semester, {
+        foreignKey: 'semester',
+        as: 'semesterInfo',
+      });
     }
   }
   par_student_subject.init({

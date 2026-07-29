@@ -61,6 +61,12 @@ module.exports = {
         allowNull: false,
         type: Sequelize.DATE
       },
+      student_type:{
+        type:Sequelize.INTEGER
+      },
+      gender:{
+        type:Sequelize.STRING
+      },
       updatedAt: {
         allowNull: false,
         type: Sequelize.DATE

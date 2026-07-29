@@ -19,7 +19,7 @@ module.exports = {
         type: Sequelize.STRING
       },
       studenttype: {
-        type: Sequelize.ENUM('added', 'unadded', 'both'),
+        type: Sequelize.INTEGER,
         allowNull: true,
         defaultValue: null
       },

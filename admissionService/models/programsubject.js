@@ -29,6 +29,10 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: true, 
 
       })
+      ProgramSubject.belongsTo(models.semester, {
+        foreignKey: 'semester',
+        as: 'semesterInfo',
+      });
      
     }
   }

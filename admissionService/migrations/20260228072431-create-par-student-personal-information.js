@@ -49,6 +49,12 @@ module.exports = {
       blood_groop: {
         type: Sequelize.STRING
       },
+      student_type:{
+        type:Sequelize.INTEGER
+      },
+      gender:{
+        type:Sequelize.INTEGER
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE

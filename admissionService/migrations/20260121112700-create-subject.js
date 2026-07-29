@@ -18,9 +18,7 @@ module.exports = {
       abbreviation_name: {
         type: Sequelize.STRING
       },
-      subject_pattern: {
-        type: Sequelize.STRING
-      },
+     
       status: {
         type: Sequelize.STRING
       },

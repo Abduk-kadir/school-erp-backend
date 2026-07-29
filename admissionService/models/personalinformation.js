@@ -32,6 +32,10 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'groupid',
         as: 'feeGroup'
       });
+      PersonalInformation.belongsTo(models.studenttype, {
+        foreignKey: 'student_type',
+        as: 'studenttypeInfo',
+      });
     }
   }
   PersonalInformation.init({
@@ -43,7 +47,7 @@ module.exports = (sequelize, DataTypes) => {
 
     last_name: DataTypes.STRING,
     father_name: DataTypes.STRING,
-    student_type: DataTypes.STRING,
+    student_type: DataTypes.INTEGER,
     cast:DataTypes.INTEGER,
     gender: DataTypes.STRING,
     class: DataTypes.STRING,

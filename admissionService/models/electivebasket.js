@@ -15,13 +15,21 @@ module.exports = (sequelize, DataTypes) => {
         as: 'class',
         onDelete: 'CASCADE',
       });
+      ElectiveBasket.belongsTo(models.semester, {
+        foreignKey: 'semester',
+        as: 'semesterInfo',
+      });
+      ElectiveBasket.belongsTo(models.studenttype, {
+        foreignKey: 'studenttype',
+        as: 'studenttypeInfo',
+      });
     }
   }
   ElectiveBasket.init({
     classId: DataTypes.INTEGER,
     semester: DataTypes.INTEGER,
     basketName: DataTypes.STRING,
-    studenttype: DataTypes.ENUM('added', 'unadded', 'both'),
+    studenttype: DataTypes.INTEGER,
     minChoices: DataTypes.INTEGER,
     maxChoices: DataTypes.INTEGER,
     exactChoices: DataTypes.INTEGER,

@@ -87,6 +87,8 @@ const designationRoutes = require('./routes/designationRoutes');
 const departmentRoutes = require('./routes/departmentRoutes');
 const titleRoutes = require('./routes/titleRoutes');
 const rfidRoutes = require('./routes/rfidRoutes');
+const semesterRoutes = require('./routes/semesterRoutes');
+const studenttypeRoutes = require('./routes/studenttypeRoutes');
 
 // In your app.js or server.js
                  // Ensure Redis connects first
@@ -120,6 +122,8 @@ app.use('/api/designations', designationRoutes);
 app.use('/api/departments', departmentRoutes);
 app.use('/api/titles', titleRoutes);
 app.use('/api/rfid', rfidRoutes);
+app.use('/api/semesters', semesterRoutes);
+app.use('/api/studenttypes', studenttypeRoutes);
 
 
 app.use('/api/error',errorRoutes)

@@ -1,4 +1,4 @@
-const { ProgramSubject, class_master, Program, Subject, ElectiveBasket } = require('../models');
+const { ProgramSubject, class_master, Program, Subject, ElectiveBasket, semester } = require('../models');
 exports.getAllProgramSubjects = async (req, res) => {
  
   let {classId}=req.query
@@ -15,12 +15,21 @@ exports.getAllProgramSubjects = async (req, res) => {
         { model: Program, as: 'program' },
         { model: Subject, as: 'subject' },
         { model: ElectiveBasket, as: 'electivebasket' },
+        { model: semester, as: 'semesterInfo', attributes: ['id', 'semester'] },
       ],
     });
+
+    const data = subjects.map((item) => {
+      const plain = item.toJSON();
+      plain.semester = plain.semesterInfo?.semester ?? plain.semester;
+      delete plain.semesterInfo;
+      return plain;
+    });
+
     return res.status(200).json({
       success: true,
-      count: subjects.length,
-      data: subjects,
+      count: data.length,
+      data,
     });
   } catch (error) {
     console.error(error);
@@ -65,6 +74,11 @@ exports.getAllProgramSubjectsByClassAndSemester = async (req, res) => {
           attributes: ['id', 'exactChoices'],
           required: false,
         },
+        {
+          model: semester,
+          as: 'semesterInfo',
+          attributes: ['id', 'semester'],
+        },
       ],
     });
 
@@ -73,14 +87,14 @@ exports.getAllProgramSubjectsByClassAndSemester = async (req, res) => {
 
     programSubjects.forEach((ps) => {
       const classId = ps.classId;
-      const semester = ps.semester;
+      const semesterValue = ps.semesterInfo?.semester ?? ps.semester;
      const key = `${ps.classId}-${ps.semester}-${ps.programId ?? 'null'}`;
 
       if (!grouped[key]) {
         grouped[key] = {
           classId: classId,
           className: ps.class?.class_name || 'Unknown Class',
-          semester: semester,
+          semester: semesterValue,
           programId: ps.program?.id || null,
           programName: ps.program?.program_name || null, // ← added program info here
           compulsorySubjects: [],

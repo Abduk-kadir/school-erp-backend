@@ -16,7 +16,7 @@ const createClass = asyncHandler(async (req, res) => {
   if (existingClass) {
     return res.status(400).json({ message: "Class code already exists" });
   }
-s
+
   const newClass = await class_master.create({
     class_name,
     class_code,
