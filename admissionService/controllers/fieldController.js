@@ -69,7 +69,7 @@ exports.createField = async (req, res) => {
       stageId: req.params.stageId || req.body.stageId,
     });
     let {tableName,columnType,name,tableName2}=req.body
-    const allowedTypes = ["VARCHAR(255)", "TEXT", "INTEGER", "DATE"];
+    const allowedTypes = ["VARCHAR(255)", "TEXT", "INT", "BIGINT","DATE","TIME"];
     console.log('column type:',columnType)
     if (!allowedTypes.includes(columnType)) {
       return res.status(400).json({
