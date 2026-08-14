@@ -89,8 +89,13 @@ const ParmanentPersonalInformation = {
 
   getByEmail: asyncHandler(async(req,res)=>{
     const email=req.params.email ?? req.params.Email;
+    const existingEmail = await par_student_personal_information.findOne({
+      where: { email }
+  });
+    if(!existingEmail) return res.status(404).json({message:"envalid credential",success:false});
+
     const data=await par_student_personal_information.findAll({where:{email},raw:true});
-    if(!data) return res.status(404).json({message:"personal detail not found"});
+    
     res.status(200).json({success:true,data:data});
   }),
   getByReg: asyncHandler(async (req, res) => {

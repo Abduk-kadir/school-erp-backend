@@ -40,6 +40,9 @@ module.exports = {
       cast:{
         type:Sequelize.INTEGER
       },
+      email:{
+        type:Sequelize.STRING
+      },
       password: {
         type: Sequelize.STRING
       },

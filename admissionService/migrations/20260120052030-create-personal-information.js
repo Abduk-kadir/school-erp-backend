@@ -9,9 +9,7 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      email:{
-        type:Sequelize.STRING
-      },
+      
       reg_no:{
         type: Sequelize.BIGINT
 
