@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const { carsoul } = require('../../models');
 const { CARSOSLIDE_UPLOAD_ROOT } = require('../../middlewares/multerConfig');
+const { getDataTable } = require('../../../admissionService/helper');
 
 function saveCarsoulImageWithId(file, carsoulId) {
   if (!file) return null;
@@ -70,15 +71,9 @@ const carsoulController = {
   }),
 
   getAll: asyncHandler(async (req, res) => {
-    const data = await carsoul.findAll({
-      order: [['id', 'DESC']],
-    });
-
-    return res.status(200).json({
-      success: true,
-      count: data.length,
-      data,
-    });
+    
+    const result = await getDataTable(req, carsoul);
+    res.json(result);
   }),
 
   update: asyncHandler(async (req, res) => {

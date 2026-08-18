@@ -1,5 +1,6 @@
 const asyncHandler = require('express-async-handler');
 const { semester } = require('../models');
+const { getDataTable } = require('../helper');
 
 function getRowsFromBody(body, fieldName) {
   if (Array.isArray(body)) return body;
@@ -56,15 +57,9 @@ const semesterController = {
   }),
 
   getAll: asyncHandler(async (req, res) => {
-    const records = await semester.findAll({
-      order: [['semester', 'ASC']],
-    });
-
-    return res.status(200).json({
-      success: true,
-      count: records.length,
-      data: records,
-    });
+  
+    const result = await getDataTable(req, semester, ['semester']);
+    res.json(result);
   }),
 
   delete: asyncHandler(async (req, res) => {

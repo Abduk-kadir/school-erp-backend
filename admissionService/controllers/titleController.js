@@ -1,5 +1,6 @@
 const asyncHandler = require('express-async-handler');
 const { title } = require('../models');
+const { getDataTable } = require('../helper');
 
 const titleController = {
   create: asyncHandler(async (req, res) => {
@@ -25,15 +26,11 @@ const titleController = {
   }),
 
   getAll: asyncHandler(async (req, res) => {
-    const data = await title.findAll({
-      order: [['id', 'ASC']],
-    });
+   
+    
+    const result = await getDataTable(req, title, ['title']);
+    res.json(result);
 
-    return res.status(200).json({
-      success: true,
-      count: data.length,
-      data,
-    });
   }),
 
   update: asyncHandler(async (req, res) => {

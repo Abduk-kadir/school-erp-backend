@@ -1,5 +1,6 @@
 const asyncHandler = require('express-async-handler');
 const { studenttype } = require('../models');
+const { getDataTable } = require('../helper');
 
 function getRowsFromBody(body, fieldName) {
   if (Array.isArray(body)) return body;
@@ -56,15 +57,10 @@ const studenttypeController = {
   }),
 
   getAll: asyncHandler(async (req, res) => {
-    const records = await studenttype.findAll({
-      order: [['studenttype', 'ASC']],
-    });
+    
+    const result = await getDataTable(req, studenttype, ['studenttype']);
+    res.json(result);
 
-    return res.status(200).json({
-      success: true,
-      count: records.length,
-      data: records,
-    });
   }),
 
   delete: asyncHandler(async (req, res) => {

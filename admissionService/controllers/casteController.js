@@ -1,4 +1,5 @@
 const { caste_master } = require('../models'); // adjust path if needed
+const { getDataTable } = require('../helper');
 
 // Create a new caste
 const createCaste = async (req, res) => {
@@ -20,8 +21,12 @@ const createCaste = async (req, res) => {
 // Get all castes
 const getCastes = async (req, res) => {
   try {
-    const castes = await caste_master.findAll();
-    res.status(200).json({ data: castes });
+   
+    const result = await getDataTable(req, caste_master, ['value']);
+    res.json(result);
+
+
+
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error", error: error.message });

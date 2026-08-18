@@ -1,5 +1,6 @@
 const asyncHandler = require('express-async-handler');
 const { department } = require('../models');
+const { getDataTable } = require('../helper');
 
 function getRowsFromBody(body, fieldName) {
   if (Array.isArray(body)) return body;
@@ -56,15 +57,10 @@ const departmentController = {
   }),
 
   getAll: asyncHandler(async (req, res) => {
-    const records = await department.findAll({
-      order: [['department_name', 'ASC']],
-    });
+   
 
-    return res.status(200).json({
-      success: true,
-      count: records.length,
-      data: records,
-    });
+    const result = await getDataTable(req, department, ['department_name']);
+    res.json(result);
   }),
 
   delete: asyncHandler(async (req, res) => {

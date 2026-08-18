@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const { othercrousal } = require('../../models');
 const { OTHERCARSOSLIDE_UPLOAD_ROOT } = require('../../middlewares/multerConfig');
+const { getDataTable } = require('../../../admissionService/helper');
 
 function saveOthercrousalImageWithId(file, othercrousalId) {
   if (!file) return null;
@@ -70,15 +71,10 @@ const othercrousalController = {
   }),
 
   getAll: asyncHandler(async (req, res) => {
-    const data = await othercrousal.findAll({
-      order: [['id', 'DESC']],
-    });
+    
 
-    return res.status(200).json({
-      success: true,
-      count: data.length,
-      data,
-    });
+    const result = await getDataTable(req, othercrousal);
+    res.json(result);
   }),
 
   update: asyncHandler(async (req, res) => {

@@ -1,5 +1,6 @@
 const asyncHandler = require('express-async-handler');
 const { class_div_map_master, class_master, division_master } = require('../models');
+const { getDataTable } = require('../helper');
 
 function getRowsFromBody(body) {
   if (Array.isArray(body)) return body;
@@ -42,27 +43,27 @@ const classDivMapMasterController = {
   }),
 
   getAll: asyncHandler(async (req, res) => {
-    const data = await class_div_map_master.findAll({
-      include: [
-        {
-          model: class_master,
-          as: 'classInfo',
-          attributes: ['id', 'class_name', 'class_code'],
-        },
-        {
-          model: division_master,
-          as: 'divisionInfo',
-          attributes: ['id', 'division_name', 'division_code'],
-        },
-      ],
-      order: [['id', 'ASC']],
-    });
+   
 
-    return res.status(200).json({
-      success: true,
-      count: data.length,
-      data,
-    });
+    const result = await getDataTable(
+      req,
+      class_div_map_master,
+        [],
+        {},
+        [
+          {
+            model: class_master,
+            as: 'classInfo',
+            attributes: ['id', 'class_name', 'class_code'],
+          },
+          {
+            model: division_master,
+            as: 'divisionInfo',
+            attributes: ['id', 'division_name', 'division_code'],
+          }
+          
+        ]);
+      res.json(result);
   }),
 
   delete: asyncHandler(async (req, res) => {

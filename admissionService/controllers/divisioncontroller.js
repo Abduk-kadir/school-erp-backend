@@ -1,5 +1,6 @@
 const asyncHandler = require('express-async-handler');
 const { division_master } = require('../models'); // adjust path if needed
+const { getDataTable } = require('../helper');
 
 // Create a new division
 const createDivision = asyncHandler(async (req, res) => {
@@ -15,8 +16,10 @@ const createDivision = asyncHandler(async (req, res) => {
 
 // Get all divisions
 const getDivisions = asyncHandler(async (req, res) => {
-  const divisions = await division_master.findAll();
-  res.status(200).json({ data: divisions ,success:true});
+ 
+
+  const result = await getDataTable(req, division_master, ['division_name','division_code']);
+  res.json(result);
 });
 
 // Get single division by ID

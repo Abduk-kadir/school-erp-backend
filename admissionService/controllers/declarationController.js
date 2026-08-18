@@ -1,6 +1,7 @@
 const asyncHandler = require('express-async-handler');
 const { Declaration, class_master } = require('../models');
 const { Op, where } = require('sequelize');
+const { getDataTable } = require('../helper');
 
 // 1. Create a new declaration
 const createDeclaration = asyncHandler(async (req, res) => {
@@ -42,7 +43,7 @@ const getAllDeclarations = asyncHandler(async (req, res) => {
   if (class_id) {
     where.class_id = class_id;
   }
-
+  /*
   const declarations = await Declaration.findAll({
     where,
     include: [
@@ -60,6 +61,21 @@ const getAllDeclarations = asyncHandler(async (req, res) => {
     count: declarations.length,
     data: declarations,
   });
+  */
+  const result = await getDataTable(
+    req,
+     Declaration,
+      ['content'],
+      where,
+      [
+        {
+          model: class_master,
+          as: 'class',
+          attributes: ['id', 'class_name'], // adjust fields as needed
+        }
+      ]);
+  res.json(result);
+
 });
 
 // 3. Get single declaration by ID

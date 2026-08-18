@@ -1,5 +1,6 @@
 const asyncHandler = require('express-async-handler');
 const { holidarmaster, class_master, division_master, par_student_personal_information, sequelize, Sequelize } = require('../../models');
+const { getDataTable } = require('../../../admissionService/helper');
 function getRowsFromBody(body) {
   if (Array.isArray(body)) return body;
   if (body && Array.isArray(body.rows)) return body.rows;
@@ -42,6 +43,7 @@ const holidarmasterController = {
   }),
 
   getAll: asyncHandler(async (req, res) => {
+    /*
     const data = await holidarmaster.findAll({
       include: [
         {
@@ -66,6 +68,28 @@ const holidarmasterController = {
       count: data.length,
       data,
     });
+    */
+   
+    const result = await getDataTable(
+      req,
+      holidarmaster,
+        ['holiday'],
+        {},
+        [
+          {
+            model: class_master,
+            as: 'classInfo',
+            attributes: ['id', 'class_name', 'class_code'],
+          },
+          {
+            model: division_master,
+            as: 'divisionInfo',
+            attributes: ['id', 'division_name', 'division_code'],
+          }
+          
+        ]);
+      res.json(result);
+      
   }),
 
   getHolidayMasterStudent: asyncHandler(async (req, res) => {

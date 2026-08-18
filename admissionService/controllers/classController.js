@@ -28,7 +28,7 @@ const createClass = asyncHandler(async (req, res) => {
 });
 
 const getClasses = asyncHandler(async (req, res) => {
-  const result = await getDataTable(req, class_master, ['class_name','class_code','fall_in_category']);
+  const result = await getDataTable(req, class_master, ['class_name','class_code']);
   res.json(result);
 });
 
