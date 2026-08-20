@@ -87,6 +87,7 @@ exports.getAllProgramSubjectsByClassAndSemester = async (req, res) => {
 
     programSubjects.forEach((ps) => {
       const classId = ps.classId;
+      const semesterId=ps.semesterInfo?.id
       const semesterValue = ps.semesterInfo?.semester ?? ps.semester;
      const key = `${ps.classId}-${ps.semester}-${ps.programId ?? 'null'}`;
 

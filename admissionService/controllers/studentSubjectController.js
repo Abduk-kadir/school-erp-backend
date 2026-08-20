@@ -1,5 +1,5 @@
 const { student_subject, PersonalInformation, class_master, Program, Subject, ElectiveBasket } = require('../models');
-
+const { Op } = require('sequelize');
 exports.getAllStudentSubjects = async (req, res) => {
     console.log('this is calling')
   try {
@@ -22,6 +22,40 @@ exports.getAllStudentSubjects = async (req, res) => {
     console.error(error);
     return res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
+};
+exports.getAllStudentSubjectsbyregids = async (req, res) => {
+  const { allRegNo } = req.body;
+
+  // Optional: basic validation
+  if (!Array.isArray(allRegNo) || allRegNo.length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: 'allRegNo must be a non-empty array',
+    });
+  }
+
+try {
+  const records = await student_subject.findAll({
+    where: {
+      
+      student_reg_no: {
+        [Op.in]: allRegNo,
+      },
+    },
+    attributes: {
+      exclude: ['createdAt', 'updatedAt'],   // ← removes these two fields
+    },
+  });
+
+  return res.status(200).json({
+    success: true,
+    count: records.length,
+    data: records,
+  });
+} catch (error) {
+  console.error(error);
+  return res.status(500).json({ success: false, message: 'Server error', error: error.message });
+}
 };
 
 // Get all subjects assigned to a specific student (useful for student dashboard/admission)
