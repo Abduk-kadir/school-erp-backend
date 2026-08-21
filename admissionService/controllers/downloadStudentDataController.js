@@ -2,7 +2,7 @@ const asyncHandler = require('express-async-handler');
 const db = require('../models')
 const sequelize = db.sequelize;
 const ExcelJS = require('exceljs');
-const { student_subject, par_student_personal_information, class_master, Program, Subject, ElectiveBasket,division_master,caste_master,par_parentparticular,par_educational_detail,par_other_information,institute } = require('../models');
+const { par_student_subject, par_student_personal_information, class_master, Program, Subject, ElectiveBasket,division_master,caste_master,par_parentparticular,par_educational_detail,par_other_information,par_student_transport,institute } = require('../models');
 
 
 let allColumnOfTable = asyncHandler(async (req, res) => {
@@ -11,8 +11,8 @@ let allColumnOfTable = asyncHandler(async (req, res) => {
         const edu = await sequelize.getQueryInterface().describeTable(par_educational_detail.getTableName());
         const oth = await sequelize.getQueryInterface().describeTable(par_other_information.getTableName());
         const dec = await sequelize.getQueryInterface().describeTable('student_declarations');
-        const sub = await sequelize.getQueryInterface().describeTable('student_subjects');
-        const trans = await sequelize.getQueryInterface().describeTable('studenttransports');
+        const sub = await sequelize.getQueryInterface().describeTable(par_student_subject.getTableName());
+        const trans = await sequelize.getQueryInterface().describeTable(par_student_transport.getTableName());
 
         // Helper function to filter out 'id', 'reg_no', and timestamps
         const excludeCols = ['id', 'reg_no', 'createdAt', 'updatedAt', 'created_at', 'updated_at'];
@@ -258,7 +258,7 @@ const exportAllStudentData = asyncHandler(async (req, res) => {
       LEFT JOIN \`${par_educational_detail.getTableName()}\` edu ON edu.reg_no = p.reg_no
       LEFT JOIN \`${par_other_information.getTableName()}\` other ON other.reg_no = p.reg_no
       LEFT JOIN student_declarations decl ON decl.reg_no = p.reg_no
-      LEFT JOIN studenttransports trans ON trans.reg_no = p.reg_no
+      LEFT JOIN \`${par_student_transport.getTableName()}\` trans ON trans.reg_no = p.reg_no
     `;
 
         console.log("Query:", query);
@@ -268,7 +268,7 @@ const exportAllStudentData = asyncHandler(async (req, res) => {
         });
 
 
-       const records = await student_subject.findAll({
+       const records = await par_student_subject.findAll({
           include: [
             
             { model: class_master, as: 'class', attributes: ['id', 'class_name'] },
