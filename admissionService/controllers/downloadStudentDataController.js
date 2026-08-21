@@ -2,14 +2,14 @@ const asyncHandler = require('express-async-handler');
 const db = require('../models')
 const sequelize = db.sequelize;
 const ExcelJS = require('exceljs');
-const { student_subject, PersonalInformation, class_master, Program, Subject, ElectiveBasket,division_master,caste_master,ParentParticular,EducationDetail,OtherInformation,institute } = require('../models');
+const { student_subject, par_student_personal_information, class_master, Program, Subject, ElectiveBasket,division_master,caste_master,par_parentparticular,par_educational_detail,par_other_information,institute } = require('../models');
 
 
 let allColumnOfTable = asyncHandler(async (req, res) => {
-        const personal = await sequelize.getQueryInterface().describeTable('personalinformations');
-        const parentPar = await sequelize.getQueryInterface().describeTable('parentparticulars');
-        const edu = await sequelize.getQueryInterface().describeTable('educationdetails');
-        const oth = await sequelize.getQueryInterface().describeTable('otherinformations');
+        const personal = await sequelize.getQueryInterface().describeTable(par_student_personal_information.getTableName());
+        const parentPar = await sequelize.getQueryInterface().describeTable(par_parentparticular.getTableName());
+        const edu = await sequelize.getQueryInterface().describeTable(par_educational_detail.getTableName());
+        const oth = await sequelize.getQueryInterface().describeTable(par_other_information.getTableName());
         const dec = await sequelize.getQueryInterface().describeTable('student_declarations');
         const sub = await sequelize.getQueryInterface().describeTable('student_subjects');
         const trans = await sequelize.getQueryInterface().describeTable('studenttransports');
@@ -163,7 +163,7 @@ console.log('incorrectOtherInfo is:',incorrectOtherInfo)
 
     await sequelize.transaction(async (t) => {
       // 1. personal bulk insert (excel id not inserted)
-      const created = await PersonalInformation.bulkCreate(
+      const created = await par_student_personal_information.bulkCreate(
         correctPersonal.map(({ id, reg_no, ...data }) => data),
         { transaction: t }
       );
@@ -182,11 +182,11 @@ console.log('incorrectOtherInfo is:',incorrectOtherInfo)
 
       // 2. parent  3. education  4. other
       if (correctParentParticulars.length)
-        await sequelize.getQueryInterface().bulkInsert('parentparticulars', forInsert(correctParentParticulars), { transaction: t });
+        await sequelize.getQueryInterface().bulkInsert(par_parentparticular.getTableName(), forInsert(correctParentParticulars), { transaction: t });
       if (correctEduDetails.length)
-        await sequelize.getQueryInterface().bulkInsert('educationdetails', forInsert(correctEduDetails), { transaction: t });
+        await sequelize.getQueryInterface().bulkInsert(par_educational_detail.getTableName(), forInsert(correctEduDetails), { transaction: t });
       if (correctOtherInfo.length)
-        await sequelize.getQueryInterface().bulkInsert('otherinformations', forInsert(correctOtherInfo), { transaction: t });
+        await sequelize.getQueryInterface().bulkInsert(par_other_information.getTableName(), forInsert(correctOtherInfo), { transaction: t });
     });
 
     res.json({
@@ -251,12 +251,12 @@ const exportAllStudentData = asyncHandler(async (req, res) => {
       SELECT 
         p.reg_no,
         ${selectClause}
-      FROM personalinformations p
-      LEFT JOIN parentparticulars parent ON parent.reg_no = p.reg_no
+      FROM \`${par_student_personal_information.getTableName()}\` p
+      LEFT JOIN \`${par_parentparticular.getTableName()}\` parent ON parent.reg_no = p.reg_no
       LEFT JOIN class_masters cm ON cm.id = p.class
 
-      LEFT JOIN educationdetails edu ON edu.reg_no = p.reg_no
-      LEFT JOIN otherinformations other ON other.reg_no = p.reg_no
+      LEFT JOIN \`${par_educational_detail.getTableName()}\` edu ON edu.reg_no = p.reg_no
+      LEFT JOIN \`${par_other_information.getTableName()}\` other ON other.reg_no = p.reg_no
       LEFT JOIN student_declarations decl ON decl.reg_no = p.reg_no
       LEFT JOIN studenttransports trans ON trans.reg_no = p.reg_no
     `;
