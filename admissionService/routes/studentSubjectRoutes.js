@@ -6,6 +6,7 @@ const {
   getStudentSubjects,
   createStudentSubject,
   bulkCreateStudentSubjects,
+  bulkUpdateStudentSubjects,
   updateStudentSubject,
   deleteStudentSubject,
   getAllStudentSubjectsbyregids
@@ -16,7 +17,8 @@ const {
 router.get('/', getAllStudentSubjects);                  // GET all assignments
 router.get('/student/:student_reg_no', getStudentSubjects);  // GET all subjects for one student
 //router.post('/', createStudentSubject);                  // Create single assignment
-router.post('/bulk', bulkCreateStudentSubjects); 
+router.post('/bulk', bulkCreateStudentSubjects);
+router.put('/bulk', bulkUpdateStudentSubjects);
          
 //router.put('/:id', updateStudentSubject);                // Update one assignment
 //router.delete('/:id', deleteStudentSubject);   
