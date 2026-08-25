@@ -196,25 +196,43 @@ const diaryController = {
     const whereSql = whereClause.length
       ? ` where ${whereClause.join(' and ')}`
       : '';
-    const query = `select dr.*, bt.batch_name, cm.class_name, dv.division_name, sb.value as subject_name, CONCAT_WS(' ', sf.surname, sf.firstname) as staff_name from diaries
-   as dr join batches as bt on dr.batch=bt.id
+
+    const fromJoins = `from diaries as dr
+   join batches as bt on dr.batch=bt.id
    join division_masters as dv on dr.division= dv.id
    join class_masters as cm on dr.class = cm.id
    join Subjects as sb on dr.subject = sb.id
-   left join StaffRegistrations as sf on dr.staffid = sf.id
+   left join StaffRegistrations as sf on dr.staffid = sf.id`;
+
+    const query = `select dr.*, bt.batch_name, cm.class_name, dv.division_name, sb.value as subject_name, CONCAT_WS(' ', sf.surname, sf.firstname) as staff_name ${fromJoins}
    ${whereSql}
    LIMIT ${length} OFFSET ${start}`;
 
-    const result = await sequelize.query(query, {
-      type: QueryTypes.SELECT,
-      raw: true,
-    });
+    const [[totalRow], [filteredRow], result] = await Promise.all([
+      sequelize.query(`select COUNT(*) as total ${fromJoins}`, {
+        type: QueryTypes.SELECT,
+        raw: true,
+      }),
+      sequelize.query(`select COUNT(*) as total ${fromJoins} ${whereSql}`, {
+        type: QueryTypes.SELECT,
+        raw: true,
+      }),
+      sequelize.query(query, {
+        type: QueryTypes.SELECT,
+        raw: true,
+      }),
+    ]);
+
+    const recordsTotal = Number(totalRow?.total ?? 0);
+    const recordsFiltered = Number(filteredRow?.total ?? 0);
 
     return res.status(200).json({
       success: true,
+      draw,
+      recordsTotal,
+      recordsFiltered,
       count: result.length,
       data: result,
-      draw,
     });
   }),
   getDiaryStudent:asyncHandler(async(req,res)=>{
