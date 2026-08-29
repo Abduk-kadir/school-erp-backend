@@ -6,7 +6,7 @@ const { LOGO_UPLOAD_ROOT } = require('../middlewares/multerConfig');
 
 const instituteController = {
   create: asyncHandler(async (req, res) => {
-    const { name, code } = req.body;
+    const { name, code ,support_statement} = req.body;
 
     if (!name || !code) {
       return res.status(400).json({ message: 'name and code are required' });
@@ -22,6 +22,7 @@ const instituteController = {
     const inst = await institute.create({
       name,
       code,
+      support_statement,
       logo: logoPath,
     });
 

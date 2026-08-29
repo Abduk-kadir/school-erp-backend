@@ -142,24 +142,19 @@ async update(req, res) {
 },
  async getAll(req, res) {
     try {
-      const classWiseSchools = await classWiseSchool.findAll({
-        include:[{
-            model:class_master,
-            as:"class",
-            attributes: ['class_name']
+      const { classid } = req.query;
+      const whereClause = classid ? { class_id: classid } : {};
 
-        }]
-       
+      const classWiseSchools = await classWiseSchool.findAll({
+        where: whereClause,
+        include: [{
+          model: class_master,
+          as: 'class',
+          attributes: ['class_name'],
+        }],
       });
 
-      // Optional: make logo URLs absolute
-      const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
-      const classWiseSchoolsWithFullLogo = classWiseSchools.map(inst => ({
-        ...inst.toJSON(),
-        logo: inst.logo ? `${baseUrl}${inst.logo}` : null,
-      }));
-
-      return res.json({success:true,data:classWiseSchoolsWithFullLogo});
+      return res.json({ success: true, data: classWiseSchools });
     } catch (error) {
       return res.status(500).json({ message: 'Server error' });
     }
