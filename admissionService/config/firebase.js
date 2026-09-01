@@ -4,7 +4,7 @@ const path = require('path');
 
 const serviceAccount = JSON.parse(
   fs.readFileSync(
-    path.join(__dirname, 'demoprojectabdul-firebase-adminsdk-fbsvc-9880dfe980.json'),
+    path.join(__dirname, 'demoprojectabdul-firebase-adminsdk-fbsvc-7f0f3aa064.json'),
     'utf8'
   )
 );
