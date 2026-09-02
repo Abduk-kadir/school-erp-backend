@@ -50,6 +50,7 @@ let importStudentData = asyncHandler(async (req, res) => {
         //EducationDetail.findAll({ raw: true }),
         //OtherInformation.findAll({ raw: true })
     ]);
+    console.log('********************************:allStudentTypes',allStudentTypes)
 
     workbook.eachSheet((worksheet) => {
         const tableName = worksheet.name.trim();
@@ -104,14 +105,14 @@ let importStudentData = asyncHandler(async (req, res) => {
             divisionMap.has(item.division) &&
             casteMap.has(item.cast)
             &&genderMap.has(item.gender)
-            &&studentTypeMap.has(item.studenttype)
+            &&studentTypeMap.has(item.student_type)
         ) {
             // Replace text with IDs
             item.class = classMap.get(item.class);
             item.division = divisionMap.get(item.division);
             item.cast = casteMap.get(item.cast);
             item.gender = genderMap.get(item.gender);
-            item.studenttype = studentTypeMap.get(item.studenttype);
+            item.studenttype = studentTypeMap.get(item.student_type);
             return true;
         } else {
             const errors = [];
@@ -119,13 +120,14 @@ let importStudentData = asyncHandler(async (req, res) => {
             if (!divisionMap.has(item.division)) errors.push(`invalid division: ${item.division}`);
             if (!casteMap.has(item.cast)) errors.push(`invalid cast: ${item.cast}`);
             if (!genderMap.has(item.gender)) errors.push(`invalid gender: ${item.gender}`);
-            if (!studentTypeMap.has(item.studenttype)) errors.push(`invalid student type: ${item.studenttype}`);
+            if (!studentTypeMap.has(item.student_type)) errors.push(`invalid student type: ${item.studenttype}`);
             item.error = errors.join(', ');
             incorrectPersonal.push(item);
             return false;
         }
     });
-
+    console.log('studenttupe map*********************',studentTypeMap)
+    console.log('correct personal information************************',correctPersonal)
     const correctPersonalidset = new Set(correctPersonal.map(c => c.id));
     let correctParentParticulars = datafromexcel['Parent Particulars'].filter((item) => {
         if (correctPersonalidset.has(item.id)) {
@@ -160,7 +162,7 @@ let importStudentData = asyncHandler(async (req, res) => {
     const inst = await institute.findOne();
     const yy = String(new Date().getFullYear()).slice(-2);
     const excelToReg = {};
-
+    
     try {
         await sequelize.transaction(async (t) => {
             try {
