@@ -40,7 +40,7 @@ let importStudentData = asyncHandler(async (req, res) => {
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(req.file.buffer);
     let datafromexcel = {}
-    const [allClasses, allDivisions, allCasts, allParentPar, allEduDetails,allGenders,allStudentTypes] = await Promise.all([
+    const [allClasses, allDivisions, allCasts,allGenders,allStudentTypes, allParentPar, allEduDetails] = await Promise.all([
         class_master.findAll({ raw: true }),
         division_master.findAll({ raw: true }),
         caste_master.findAll({ raw: true }),
