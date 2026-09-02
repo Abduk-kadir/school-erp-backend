@@ -49,7 +49,7 @@ module.exports = (sequelize, DataTypes) => {
     father_name: DataTypes.STRING,
     student_type: DataTypes.INTEGER,
     cast:DataTypes.INTEGER,
-    gender: DataTypes.STRING,
+    gender: DataTypes.INTEGER,
     class: DataTypes.STRING,
     division: DataTypes.STRING,
     contact_number: DataTypes.STRING,

@@ -2,7 +2,7 @@ const asyncHandler = require('express-async-handler');
 const db = require('../models')
 const sequelize = db.sequelize;
 const ExcelJS = require('exceljs');
-const { par_student_subject, par_student_personal_information, class_master, Program, Subject, ElectiveBasket, division_master, caste_master, par_parentparticular, par_educational_detail, par_other_information, par_student_transport, institute } = require('../models');
+const { par_student_subject, par_student_personal_information, class_master, Program, Subject, ElectiveBasket, division_master, caste_master, par_parentparticular, par_educational_detail, par_other_information, par_student_transport, institute,gender_master,gender,studenttype } = require('../models');
 
 
 let allColumnOfTable = asyncHandler(async (req, res) => {
@@ -40,10 +40,12 @@ let importStudentData = asyncHandler(async (req, res) => {
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(req.file.buffer);
     let datafromexcel = {}
-    const [allClasses, allDivisions, allCasts, allParentPar, allEduDetails] = await Promise.all([
+    const [allClasses, allDivisions, allCasts, allParentPar, allEduDetails,allGenders,allStudentTypes] = await Promise.all([
         class_master.findAll({ raw: true }),
         division_master.findAll({ raw: true }),
         caste_master.findAll({ raw: true }),
+        gender.findAll({ raw: true }),
+        studenttype.findAll({ raw: true }),
         //ParentParticular.findAll({ raw: true }),
         //EducationDetail.findAll({ raw: true }),
         //OtherInformation.findAll({ raw: true })
@@ -84,6 +86,9 @@ let importStudentData = asyncHandler(async (req, res) => {
     const casteMap = new Map(
         allCasts.map(c => [c.value, c.id])
     );
+    const genderMap=new Map(allGenders.map(g=>[g.gender_name,g.id]))
+    const studentTypeMap=new Map(allStudentTypes.map(s=>[s.studenttype,s.id]))
+
     const originalPersonal = (datafromexcel['Personal Infromation'] || []).map(r => ({ ...r }));
     const originalParent = (datafromexcel['Parent Particulars'] || []).map(r => ({ ...r }));
     const originalEdu = (datafromexcel['Educational Details'] || []).map(r => ({ ...r }));
@@ -98,19 +103,23 @@ let importStudentData = asyncHandler(async (req, res) => {
             classMap.has(item.class) &&
             divisionMap.has(item.division) &&
             casteMap.has(item.cast)
+            &&genderMap.has(item.gender)
+            &&studentTypeMap.has(item.studenttype)
         ) {
             // Replace text with IDs
             item.class = classMap.get(item.class);
             item.division = divisionMap.get(item.division);
             item.cast = casteMap.get(item.cast);
-
+            item.gender = genderMap.get(item.gender);
+            item.studenttype = studentTypeMap.get(item.studenttype);
             return true;
         } else {
             const errors = [];
             if (!classMap.has(item.class)) errors.push(`invalid class: ${item.class}`);
             if (!divisionMap.has(item.division)) errors.push(`invalid division: ${item.division}`);
             if (!casteMap.has(item.cast)) errors.push(`invalid cast: ${item.cast}`);
-
+            if (!genderMap.has(item.gender)) errors.push(`invalid gender: ${item.gender}`);
+            if (!studentTypeMap.has(item.studenttype)) errors.push(`invalid student type: ${item.studenttype}`);
             item.error = errors.join(', ');
             incorrectPersonal.push(item);
             return false;

@@ -63,7 +63,7 @@ module.exports = {
         type:Sequelize.INTEGER
       },
       gender:{
-        type:Sequelize.STRING
+        type:Sequelize.INTEGER
       },
       updatedAt: {
         allowNull: false,
