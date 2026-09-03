@@ -49,7 +49,8 @@ module.exports = (sequelize, DataTypes) => {
     rfid: DataTypes.STRING,
     password: DataTypes.STRING,
     dob: DataTypes.STRING,
-    blood_groop: DataTypes.STRING
+    blood_groop: DataTypes.STRING,
+    photo_url: DataTypes.STRING,
   }, {
     sequelize,
     modelName: 'par_student_personal_information',

@@ -290,7 +290,24 @@ const exportAllStudentData = asyncHandler(async (req, res) => {
             cols.map(col => {
                 if (alias === 'p' && col === 'class') {
                     return 'cm.class_name AS class'; // replace class ID with class name
-                } else {
+                }
+                else if(alias === 'p' && col === 'division'){
+
+                    return 'dm.division_name AS division';
+                }
+                else if(alias === 'p' && col === 'cast'){
+
+                    return 'cms.value AS cast';
+                }
+                else if(alias === 'p' && col === 'gender'){
+
+                    return 'gm.gender_name AS gender';
+                }
+                else if(alias === 'p' && col === 'studenttype'){
+                    
+                    return 'st.studenttype AS studenttype';
+                }
+                else {
                     return `${alias}.\`${col}\``;
                 }
             }).join(", ")
@@ -309,6 +326,10 @@ const exportAllStudentData = asyncHandler(async (req, res) => {
       FROM \`${par_student_personal_information.getTableName()}\` p
       LEFT JOIN \`${par_parentparticular.getTableName()}\` parent ON parent.reg_no = p.reg_no
       LEFT JOIN class_masters cm ON cm.id = p.class
+      LEFT JOIN division_masters dm ON dm.id = p.division
+      LEFT JOIN caste_masters cms ON cms.id = p.cast
+      LEFT JOIN genders gm ON gm.id = p.gender
+      LEFT JOIN studenttypes st ON st.id = p.student_type
 
       LEFT JOIN \`${par_educational_detail.getTableName()}\` edu ON edu.reg_no = p.reg_no
       LEFT JOIN \`${par_other_information.getTableName()}\` other ON other.reg_no = p.reg_no
