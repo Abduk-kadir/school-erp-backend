@@ -10,15 +10,16 @@ const filterStudent = async (row) => {
         whereClause.push(`student.division=${row.division}`)
     }
     if (row.subject) {
-        whereClause.push(`subject.subject_id=${row.subject}`)
+        whereClause.push(`subject.subjectId=${row.subject}`)
     }
     let whereSql = whereClause.length ? ` where ${whereClause.join(' and ')}` : '';
-    let sqlQuery = `select student.id, student.reg_no,student.class ,student.division, subject.subject_id,subject.semester ,token.token
+    let sqlQuery = `select student.id, student.reg_no,student.class ,student.division, subject.subjectId ,token.token
     from par_student_personal_informations as student 
-    join student_subjects subject on student.reg_no=subject.student_reg_no 
+    join ProgramSubjects subject on student.class=subject.classId 
     inner join student_fcmtokens as token on token.studentid=student.id
     ${whereSql}
     `;
+    console.log('sqlQuery is***********:', sqlQuery);
     let students = await sequelize.query(sqlQuery, {
         type: QueryTypes.SELECT,
         raw: true,
