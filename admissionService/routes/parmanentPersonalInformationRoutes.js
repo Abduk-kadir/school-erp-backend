@@ -8,6 +8,7 @@ router.get('/columns', ParmanentPersonalInformation.getAllColumns);
 router.put('/bulk-update', ParmanentPersonalInformation.bulkUpdatePersonalInformation);
 router.get('/reg/:reg_no', ParmanentPersonalInformation.getByReg);
 router.get('/email/:email',ParmanentPersonalInformation.getByEmail);
+router.get('/email/:email/password/:password', ParmanentPersonalInformation.getAllByEmailAndPassword);
 router.post('/login',ParmanentPersonalInformation.login);
 router.put('/:id', ParmanentPersonalInformation.update);
 router.delete('/:id', ParmanentPersonalInformation.remove);

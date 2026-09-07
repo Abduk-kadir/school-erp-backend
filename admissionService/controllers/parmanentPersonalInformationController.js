@@ -98,6 +98,25 @@ const ParmanentPersonalInformation = {
     
     res.status(200).json({success:true,data:data});
   }),
+
+  getAllByEmailAndPassword: asyncHandler(async (req, res) => {
+    const email = req.params.email ?? req.params.Email;
+    const password = req.params.password ?? req.body?.password;
+    const existing = await par_student_personal_information.findOne({
+      where: { email, password },
+    });
+    if (!existing) {
+      return res.status(404).json({ message: 'envalid credential', success: false });
+    }
+
+    const data = await par_student_personal_information.findAll({
+      where: { email, password },
+      raw: true,
+    });
+
+    res.status(200).json({ success: true, data });
+  }),
+
   getByReg: asyncHandler(async (req, res) => {
     const regNoParam = req.params.reg_no ?? req.params.regNo;
     const reg_no = Number(regNoParam);

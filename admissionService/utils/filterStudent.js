@@ -24,7 +24,10 @@ const filterStudent = async (row) => {
         type: QueryTypes.SELECT,
         raw: true,
     });
-    return students;
+    // ProgramSubjects join can return the same student/token once per subject
+    const uniqueStudents = [...new Map(students.map((s) => [s.token, s])).values()];
+    console.log('uniquestudent is ***********:', uniqueStudents);
+    return uniqueStudents;
 };
 
 module.exports = filterStudent;

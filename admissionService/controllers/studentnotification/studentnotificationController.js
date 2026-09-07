@@ -131,8 +131,7 @@ const studentnotificationController = {
       const row = recordsToCreate[i];
       const students = await filterStudent(row);
       console.log('students is***********:', students);
-      await sendBulkNotification(students, 'notification is sent',
-        'notification is sent',
+      await sendBulkNotification(students, 'notification is sent',row.message,
         {
           type: 'exam',
           examId: '12345',
