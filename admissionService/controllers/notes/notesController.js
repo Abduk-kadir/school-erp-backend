@@ -1,6 +1,6 @@
 const asyncHandler = require('express-async-handler');
 const { QueryTypes } = require('sequelize');
-const { notes, sequelize, par_student_personal_information, student_subject } = require('../../models');
+const { notes, sequelize, par_student_personal_information, student_subject,Subject} = require('../../models');
 const filterStudent = require('../../utils/filterStudent');
 const { sendBulkNotification } = require('../../services/notificationService');
 
@@ -46,8 +46,9 @@ const notesController = {
       const row = {class:classId,division,subject};
       const students = await filterStudent(row);
       console.log('students is***********:', students);
-      await sendBulkNotification(students, 'Diaryyyy',
-        'notes  are sent',
+      let subjectName=await Subject.findOne({where:{id:subject}});
+      await sendBulkNotification(students, 'Notes',
+        'subject '+subjectName.value+ " topic "+topic,
         {
           type: 'notes',
           examId: '12345',

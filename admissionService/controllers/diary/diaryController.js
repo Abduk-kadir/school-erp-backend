@@ -144,8 +144,8 @@ const diaryController = {
       const row = recordsToCreate[i];
       const students = await filterStudent(row);
       console.log('students is***********:', students);
-      await sendBulkNotification(students, 'Diaryyyy',
-        'Today hhhh diary is sent',
+      await sendBulkNotification(students, 'Diary',
+        row.message,
         {
           type: 'exam',
           examId: '12345',
