@@ -4,6 +4,7 @@ const { uploadStaffDocument } = require('../middlewares/multerConfig');
 const {
   registration,
   login,
+  logout,
   staffDetail,
   staffDetailById,
   editStaff,
@@ -31,5 +32,6 @@ router.put(
   editStaff
 );
 router.post('/login', login);
+router.post('/logout', logout);
 
 module.exports = router;

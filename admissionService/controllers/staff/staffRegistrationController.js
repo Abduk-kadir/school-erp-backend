@@ -211,6 +211,31 @@ const login = async (req, res) => {
   }
 };
 
+const logout = async (req, res) => {
+  try {
+    const fcmToken = req.body.fcmToken ?? req.body.device_token;
+    if (!fcmToken) {
+      return res.status(400).json({
+        success: false,
+        message: 'fcmToken is required',
+      });
+    }
+
+    await staffFcmtoken.destroy({ where: { token: fcmToken } });
+    return res.status(200).json({
+      success: true,
+      message: 'Logged out successfully',
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message,
+    });
+  }
+};
+
 const staffDetail = async (req, res) => {
   try {
     const staff = await StaffRegistration.findByPk(req.staff, {
@@ -456,4 +481,4 @@ const allStaff = async (req, res) => {
   }
 };
 
-module.exports = { registration, login, staffDetail, staffDetailById, editStaff, allStaff };
+module.exports = { registration, login, logout, staffDetail, staffDetailById, editStaff, allStaff };

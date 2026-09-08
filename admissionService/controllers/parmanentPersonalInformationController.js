@@ -1,5 +1,5 @@
 const asyncHandler = require('express-async-handler');
-const { par_student_personal_information, sequelize } = require('../models');
+const { par_student_personal_information, studentFcmtoken, sequelize } = require('../models');
 const { Op } = require('sequelize');
 const generateToken = require('../utils/generateToken');
 const saveStudentFcmToken = require('../utils/saveStudentFcmToken');
@@ -20,6 +20,22 @@ const ParmanentPersonalInformation = {
 
     const token = generateToken({ reg_no: data.id });
     res.status(200).json({ success: true, token, reg_no: data.reg_no });
+  }),
+
+  logout: asyncHandler(async (req, res) => {
+    const fcmToken = req.body.fcmToken ?? req.body.device_token;
+    if (!fcmToken) {
+      return res.status(400).json({
+        success: false,
+        message: 'fcmToken is required',
+      });
+    }
+
+    await studentFcmtoken.destroy({ where: { token: fcmToken } });
+    return res.status(200).json({
+      success: true,
+      message: 'Logged out successfully',
+    });
   }),
 
  
