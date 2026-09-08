@@ -1,7 +1,8 @@
 const asyncHandler = require('express-async-handler');
-const { par_student_personal_information, studentFcmtoken, sequelize } = require('../models');
+const { par_student_personal_information, sequelize } = require('../models');
 const { Op } = require('sequelize');
 const generateToken = require('../utils/generateToken');
+const saveStudentFcmToken = require('../utils/saveStudentFcmToken');
 
 const ParmanentPersonalInformation = {
   login: asyncHandler(async (req, res) => {
@@ -14,14 +15,7 @@ const ParmanentPersonalInformation = {
     if (!data) return res.status(404).json({ message: 'email or passwor is not correct' });
 
     if (fcmToken) {
-      const existing = await studentFcmtoken.findOne({
-        where: { studentid: data.id },
-      });
-      if (existing) {
-        await existing.update({ token: fcmToken });
-      } else {
-        await studentFcmtoken.create({ studentid: data.id, token: fcmToken });
-      }
+      await saveStudentFcmToken(data.id, fcmToken);
     }
 
     const token = generateToken({ reg_no: data.id });

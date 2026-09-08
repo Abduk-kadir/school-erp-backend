@@ -2,6 +2,7 @@ const asyncHandler = require('express-async-handler');
 const { par_student_personal_information, studentFcmtoken} = require('../../models');
 const { Op } = require('sequelize');
 const generateToken = require('../../utils/generateToken');
+const saveStudentFcmToken = require('../../utils/saveStudentFcmToken');
 
 const login=asyncHandler(async(req,res)=>{
     const { username,password, device_token,account_type ,academic_year} = req.body;
@@ -25,14 +26,7 @@ const login=asyncHandler(async(req,res)=>{
       raw:true
     })
     if (device_token) {
-      const existing = await studentFcmtoken.findOne({
-        where: { studentid: data.id },
-      });
-      if (existing) {
-        await existing.update({ token: device_token });
-      } else {
-        await studentFcmtoken.create({ studentid: data.id, token: device_token });
-      }
+      await saveStudentFcmToken(data.id, device_token);
     }
     const token = generateToken({ reg_no: data.id });
     res.status(200).json({ success: true,
@@ -76,14 +70,7 @@ const login=asyncHandler(async(req,res)=>{
       raw:true
     })
     if (device_token) {
-      const existing = await studentFcmtoken.findOne({
-        where: { studentid: data.id },
-      });
-      if (existing) {
-        await existing.update({ token: device_token });
-      } else {
-        await studentFcmtoken.create({ studentid: data.id, token: device_token });
-      }
+      await saveStudentFcmToken(data.id, device_token);
     }
     const token = generateToken({ reg_no: data.id });
     res.status(200).json({ success: true,

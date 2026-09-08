@@ -16,7 +16,7 @@ const filterStudent = async (row) => {
     let sqlQuery = `select student.id, student.reg_no,student.class ,student.division, subject.subjectId ,token.token
     from par_student_personal_informations as student 
     join ProgramSubjects subject on student.class=subject.classId 
-    inner join student_fcmtokens as token on token.studentid=student.id
+    join student_fcmtokens as token on token.studentid=student.id
     ${whereSql}
     `;
     console.log('sqlQuery is***********:', sqlQuery);

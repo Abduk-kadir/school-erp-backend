@@ -4,6 +4,7 @@ const fs = require('fs');
 const { Op, QueryTypes } = require('sequelize');
 const { StaffRegistration, staffFcmtoken, department, designation, sequelize } = require('../../models');
 const generateToken = require('../../utils/generateToken');
+const saveStaffFcmToken = require('../../utils/saveStaffFcmToken');
 const { STAFF_DOCUMENT_UPLOAD_ROOT } = require('../../middlewares/multerConfig');
 
 const STAFF_DOCUMENT_ROOT = STAFF_DOCUMENT_UPLOAD_ROOT;
@@ -185,14 +186,7 @@ const login = async (req, res) => {
     }
 
     if (fcmToken) {
-      const existing = await staffFcmtoken.findOne({
-        where: { staffid: staff.id },
-      });
-      if (existing) {
-        await existing.update({ token: fcmToken });
-      } else {
-        await staffFcmtoken.create({ staffid: staff.id, token: fcmToken });
-      }
+      await saveStaffFcmToken(staff.id, fcmToken);
     }
 
     const token = generateToken({
