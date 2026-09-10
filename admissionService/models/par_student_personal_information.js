@@ -31,6 +31,16 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'student_type',
         as: 'studenttypeInfo',
       });
+      par_student_personal_information.belongsTo(models.class_master, {
+        foreignKey: 'class',
+        targetKey: 'id',
+        as: 'classInfo',
+      });
+      par_student_personal_information.belongsTo(models.division_master, {
+        foreignKey: 'division',
+        targetKey: 'id',
+        as: 'divisionInfo',
+      });
     }
   }
   par_student_personal_information.init({
@@ -50,6 +60,8 @@ module.exports = (sequelize, DataTypes) => {
     password: DataTypes.STRING,
     dob: DataTypes.STRING,
     blood_groop: DataTypes.STRING,
+    rollnumber:DataTypes.BIGINT,
+    address:DataTypes.STRING,
     photo_url: DataTypes.STRING,
   }, {
     sequelize,

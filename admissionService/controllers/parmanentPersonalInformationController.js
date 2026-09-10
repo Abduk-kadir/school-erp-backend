@@ -1,5 +1,5 @@
 const asyncHandler = require('express-async-handler');
-const { par_student_personal_information, studentFcmtoken, sequelize } = require('../models');
+const { par_student_personal_information, studentFcmtoken, sequelize, class_master, division_master, studenttype } = require('../models');
 const { Op } = require('sequelize');
 const generateToken = require('../utils/generateToken');
 const saveStudentFcmToken = require('../utils/saveStudentFcmToken');
@@ -90,7 +90,11 @@ const ParmanentPersonalInformation = {
 
     const rows = await par_student_personal_information.findAll({
       where: Object.keys(where).length ? where : {},
-      
+      include: [
+        { model: class_master, as: 'classInfo', attributes: ['class_name'] },
+        { model: division_master, as: 'divisionInfo', attributes: ['division_name'] },
+        { model: studenttype, as: 'studenttypeInfo', attributes: ['studenttype'] },
+      ],
     });
     res.status(200).json({ success: true, message: 'data fetched successfully', data: rows });
   }),
@@ -139,36 +143,37 @@ const ParmanentPersonalInformation = {
 
   update: asyncHandler(async (req, res) => {
     const { id } = req.params;
-    const {
-      reg_no,
-      first_name,
-      last_name,
-      father_name,
-      class: classId,
-      feegroupid,
-      division,
-      contact_number,
-      password,
-      dob,
-      blood_groop,
-    } = req.body;
+    const allowedFields = [
+      'first_name',
+      'last_name',
+      'father_name',
+      'email',
+      'division',
+      'contact_number',
+      'rollnumber',
+      'address',
+      'rfid',
+      'blood_groop',
+    ];
+
+    const updateData = {};
+    for (const field of allowedFields) {
+      if (req.body[field] !== undefined) {
+        updateData[field] = req.body[field];
+      }
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No valid fields to update',
+      });
+    }
 
     const row = await par_student_personal_information.findByPk(id);
     if (!row) return res.status(404).json({ message: 'Not found' });
 
-    await row.update({
-      reg_no,
-      first_name,
-      last_name,
-      father_name,
-      class: classId,
-      feegroupid,
-      division,
-      contact_number,
-      password,
-      dob,
-      blood_groop,
-    });
+    await row.update(updateData);
 
     res.status(200).json({ message: 'Updated', data: row });
   }),
