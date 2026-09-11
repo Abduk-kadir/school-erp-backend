@@ -15,7 +15,14 @@ const ParmanentPersonalInformation = {
     if (!data) return res.status(404).json({ message: 'email or passwor is not correct' });
 
     if (fcmToken) {
-      await saveStudentFcmToken(data.id, fcmToken);
+      const siblings = await par_student_personal_information.findAll({
+        where: { email: data.email },
+        attributes: ['id'],
+        raw: true,
+      });
+      await Promise.all(
+        siblings.map((s) => saveStudentFcmToken(s.id, fcmToken))
+      );
     }
 
     const token = generateToken({ reg_no: data.id });
@@ -24,6 +31,7 @@ const ParmanentPersonalInformation = {
 
   logout: asyncHandler(async (req, res) => {
     const fcmToken = req.body.fcmToken ?? req.body.device_token;
+    const email = req.body.email;
     if (!fcmToken) {
       return res.status(400).json({
         success: false,
@@ -31,7 +39,37 @@ const ParmanentPersonalInformation = {
       });
     }
 
-    await studentFcmtoken.destroy({ where: { token: fcmToken } });
+    let parentEmail = email;
+    if (!parentEmail) {
+      const tokenRow = await studentFcmtoken.findOne({
+        where: { token: fcmToken },
+        raw: true,
+      });
+      if (tokenRow) {
+        const student = await par_student_personal_information.findByPk(
+          tokenRow.studentid,
+          { attributes: ['email'], raw: true }
+        );
+        parentEmail = student?.email;
+      }
+    }
+
+    if (parentEmail) {
+      const siblings = await par_student_personal_information.findAll({
+        where: { email: parentEmail },
+        attributes: ['id'],
+        raw: true,
+      });
+      const siblingIds = siblings.map((s) => s.id);
+      if (siblingIds.length) {
+        await studentFcmtoken.destroy({
+          where: { studentid: siblingIds, token: fcmToken },
+        });
+      }
+    } else {
+      await studentFcmtoken.destroy({ where: { token: fcmToken } });
+    }
+
     return res.status(200).json({
       success: true,
       message: 'Logged out successfully',

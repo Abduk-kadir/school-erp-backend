@@ -60,7 +60,7 @@ module.exports = (sequelize, DataTypes) => {
     password: DataTypes.STRING,
     dob: DataTypes.STRING,
     blood_groop: DataTypes.STRING,
-    rollnumber:DataTypes.BIGINT,
+    rollnumber:DataTypes.INTEGER,
     address:DataTypes.STRING,
     photo_url: DataTypes.STRING,
   }, {
