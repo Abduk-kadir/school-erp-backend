@@ -1,5 +1,5 @@
 const asyncHandler = require('express-async-handler');
-const { AllRfid, NotMatchedRfid, RfidUnknown, sequelize } = require('../../models');
+const { rfidQueue } = require('../../queues/rfidQueue');
 
 const saveattendancebyrfid = asyncHandler(async (req, res) => {
   const rawData = req.query.Data;
@@ -10,37 +10,14 @@ const saveattendancebyrfid = asyncHandler(async (req, res) => {
 
   const allRows = rawData
     .split(';')
-    .map(item => item.trim())
+    .map((item) => item.trim())
     .filter(Boolean);
-
-  for (const row of allRows) {
-    await AllRfid.create({ data: row });
-
-    const parts = row.split(',').map(item => item.trim());
-    const rfid = parts[1];
-    const machineNo = parts[4];
-
-    if (machineNo !== '31') {
-      await NotMatchedRfid.create({ data: row });
-      continue;
-    }
-
-    const [student] = await sequelize.query(
-      'SELECT * FROM par_student_personal_informations WHERE rfid = ? LIMIT 1',
-      {
-        replacements: [rfid],
-        type: sequelize.QueryTypes.SELECT
-      }
-    );
-
-    if (!student) {
-      await RfidUnknown.create({ data: row });
-    }
-  }
-
-  res.send("Done")
+    console.log("allRows",allRows);
+  // Fast ACK for machines — heavy work runs in rfidWorker
+  await rfidQueue.add('process-rfid-batch', { rows: allRows });
+  return res.send('Done');
 });
 
 module.exports = {
-  saveattendancebyrfid
+  saveattendancebyrfid,
 };
