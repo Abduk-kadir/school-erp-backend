@@ -21,6 +21,9 @@ module.exports = {
       father_name: {
         type: Sequelize.STRING
       },
+      mother_name: {
+        type: Sequelize.STRING
+      },
       class: {
         type: Sequelize.INTEGER
       },
@@ -32,6 +35,9 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       contact_number: {
+        type: Sequelize.STRING
+      },
+      contact_number_second: {
         type: Sequelize.STRING
       },
       rfid: {

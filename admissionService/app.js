@@ -1,9 +1,11 @@
 const express = require('express');
 const sequelize = require('./models').sequelize; // From models/index.js
 
+
 const cors=require('cors')
 const app = express();
 const path = require('path');
+const startAllJobs = require('./jobs/index.js');
 
 //const dbSwitcher = require('./middlewares/dbSwitcher');
 //const dbRoutes = require('./routes/dbRoutes');
@@ -90,7 +92,8 @@ const genderRoutes = require('./routes/genderRoutes');
 const rfidRoutes = require('./routes/rfidRoutes');
 const semesterRoutes = require('./routes/semesterRoutes');
 const studenttypeRoutes = require('./routes/studenttypeRoutes');
-
+//start all jobs
+//startAllJobs();
 // In your app.js or server.js
                  // Ensure Redis connects first
                  

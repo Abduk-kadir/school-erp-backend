@@ -54,7 +54,8 @@ function parseRfidRow(row) {
   const parts = String(row)
     .split(',')
     .map((item) => item.trim());
-  const punchedAt = parsePunchDateTime(parts[2]);
+  const punchedAt =parsePunchDateTime(`${parts[2]} ${parts[3]}`);
+ 
   return {
     raw: row,
     machineId: parts[0] || null,
@@ -83,7 +84,7 @@ async function upsertAttendanceAndCollectNotify(punch, student) {
       reg_no: student.reg_no,
       attendance_date: attendanceDate,
       in_time: punchTime,
-      in_time_notification_flag: false,
+      in_time_notification_flag: true,
       out_time: null,
       out_time_notification_flag: false,
       machine_id: machineId,
@@ -106,12 +107,12 @@ async function upsertAttendanceAndCollectNotify(punch, student) {
     return { notifyJobs, punchedAt };
   }
 
-  if (!row.in_time) {
+  if (row) {
     await row.update({
       in_time: punchTime,
       machine_id: machineId || row.machine_id,
+      in_time_notification_flag:true,
     });
-    if (!row.in_time_notification_flag) {
       notifyJobs.push({
         type: 'in',
         studentId: student.id,
@@ -127,37 +128,65 @@ async function upsertAttendanceAndCollectNotify(punch, student) {
         attendanceDate,
         flagField: 'in_time_notification_flag',
       });
-    }
+    
     return { notifyJobs, punchedAt };
   }
 
-  // Later punch(es) = out
-  await row.update({
-    out_time: punchTime,
-    machine_id: machineId || row.machine_id,
-  });
-  if (!row.out_time_notification_flag) {
-    notifyJobs.push({
-      type: 'out',
-      studentId: student.id,
-      title: 'School Exit',
-      body: `${studentName} left school at ${punchTime}`,
-      data: {
-        type: 'attendance_out',
-        reg_no: String(student.reg_no),
-        attendance_date: attendanceDate,
-        time: punchTime,
-      },
-      attendanceId: row.id,
-      attendanceDate,
-      flagField: 'out_time_notification_flag',
-    });
-  }
 
+  /*
+    if (!row.in_time) {
+      await row.update({
+        in_time: punchTime,
+        machine_id: machineId || row.machine_id,
+      });
+      if (!row.in_time_notification_flag) {
+        notifyJobs.push({
+          type: 'in',
+          studentId: student.id,
+          title: 'School Entry',
+          body: `${studentName} entered school at ${punchTime}`,
+          data: {
+            type: 'attendance_in',
+            reg_no: String(student.reg_no),
+            attendance_date: attendanceDate,
+            time: punchTime,
+          },
+          attendanceId: row.id,
+          attendanceDate,
+          flagField: 'in_time_notification_flag',
+        });
+      }
+      return { notifyJobs, punchedAt };
+    }
+     
+    // Later punch(es) = out
+    await row.update({
+      out_time: punchTime,
+      machine_id: machineId || row.machine_id,
+    });
+    if (!row.out_time_notification_flag) {
+      notifyJobs.push({
+        type: 'out',
+        studentId: student.id,
+        title: 'School Exit',
+        body: `${studentName} left school at ${punchTime}`,
+        data: {
+          type: 'attendance_out',
+          reg_no: String(student.reg_no),
+          attendance_date: attendanceDate,
+          time: punchTime,
+        },
+        attendanceId: row.id,
+        attendanceDate,
+        flagField: 'out_time_notification_flag',
+      });
+    }
+  */
   return { notifyJobs, punchedAt };
 }
 
 async function queueNotifications(notifyJobs) {
+  console.log("in queueNotifications section**********")
   if (!notifyJobs.length) return;
 
   const studentIds = [...new Set(notifyJobs.map((j) => j.studentId))];
@@ -171,7 +200,7 @@ async function queueNotifications(notifyJobs) {
     if (!tokensByStudent.has(t.studentid)) tokensByStudent.set(t.studentid, []);
     tokensByStudent.get(t.studentid).push(t.token);
   }
-  console.log('token by student :',tokensByStudent)
+  console.log('token by student :', tokensByStudent)
   await Promise.all(
     notifyJobs.map(async (job) => {
       const tokens = [...new Set(tokensByStudent.get(job.studentId) || [])];
@@ -207,7 +236,7 @@ async function processRfidBatch(job) {
   );
 
   const parsed = rows.map(parseRfidRow);
-  console.log("parsed",parsed)
+  console.log("parsed", parsed)
   const notMatched = parsed.filter((p) => p.flag !== '31');
   const valid = parsed.filter((p) => p.flag === '31' && p.rfid);
 
@@ -223,7 +252,7 @@ async function processRfidBatch(job) {
   }
 
   const rfids = [...new Set(valid.map((v) => v.rfid))];
-  console.log("rfids",rfids)
+  console.log("rfids", rfids)
   const students = await sequelize.query(
     `SELECT id, reg_no, rfid, first_name, last_name
      FROM par_student_personal_informations
@@ -247,8 +276,8 @@ async function processRfidBatch(job) {
       punches.push({ punch, student });
     }
   }
- console.log("punches**********",punches)
- console.log("unknown**********",unknown)
+  console.log("punches**********", punches)
+  console.log("unknown**********", unknown)
   if (unknown.length) {
     await RfidUnknown.bulkCreate(unknown, { validate: false });
   }
@@ -261,7 +290,7 @@ async function processRfidBatch(job) {
     if (!byStudent.has(key)) byStudent.set(key, []);
     byStudent.get(key).push(item);
   }
-   console.log("byStudent**********",byStudent)
+  console.log("byStudent**********", byStudent)
   const allNotifyJobs = [];
   await Promise.all(
     [...byStudent.values()].map(async (studentPunches) => {
@@ -275,7 +304,7 @@ async function processRfidBatch(job) {
     })
   );
 
-  console.log("allNotifyjobs********",allNotifyJobs)
+  console.log("allNotifyjobs********", allNotifyJobs)
   // Notifications are queued (not sent inline) so FCM stays async
   await queueNotifications(allNotifyJobs);
 
