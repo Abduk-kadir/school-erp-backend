@@ -92,8 +92,9 @@ const genderRoutes = require('./routes/genderRoutes');
 const rfidRoutes = require('./routes/rfidRoutes');
 const semesterRoutes = require('./routes/semesterRoutes');
 const studenttypeRoutes = require('./routes/studenttypeRoutes');
+const attendanceCronRecordRoutes = require('./routes/attendanceCronRecordRoutes');
 //start all jobs
-//startAllJobs();
+startAllJobs();
 // In your app.js or server.js
                  // Ensure Redis connects first
                  
@@ -130,6 +131,7 @@ console.log('🚀 RFID Attendance Worker Started Successfully');
 
 //app.use('/api/db', dbRoutes);
 app.use('/api/in-out-attendance', inOutAttendanceRoutes);
+app.use('/api/attendance-cron-records', attendanceCronRecordRoutes);
 app.use('/api/attendance-lecturewise', attendanceLecturewiseRoutes);
 app.use('/api/holiday-masters', holidarmasterRoutes);
 app.use('/api/event-masters', eventmasterRoutes);
