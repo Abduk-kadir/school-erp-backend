@@ -1,9 +1,10 @@
 const asyncHandler = require('express-async-handler');
 const fs = require('fs');
 const { QueryTypes } = require('sequelize');
-const { diary, sequelize,studentFcmtoken,par_student_personal_information,student_subject} = require('../../models');
+const { diary, sequelize,studentFcmtoken,par_student_personal_information,student_subject,ProgramSubject} = require('../../models');
 const {sendBulkNotification} = require('../../services/notificationService');
 const filterStudent = require('../../utils/filterStudent');
+
 const DOCUMENT_FIELD_NAMES = [
   'diary',
   'document',
@@ -240,8 +241,8 @@ const diaryController = {
     let student=await par_student_personal_information.findOne({where:{reg_no:reg_no},raw:true})
     let classId=student.class;
     let division=student.division
-    let student_subjects=await student_subject.findAll({where:{student_reg_no:reg_no},raw:true})
-    let subjects=student_subjects.map(subject=>subject.subject_id)
+    let student_subjects=await ProgramSubject.findAll({where:{classId:classId},raw:true})
+    let subjects=student_subjects.map(subject=>subject.subjectId)
     console.log('student subjects is:***********:',subjects)
     const subjectsSql = subjects.length ? subjects.join(',') : 'null';
     const query = `select dr.*, cm.class_name, dv.division_name, sb.value as subject_name from diaries

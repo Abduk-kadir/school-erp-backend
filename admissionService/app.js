@@ -94,7 +94,7 @@ const semesterRoutes = require('./routes/semesterRoutes');
 const studenttypeRoutes = require('./routes/studenttypeRoutes');
 const attendanceCronRecordRoutes = require('./routes/attendanceCronRecordRoutes');
 //start all jobs
-startAllJobs();
+//startAllJobs();
 // In your app.js or server.js
                  // Ensure Redis connects first
                  
