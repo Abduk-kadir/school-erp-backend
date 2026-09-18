@@ -8,6 +8,8 @@ const {
   InOutAttendance,
   studentFcmtoken,
   sequelize,
+  batchmaster,
+  batch,
 } = require('../models');
 const { notificationQueue } = require('../queues/notificationQueue.js');
 
@@ -66,6 +68,10 @@ function parseRfidRow(row) {
     flag: parts[4] || null,
   };
 }
+function timeToSeconds(t) {
+  const [h, m, s] = String(t).split(':').map(Number);
+  return h * 3600 + m * 60 + (s || 0);
+}
 
 async function upsertAttendanceAndCollectNotify(punch, student) {
   const { attendanceDate, punchTime, machineId, punchedAt } = punch;
@@ -78,8 +84,19 @@ async function upsertAttendanceAndCollectNotify(punch, student) {
     .filter(Boolean)
     .join(' ')
     .trim() || `Reg ${student.reg_no}`;
-
-  if (!row) {
+console.log('student is***************************',student)
+    const studentbatchendtime = await batchmaster.findOne({
+      where: { classid: student.class, divisionid: student.division },
+      include: [{ model: batch, as: 'batchInfo', attributes: ['endtime'] }],
+      
+    });
+    
+   let endtime=studentbatchendtime.batchInfo.endtime
+   console.log('endtime is***************************',endtime)
+   let punchtimeInSeconds=timeToSeconds(punchTime)
+   let endtimeInSeconds=timeToSeconds(endtime)
+   let isOutPunch=punchtimeInSeconds>endtimeInSeconds
+  if (!row&&!isOutPunch) {
     row = await InOutAttendance.create({
       reg_no: student.reg_no,
       attendance_date: attendanceDate,
@@ -107,7 +124,7 @@ async function upsertAttendanceAndCollectNotify(punch, student) {
     return { notifyJobs, punchedAt };
   }
 
-  if (row) {
+  if (row&&!isOutPunch) {
     await row.update({
       in_time: punchTime,
       machine_id: machineId || row.machine_id,
@@ -132,44 +149,47 @@ async function upsertAttendanceAndCollectNotify(punch, student) {
     return { notifyJobs, punchedAt };
   }
 
-
-  /*
-    if (!row.in_time) {
-      await row.update({
-        in_time: punchTime,
-        machine_id: machineId || row.machine_id,
-      });
-      if (!row.in_time_notification_flag) {
-        notifyJobs.push({
-          type: 'in',
-          studentId: student.id,
-          title: 'School Entry',
-          body: `${studentName} entered school at ${punchTime}`,
-          data: {
-            type: 'attendance_in',
-            reg_no: String(student.reg_no),
-            attendance_date: attendanceDate,
-            time: punchTime,
-          },
-          attendanceId: row.id,
-          attendanceDate,
-          flagField: 'in_time_notification_flag',
-        });
-      }
-      return { notifyJobs, punchedAt };
-    }
-     
-    // Later punch(es) = out
-    await row.update({
-      out_time: punchTime,
-      machine_id: machineId || row.machine_id,
+  if(!row&&isOutPunch){
+    row = await InOutAttendance.create({
+      reg_no: student.reg_no,
+      attendance_date: attendanceDate,
+      in_time: punchTime,
+      in_time_notification_flag: true,
+      out_time: null,
+      out_time_notification_flag: false,
+      machine_id: machineId,
     });
-    if (!row.out_time_notification_flag) {
+    notifyJobs.push({
+      type: 'in',
+      studentId: student.id,
+      title: 'School Entry',
+      body: `${studentName} entered school at ${punchTime}`,
+      data: {
+        type: 'attendance_in',
+        reg_no: String(student.reg_no),
+        attendance_date: attendanceDate,
+        time: punchTime,
+      },
+      attendanceId: row.id,
+      attendanceDate,
+      flagField: 'in_time_notification_flag',
+    });
+
+    return { notifyJobs, punchedAt };
+
+  }
+  if(row&&isOutPunch){
+    await row.update({
+      
+      machine_id: machineId || row.machine_id,
+      out_time:punchTime,
+      out_time_notification_flag:true,
+    });
       notifyJobs.push({
         type: 'out',
         studentId: student.id,
         title: 'School Exit',
-        body: `${studentName} left school at ${punchTime}`,
+        body: `${studentName} entered school at ${punchTime}`,
         data: {
           type: 'attendance_out',
           reg_no: String(student.reg_no),
@@ -178,10 +198,13 @@ async function upsertAttendanceAndCollectNotify(punch, student) {
         },
         attendanceId: row.id,
         attendanceDate,
-        flagField: 'out_time_notification_flag',
+        flagField: 'in_time_notification_flag',
       });
-    }
-  */
+    
+    return { notifyJobs, punchedAt };
+
+  }
+  
   return { notifyJobs, punchedAt };
 }
 
@@ -254,7 +277,7 @@ async function processRfidBatch(job) {
   const rfids = [...new Set(valid.map((v) => v.rfid))];
   console.log("rfids", rfids)
   const students = await sequelize.query(
-    `SELECT id, reg_no, rfid, first_name, last_name
+    `SELECT id, reg_no, rfid, first_name, last_name,class,division
      FROM par_student_personal_informations
      WHERE rfid IN (:rfids)`,
     {
