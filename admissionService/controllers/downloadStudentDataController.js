@@ -51,6 +51,10 @@ let importStudentData = asyncHandler(async (req, res) => {
         //OtherInformation.findAll({ raw: true })
     ]);
     console.log('********************************:allStudentTypes',allStudentTypes)
+    console.log('********************************:allGenders',allGenders)
+    console.log('********************************:allClasses',allClasses)
+    console.log('********************************:allDivisions',allDivisions)
+    console.log('********************************:allCasts',allCasts)
 
     workbook.eachSheet((worksheet) => {
         const tableName = worksheet.name.trim();
@@ -77,18 +81,22 @@ let importStudentData = asyncHandler(async (req, res) => {
 
     //console.log('datafrom excel is:',datafromexcel)
     const classMap = new Map(
-        allClasses.map(c => [c.class_name, c.id])
+        allClasses.map(c => [String(c.class_name).trim(), c.id])
     );
 
     const divisionMap = new Map(
-        allDivisions.map(d => [d.division_name, d.id])
+        allDivisions.map(d => [String(d.division_name).trim(), d.id])
     );
 
     const casteMap = new Map(
-        allCasts.map(c => [c.value, c.id])
+        allCasts.map(c => [String(c.value).trim(), c.id])
     );
-    const genderMap=new Map(allGenders.map(g=>[g.gender_name,g.id]))
-    const studentTypeMap=new Map(allStudentTypes.map(s=>[s.studenttype,s.id]))
+    const genderMap = new Map(
+        allGenders.map(g => [String(g.gender_name).trim(), g.id])
+    );
+    const studentTypeMap = new Map(
+        allStudentTypes.map(s => [String(s.studenttype).trim(), s.id])
+    );
 
     const originalPersonal = (datafromexcel['Personal Infromation'] || []).map(r => ({ ...r }));
     const originalParent = (datafromexcel['Parent Particulars'] || []).map(r => ({ ...r }));
@@ -99,28 +107,35 @@ let importStudentData = asyncHandler(async (req, res) => {
     let incorrectParentParticulars = []
     let incorrectEduDetails = []
     let incorrectOtherInfo = []
+    console.log('*************data from excel personal information is:',datafromexcel['Personal Infromation'])
     let correctPersonal = datafromexcel['Personal Infromation'].filter(item => {
+        const classVal = item.class != null ? String(item.class).trim() : '';
+        const divisionVal = item.division != null ? String(item.division).trim() : '';
+        const castVal = item.cast != null ? String(item.cast).trim() : '';
+        const genderVal = item.gender != null ? String(item.gender).trim() : '';
+        const studentTypeVal = item.student_type != null ? String(item.student_type).trim() : '';
+
         if (
-            classMap.has(item.class) &&
-            divisionMap.has(item.division) &&
-            casteMap.has(item.cast)
-            &&genderMap.has(item.gender)
-            &&studentTypeMap.has(item.student_type)
+            classMap.has(classVal) &&
+            divisionMap.has(divisionVal) &&
+            casteMap.has(castVal) &&
+            genderMap.has(genderVal) &&
+            studentTypeMap.has(studentTypeVal)
         ) {
-            // Replace text with IDs
-            item.class = classMap.get(item.class);
-            item.division = divisionMap.get(item.division);
-            item.cast = casteMap.get(item.cast);
-            item.gender = genderMap.get(item.gender);
-            item.student_type = studentTypeMap.get(item.student_type);
+            // Replace text with IDs (use trimmed keys)
+            item.class = classMap.get(classVal);
+            item.division = divisionMap.get(divisionVal);
+            item.cast = casteMap.get(castVal);
+            item.gender = genderMap.get(genderVal);
+            item.student_type = studentTypeMap.get(studentTypeVal);
             return true;
         } else {
             const errors = [];
-            if (!classMap.has(item.class)) errors.push(`invalid class: ${item.class}`);
-            if (!divisionMap.has(item.division)) errors.push(`invalid division: ${item.division}`);
-            if (!casteMap.has(item.cast)) errors.push(`invalid cast: ${item.cast}`);
-            if (!genderMap.has(item.gender)) errors.push(`invalid gender: ${item.gender}`);
-            if (!studentTypeMap.has(item.student_type)) errors.push(`invalid student type: ${item.student_type}`);
+            if (!classMap.has(classVal)) errors.push(`invalid class: ${item.class}`);
+            if (!divisionMap.has(divisionVal)) errors.push(`invalid division: ${item.division}`);
+            if (!casteMap.has(castVal)) errors.push(`invalid cast: ${item.cast}`);
+            if (!genderMap.has(genderVal)) errors.push(`invalid gender: ${item.gender}`);
+            if (!studentTypeMap.has(studentTypeVal)) errors.push(`invalid student type: ${item.student_type}`);
             item.error = errors.join(', ');
             incorrectPersonal.push(item);
             return false;
