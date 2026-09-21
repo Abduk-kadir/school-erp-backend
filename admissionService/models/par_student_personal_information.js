@@ -64,6 +64,9 @@ module.exports = (sequelize, DataTypes) => {
     blood_groop: DataTypes.STRING,
     rollnumber:DataTypes.INTEGER,
     address:DataTypes.STRING,
+    mother_tongue:DataTypes.STRING,
+    adharno:DataTypes.STRING,
+    apparid:DataTypes.STRING,
     photo_url: DataTypes.STRING,
   }, {
     sequelize,

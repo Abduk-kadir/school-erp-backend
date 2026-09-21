@@ -112,7 +112,7 @@ let importStudentData = asyncHandler(async (req, res) => {
             item.division = divisionMap.get(item.division);
             item.cast = casteMap.get(item.cast);
             item.gender = genderMap.get(item.gender);
-            item.studenttype = studentTypeMap.get(item.student_type);
+            item.student_type = studentTypeMap.get(item.student_type);
             return true;
         } else {
             const errors = [];
@@ -120,7 +120,7 @@ let importStudentData = asyncHandler(async (req, res) => {
             if (!divisionMap.has(item.division)) errors.push(`invalid division: ${item.division}`);
             if (!casteMap.has(item.cast)) errors.push(`invalid cast: ${item.cast}`);
             if (!genderMap.has(item.gender)) errors.push(`invalid gender: ${item.gender}`);
-            if (!studentTypeMap.has(item.student_type)) errors.push(`invalid student type: ${item.studenttype}`);
+            if (!studentTypeMap.has(item.student_type)) errors.push(`invalid student type: ${item.student_type}`);
             item.error = errors.join(', ');
             incorrectPersonal.push(item);
             return false;
