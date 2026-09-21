@@ -34,6 +34,29 @@ let allColumnOfTable = asyncHandler(async (req, res) => {
 
 
 
+/** ExcelJS can return objects for rich text / hyperlinks / formulas — flatten to plain values. */
+const normalizeExcelCellValue = (value) => {
+    if (value == null || value === '') return value;
+    if (typeof value !== 'object') return value;
+    if (value instanceof Date) return value;
+    if (Array.isArray(value.richText)) {
+        return value.richText.map((part) => part.text || '').join('');
+    }
+    if (value.text != null) {
+        let text = String(value.text);
+        if (text.startsWith('mailto:')) text = text.slice(7);
+        return text;
+    }
+    if (value.hyperlink != null && value.result == null) {
+        let link = String(value.hyperlink);
+        if (link.startsWith('mailto:')) link = link.slice(7);
+        return link;
+    }
+    if (value.result != null) return normalizeExcelCellValue(value.result);
+    if (value.sharedFormula != null && value.result != null) return normalizeExcelCellValue(value.result);
+    return value;
+};
+
 let importStudentData = asyncHandler(async (req, res) => {
     if (!req.file) return res.status(400).json({ message: "No file uploaded" });
 
@@ -63,15 +86,14 @@ let importStudentData = asyncHandler(async (req, res) => {
 
         const rows = worksheet.getSheetValues();
         if (rows.length < 2) return;
-        const headers = rows[1].slice(1); // Remove empty first cell if any
+        const headers = rows[1].slice(1).map(normalizeExcelCellValue); // Remove empty first cell if any
         const allrows = rows.slice(2);
         const records = allrows.map(row => {
 
             let record = {}
             headers.forEach((header, i) => {
-
-                record[header] = row[i + 1];
-
+                if (!header) return;
+                record[header] = normalizeExcelCellValue(row[i + 1]);
             })
             return record
         })
