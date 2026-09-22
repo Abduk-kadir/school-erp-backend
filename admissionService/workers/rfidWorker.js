@@ -102,7 +102,7 @@ console.log('student is***************************',student)
       attendance_date: attendanceDate,
       in_time: punchTime,
       in_time_notification_flag: true,
-      out_time: null,
+      out_time: '00:00:00',
       out_time_notification_flag: false,
       machine_id: machineId,
     });
@@ -155,7 +155,7 @@ console.log('student is***************************',student)
       attendance_date: attendanceDate,
       in_time: punchTime,
       in_time_notification_flag: true,
-      out_time: null,
+      out_time: '00:00:00',
       out_time_notification_flag: false,
       machine_id: machineId,
     });
