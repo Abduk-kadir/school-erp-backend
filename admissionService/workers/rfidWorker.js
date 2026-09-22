@@ -91,7 +91,7 @@ console.log('student is***************************',student)
       
     });
     
-   let endtime=studentbatchendtime.batchInfo.endtime
+   const endtime = studentbatchendtime?.batchInfo?.endtime;
    console.log('endtime is***************************',endtime)
    let punchtimeInSeconds=timeToSeconds(punchTime)
    let endtimeInSeconds=timeToSeconds(endtime)
