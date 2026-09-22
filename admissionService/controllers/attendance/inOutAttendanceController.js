@@ -215,9 +215,9 @@ const inOutAttendanceController = {
         a.in_time,
         a.out_time
       FROM par_student_personal_informations p
-      LEFT JOIN class_masters cm ON cm.id = p.class
-      LEFT JOIN division_masters dm ON dm.id = p.division
-      LEFT JOIN in_out_attendances a
+      INNER JOIN class_masters cm ON cm.id = p.class
+      INNER JOIN division_masters dm ON dm.id = p.division
+      INNER JOIN in_out_attendances a
         ON a.reg_no = p.reg_no
       WHERE ${whereClause.join(' AND ')}
       ORDER BY p.reg_no ASC
