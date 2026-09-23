@@ -166,33 +166,40 @@ const ParmanentPersonalInformation = {
     const photoUrlNames = new Set(rows.map((r) => r.photo_url));
 
     const existingNames = [];
-    for (const name of names) {
+    const toSave = [];
+
+    for (const file of photos) {
+      const name = file.originalname;
       if (photoUrlNames.has(name) && fs.existsSync(path.join(STUDENT_UPLOAD_ROOT, name))) {
         existingNames.push(name);
-      }
-    }
-
-    if (existingNames.length) {
-      for (const file of photos) {
         if (file.path && fs.existsSync(file.path)) fs.unlinkSync(file.path);
+      } else {
+        toSave.push(file);
       }
-      return res.status(400).json({
-        success: false,
-        message: 'these photos are exists',
-        photos: existingNames,
-      });
     }
 
     const saved = [];
-    for (const file of photos) {
+    for (const file of toSave) {
       const targetPath = path.join(STUDENT_UPLOAD_ROOT, file.originalname);
       fs.renameSync(file.path, targetPath);
       saved.push(`/uploads/students/photoandsignature/${file.originalname}`);
     }
 
+    if (existingNames.length && !saved.length) {
+      return res.status(400).json({
+        success: false,
+        message: 'these photos are exists',
+        photos: existingNames,
+        data: [],
+      });
+    }
+
     return res.status(200).json({
       success: true,
-      message: 'photos uploaded successfully',
+      message: existingNames.length
+        ? 'these photos are exists, rest saved'
+        : 'photos uploaded successfully',
+      photos: existingNames,
       data: saved,
     });
   }),
