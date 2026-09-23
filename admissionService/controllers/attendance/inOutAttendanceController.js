@@ -1,6 +1,6 @@
 const asyncHandler = require('express-async-handler');
 const { InOutAttendance, sequelize, Sequelize } = require('../../models');
-
+const {generatePdf} = require('../../utils/generatePdf');
 function getRowsFromBody(body) {
   if (Array.isArray(body)) return body;
   if (body && Array.isArray(body.rows)) return body.rows;
@@ -234,6 +234,93 @@ const inOutAttendanceController = {
     return res.status(200).json({ success: true, count: data.length, data ,draw});
   }),
 
+  detailReportPdf:asyncHandler(async(req,res)=>{
+    const draw = parseInt(req.query.draw) || 1;
+    const start = parseInt(req.query.start) || 0;
+    const length = parseInt(req.query.length) || 10;
+    const search = req.query['search[value]'] || req.query.search?.value || '';
+
+    // Express may parse as filter[key] string keys or nested filter object
+    const filter = req.query.filter || {};
+    const attendance_date =
+      req.query['filter[date]'] || filter.date || '';
+    const classId =
+      req.query['filter[className]'] ||
+      req.query['filter[classId]'] ||
+      filter.className ||
+      filter.classId ||
+      '';
+    const divisionId =
+      req.query['filter[divisionId]'] ||
+      req.query['filter[division]'] ||
+      filter.divisionId ||
+      filter.division ||
+      '';
+
+    // p.class / p.division are INTEGER FKs — match by id, not LIKE name
+    const whereClause = ['1 = 1'];
+    const replacements = { length, start };
+
+    if (classId) {
+      whereClause.push('p.class = :classId');
+      replacements.classId = Number(classId);
+    }
+    if (divisionId) {
+      whereClause.push('p.division = :divisionId');
+      replacements.divisionId = Number(divisionId);
+    }
+    if (attendance_date) {
+      whereClause.push('a.attendance_date = :attendance_date');
+      replacements.attendance_date = attendance_date;
+    }
+
+    const sql = `
+      SELECT
+        p.reg_no,
+        p.first_name AS name,
+        cm.class_name AS class,
+        dm.division_name AS \`div\`,
+        p.reg_no AS roll_no,
+        a.attendance_date AS \`date\`,
+        a.in_time,
+        a.out_time
+      FROM par_student_personal_informations p
+      INNER JOIN class_masters cm ON cm.id = p.class
+      INNER JOIN division_masters dm ON dm.id = p.division
+      INNER JOIN in_out_attendances a
+        ON a.reg_no = p.reg_no
+      WHERE ${whereClause.join(' AND ')}
+      ORDER BY p.reg_no ASC
+      LIMIT :length OFFSET :start
+    `;
+
+    const data = await sequelize.query(sql, {
+      replacements,
+      type: Sequelize.QueryTypes.SELECT,
+      raw: true,
+     
+    });
+    const cell = (v) => (v == null ? '' : String(v));
+    const buffer = await generatePdf({
+      title: 'In-Out Attendance',
+      columns: ['Reg No','Name','Class','Division','Roll no','Date',"In Time","Out Time"],
+      data: data.map(r => [
+        cell(r.reg_no),
+        cell(r.name),
+        cell(r.class),
+        cell(r.div),
+        cell(r.roll_no),
+        cell(r.date),
+        cell(r.in_time),
+        cell(r.out_time),
+      ]),
+    });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=attendance.pdf');
+    res.send(buffer);
+
+  }),
+
   /** report-summ: class, div, total student, present count, absent count */
   getSummaryReport: asyncHandler(async (req, res) => {
     const draw = parseInt(req.query.draw) || 1;
@@ -295,6 +382,75 @@ const inOutAttendanceController = {
       count: data.length,
       data,
     });
+  }),
+
+  summaryReportPdf: asyncHandler(async (req, res) => {
+    const start = parseInt(req.query.start) || 0;
+    const length = parseInt(req.query.length) || 10;
+    const today = new Date().toISOString().slice(0, 10);
+    const attendance_date = req.query['filter[date]'] || today;
+    const className = req.query['filter[className]'] || '';
+    const division = req.query['filter[divisionId]'] || '';
+    
+    const studentFilters = [];
+    const replacements = { attendance_date, length, start };
+
+    const attendanceDateSql = 'AND a.attendance_date = :attendance_date';
+
+    if (className) {
+      studentFilters.push(`p.class = :className`);
+      replacements.className = Number(className);
+    }
+    if (division) {
+      studentFilters.push(`p.division = :division`);
+      replacements.division = Number(division);
+    }
+
+    const studentWhere = studentFilters.length
+      ? ` AND ${studentFilters.join(' AND ')}`
+      : '';
+
+    const sql = `
+      SELECT
+        cm.class_name AS class,
+        dm.division_name AS \`div\`,
+        COUNT(DISTINCT p.reg_no) AS total_student,
+        COUNT(DISTINCT CASE WHEN a.in_time IS NOT NULL AND a.in_time > '00:00:00' THEN a.reg_no END) AS present_count,
+        COUNT(DISTINCT CASE WHEN a.attendance_date IS NOT NULL AND (a.in_time IS NULL OR a.in_time <= '00:00:00') THEN a.reg_no END) AS absent_count
+      FROM par_student_personal_informations p
+      LEFT JOIN class_masters cm ON cm.id = p.class
+      LEFT JOIN division_masters dm ON dm.id = p.division
+      LEFT JOIN in_out_attendances a
+        ON a.reg_no = p.reg_no
+        ${attendanceDateSql}
+      WHERE 1 = 1
+      ${studentWhere}
+      GROUP BY p.class, p.division, cm.class_name, dm.division_name
+      ORDER BY cm.class_name, dm.division_name
+      LIMIT :length OFFSET :start
+    `;
+
+    const data = await sequelize.query(sql, {
+      replacements,
+      type: Sequelize.QueryTypes.SELECT,
+      raw: true,
+    });
+
+    const cell = (v) => (v == null ? '' : String(v));
+    const buffer = await generatePdf({
+      title: 'In-Out Attendance Summary',
+      columns: ['Class', 'Division', 'Total Student', 'Present', 'Absent'],
+      data: data.map((r) => [
+        cell(r.class),
+        cell(r.div),
+        cell(r.total_student),
+        cell(r.present_count),
+        cell(r.absent_count),
+      ]),
+    });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=attendance-summary.pdf');
+    res.send(buffer);
   }),
 
   /** report-monthly: filter[fromDate], filter[toDate], class, division + pagination */

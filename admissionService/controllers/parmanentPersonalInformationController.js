@@ -1,8 +1,12 @@
 const asyncHandler = require('express-async-handler');
+const fs = require('fs');
+const path = require('path');
 const { par_student_personal_information, studentFcmtoken, sequelize, class_master, division_master, studenttype } = require('../models');
 const { Op } = require('sequelize');
 const generateToken = require('../utils/generateToken');
 const saveStudentFcmToken = require('../utils/saveStudentFcmToken');
+const { getDataTable } = require('../helper');
+const { STUDENT_UPLOAD_ROOT } = require('../middlewares/multerConfig');
 
 const ParmanentPersonalInformation = {
   login: asyncHandler(async (req, res) => {
@@ -126,7 +130,7 @@ const ParmanentPersonalInformation = {
       where.feegroupid = parseInt(q.feegroupid, 10);
     }
 
-    const rows = await par_student_personal_information.findAll({
+   /* const rows = await par_student_personal_information.findAll({
       where: Object.keys(where).length ? where : {},
       include: [
         { model: class_master, as: 'classInfo', attributes: ['class_name'] },
@@ -135,6 +139,62 @@ const ParmanentPersonalInformation = {
       ],
     });
     res.status(200).json({ success: true, message: 'data fetched successfully', data: rows });
+    */
+    const result = await getDataTable(req, par_student_personal_information, ['first_name','last_name','father_name','reg_no','email','contact_number'], where, [
+      { model: class_master, as: 'classInfo', attributes: ['class_name'] },
+      { model: division_master, as: 'divisionInfo', attributes: ['division_name'] },
+      { model: studenttype, as: 'studenttypeInfo', attributes: ['studenttype'] },
+    ]);
+    res.status(200).json(result);
+  }),
+
+  uploadStudentPhotoAndSignature: asyncHandler(async (req, res) => {
+    const photos = req.files?.photos || [];
+
+    if (!photos.length) {
+      return res.status(400).json({ success: false, message: 'photos are required' });
+    }
+
+    const names = photos.map((f) => f.originalname);
+
+    // photo_url already has the filename from student data — if file is on disk, it already exists
+    const rows = await par_student_personal_information.findAll({
+      where: { photo_url: { [Op.in]: names } },
+      attributes: ['photo_url'],
+      raw: true,
+    });
+    const photoUrlNames = new Set(rows.map((r) => r.photo_url));
+
+    const existingNames = [];
+    for (const name of names) {
+      if (photoUrlNames.has(name) && fs.existsSync(path.join(STUDENT_UPLOAD_ROOT, name))) {
+        existingNames.push(name);
+      }
+    }
+
+    if (existingNames.length) {
+      for (const file of photos) {
+        if (file.path && fs.existsSync(file.path)) fs.unlinkSync(file.path);
+      }
+      return res.status(400).json({
+        success: false,
+        message: 'these photos are exists',
+        photos: existingNames,
+      });
+    }
+
+    const saved = [];
+    for (const file of photos) {
+      const targetPath = path.join(STUDENT_UPLOAD_ROOT, file.originalname);
+      fs.renameSync(file.path, targetPath);
+      saved.push(`/uploads/students/photoandsignature/${file.originalname}`);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'photos uploaded successfully',
+      data: saved,
+    });
   }),
 
 

@@ -9,6 +9,7 @@ async function getDataTable(req, model, searchFields = [], extraWhere = {},inclu
  const classFilter = req.query['filter[className]'] || '';
 
 const regFilter=req.query['filter[regNo]']||''
+const divisionFilter=req.query['filter[divisionName]']||''
 
 
   // Build search clause
@@ -25,6 +26,9 @@ const regFilter=req.query['filter[regNo]']||''
  
   if (regFilter) {
     whereClause.reg_no = { [Op.like]: `%${regFilter}%` };
+  }
+  if (divisionFilter) {
+    whereClause.division = { [Op.like]: `%${divisionFilter}%` };
   }
   console.log('Final where clause:', JSON.stringify(whereClause));
   // Count total records
