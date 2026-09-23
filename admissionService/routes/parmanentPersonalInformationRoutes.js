@@ -9,7 +9,7 @@ router.get('/columns', ParmanentPersonalInformation.getAllColumns);
 router.put('/bulk-update', ParmanentPersonalInformation.bulkUpdatePersonalInformation);
 router.post(
   '/photos',
-  uploadStudentPhotoAndSignature.fields([{ name: 'photos', maxCount: 100 }]),
+  uploadStudentPhotoAndSignature.fields([{ name: 'photos', maxCount: 500 }]),
   ParmanentPersonalInformation.uploadStudentPhotoAndSignature
 );
 router.get('/reg/:reg_no', ParmanentPersonalInformation.getByReg);
