@@ -192,7 +192,7 @@ const studentnotificationController = {
    join batches as bt on sn.batch=bt.id
    join division_masters as dv on sn.division= dv.id
    join class_masters as cm on sn.class = cm.id
-   left join StaffRegistrations as sf on sn.staffid = sf.id`;
+   left join StaffRegistrations as sf on sn.staffid = sf.id order by sn.createdAt desc`;
 
     const query = `select sn.*, bt.batch_name, cm.class_name, dv.division_name, CONCAT_WS(' ', sf.surname, sf.firstname) as staff_name ${fromJoins}
    ${whereSql}

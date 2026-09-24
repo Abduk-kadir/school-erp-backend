@@ -203,7 +203,7 @@ const diaryController = {
    join division_masters as dv on dr.division= dv.id
    join class_masters as cm on dr.class = cm.id
    join Subjects as sb on dr.subject = sb.id
-   left join StaffRegistrations as sf on dr.staffid = sf.id`;
+   left join StaffRegistrations as sf on dr.staffid = sf.id order by dr.createdAt desc`;
 
     const query = `select dr.*, bt.batch_name, cm.class_name, dv.division_name, sb.value as subject_name, CONCAT_WS(' ', sf.surname, sf.firstname) as staff_name ${fromJoins}
    ${whereSql}
