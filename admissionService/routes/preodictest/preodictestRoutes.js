@@ -4,6 +4,10 @@ const preodictestController = require('../../controllers/preodictest/preodictest
 
 router.post('/', preodictestController.create);
 router.get('/', preodictestController.getAll);
+router.get(
+  '/by-class-division-subject',
+  preodictestController.getByClassDivisionSubject
+);
 router.get('/:id', preodictestController.getById);
 router.delete('/:id', preodictestController.delete);
 

@@ -98,6 +98,59 @@ const preodictestController = {
     });
   }),
 
+  getByClassDivisionSubject: asyncHandler(async (req, res) => {
+    const classId =
+      req.query.class ?? req.query.classId ?? req.query.class_id;
+    const division =
+      req.query.division ?? req.query.divisionId ?? req.query.division_id;
+    const subject =
+      req.query.subject ?? req.query.subjectId ?? req.query.subject_id;
+
+    if (!classId || !division || !subject) {
+      return res.status(400).json({
+        success: false,
+        message: 'class, division, and subject query parameters are required',
+      });
+    }
+
+    const query = `SELECT
+      pt.id,
+      pt.exam_name,
+      pt.class,
+      pt.division,
+      pt.subject,
+      pt.date,
+      pt.total_marks,
+      pt.topics,
+      pt.staffid,
+      pt.createdAt,
+      pt.updatedAt,
+      cm.class_name,
+      dv.division_name,
+      sb.value AS subject_name,
+      CONCAT_WS(' ', sf.surname, sf.firstname) AS staff_name
+    FROM preodictests AS pt
+    JOIN class_masters AS cm ON pt.class = cm.id
+    JOIN division_masters AS dv ON pt.division = dv.id
+    JOIN Subjects AS sb ON pt.subject = sb.id
+    LEFT JOIN StaffRegistrations AS sf ON pt.staffid = sf.id
+    WHERE pt.class = :classId
+      AND pt.division = :division
+      AND pt.subject = :subject
+    ORDER BY pt.date DESC, pt.id DESC`;
+
+    const records = await sequelize.query(query, {
+      type: QueryTypes.SELECT,
+      replacements: { classId, division, subject },
+    });
+
+    return res.status(200).json({
+      success: true,
+      count: records.length,
+      data: records,
+    });
+  }),
+
   getById: asyncHandler(async (req, res) => {
     const { id } = req.params;
     const record = await preodictest.findByPk(id, {

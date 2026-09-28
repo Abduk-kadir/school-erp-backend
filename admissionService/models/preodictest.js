@@ -21,6 +21,10 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'staffid',
         as: 'staffInfo',
       });
+      preodictest.hasMany(models.preodictestmarkentry, {
+        foreignKey: 'preodictest_id',
+        as: 'markEntries',
+      });
     }
   }
 

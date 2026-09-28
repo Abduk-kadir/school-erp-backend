@@ -249,7 +249,7 @@ const diaryController = {
    as dr join division_masters as dv on dr.division = dv.id
    join class_masters as cm on dr.class = cm.id
    join Subjects as sb on dr.subject = sb.id
-   where dr.class = ${classId} and dr.division = ${division} and dr.subject in (${subjectsSql})`;
+   where dr.class = ${classId} and dr.division = ${division} and dr.subject in (${subjectsSql}) order by dr.createdAt desc`;
     const diaries = await sequelize.query(query, {
       type: QueryTypes.SELECT,
       raw: true,

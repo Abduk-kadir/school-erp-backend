@@ -137,7 +137,7 @@ const timetableController = {
     const query = `select tm.*, cm.class_name, dv.division_name from timetables
    as tm join division_masters as dv on tm.division = dv.id
    join class_masters as cm on tm.class = cm.id
-   where tm.class = ${classId} and tm.division = ${division}`;
+   where tm.class = ${classId} and tm.division = ${division} order by tm.createdAt desc`;
     const timetables = await sequelize.query(query, {
       type: QueryTypes.SELECT,
       raw: true,

@@ -68,6 +68,7 @@ module.exports = (sequelize, DataTypes) => {
     adharno:DataTypes.STRING,
     apparid:DataTypes.STRING,
     photo_url: DataTypes.STRING,
+    admission_date:DataTypes.DATEONLY,
   }, {
     sequelize,
     modelName: 'par_student_personal_information',

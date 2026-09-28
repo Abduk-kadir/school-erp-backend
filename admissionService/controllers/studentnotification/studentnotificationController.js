@@ -234,7 +234,7 @@ const studentnotificationController = {
     const query = `select sn.*, cm.class_name, dv.division_name from student_notifications
    as sn join division_masters as dv on sn.division = dv.id
    join class_masters as cm on sn.class = cm.id
-   where sn.class = ${classId} and sn.division = ${division}`;
+   where sn.class = ${classId} and sn.division = ${division} order by sn.createdAt desc`;
     const notifications = await sequelize.query(query, {
       type: QueryTypes.SELECT,
       raw: true,

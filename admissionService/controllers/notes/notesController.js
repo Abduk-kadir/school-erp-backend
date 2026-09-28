@@ -147,7 +147,7 @@ const notesController = {
    as nt join division_masters as dv on nt.division = dv.id
    join class_masters as cm on nt.class = cm.id
    join Subjects as sb on nt.subject = sb.id
-   where nt.class = ${classId} and nt.division = ${division} and nt.subject in (${subjectsSql})`;
+   where nt.class = ${classId} and nt.division = ${division} and nt.subject in (${subjectsSql}) order by nt.createdAt desc`;
     const notesList = await sequelize.query(query, {
       type: QueryTypes.SELECT,
       raw: true,

@@ -150,7 +150,7 @@ const assignmentController = {
    as asg join division_masters as dv on asg.division = dv.id
    join class_masters as cm on asg.class = cm.id
    join Subjects as sb on asg.subject = sb.id
-   where asg.class = ${classId} and asg.division = ${division} and asg.subject in (${subjectsSql})`;
+   where asg.class = ${classId} and asg.division = ${division} and asg.subject in (${subjectsSql}) order by asg.createdAt desc`;
     const assignments = await sequelize.query(query, {
       type: QueryTypes.SELECT,
       raw: true,

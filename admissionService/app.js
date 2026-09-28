@@ -28,6 +28,7 @@ const assignmentRoutes = require('./routes/assignment/assignmentRoutes');
 const notesRoutes = require('./routes/notes/notesRoutes');
 const diaryRoutes = require('./routes/diary/diaryRoutes');
 const preodictestRoutes = require('./routes/preodictest/preodictestRoutes');
+const preodictestmarkentryRoutes = require('./routes/preodictest/preodictestmarkentryRoutes');
 const studentnotificationRoutes = require('./routes/studentnotification/studentnotificationRoutes');
 const casteRoutes = require('./routes/casteRoutes');
 const divisionRoutes = require('./routes/divisionRoutes');
@@ -94,6 +95,7 @@ const rfidRoutes = require('./routes/rfidRoutes');
 const semesterRoutes = require('./routes/semesterRoutes');
 const studenttypeRoutes = require('./routes/studenttypeRoutes');
 const attendanceCronRecordRoutes = require('./routes/attendanceCronRecordRoutes');
+const studentDashboardRoutes = require('./routes/studentDashboard/studentDashboardRoutes');
 //start all jobs
 //startAllJobs();
 // In your app.js or server.js
@@ -225,7 +227,9 @@ app.use('/api/assignments', assignmentRoutes);
 app.use('/api/notes', notesRoutes);
 app.use('/api/diaries', diaryRoutes);
 app.use('/api/preodictests', preodictestRoutes);
+app.use('/api/preodictest-mark-entries', preodictestmarkentryRoutes);
 app.use('/api/student-notifications', studentnotificationRoutes);
+app.use('/api/student-dashboard', studentDashboardRoutes);
 app.use('/api/classes', classRoutes);
 app.use('/api/class-div-map-masters', classDivMapMasterRoutes);
 app.use('/api/staff-class-maps', staffclassmapRoutes);
