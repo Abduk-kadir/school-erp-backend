@@ -443,7 +443,27 @@ const editStaff = async (req, res) => {
 
 const allStaff = async (req, res) => {
   try {
+    const { department: departmentQuery, designation: designationQuery } = req.query;
+    const where = {};
+
+    if (departmentQuery !== undefined && departmentQuery !== '') {
+      const departmentid = Number(departmentQuery);
+      if (!Number.isInteger(departmentid)) {
+        return res.status(400).json({ success: false, message: 'department must be a numeric id' });
+      }
+      where.departmentid = departmentid;
+    }
+
+    if (designationQuery !== undefined && designationQuery !== '') {
+      const designationid = Number(designationQuery);
+      if (!Number.isInteger(designationid)) {
+        return res.status(400).json({ success: false, message: 'designation must be a numeric id' });
+      }
+      where.designationid = designationid;
+    }
+
     const rows = await StaffRegistration.findAll({
+      where,
       attributes: { exclude: ['password'] },
       include: [
         {

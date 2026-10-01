@@ -52,10 +52,10 @@ const assignmentController = {
     const row = {class:classId,division,subject};
     const students = await filterStudent(row);
     console.log('students is***********:', students);
-    await sendBulkNotification(students, 'Diaryyyy',
-      'notes  are sent',
+    await sendBulkNotification(students, 'Assignment',
+      row.message,
       {
-        type: 'notes',
+        type: 'assignment',
         examId: '12345',
         url: '/notification-diary',
         click_action: 'FLUTTER_NOTIFICATION_CLICK',

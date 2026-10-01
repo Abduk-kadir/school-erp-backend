@@ -148,7 +148,7 @@ const diaryController = {
       await sendBulkNotification(students, 'Diary',
         row.message,
         {
-          type: 'exam',
+          type: 'diary',
           examId: '12345',
           url: '/notification-diary',
           click_action: 'FLUTTER_NOTIFICATION_CLICK',

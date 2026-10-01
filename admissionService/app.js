@@ -81,6 +81,7 @@ const adminDashBoardRoutes = require('./routes/adminDashBoardRoutes');
 const staffRegistrationRoutes = require('./routes/staffRegistrationRoutes');
 const feesTypeRoutes = require('./routes/feesTypeRoutes');
 const inOutAttendanceRoutes = require('./routes/attendance/inOutAttendanceRoutes');
+const staffInAndOutAttendanceRoutes = require('./routes/attendance/staffInAndOutAttendanceRoutes');
 const attendanceLecturewiseRoutes = require('./routes/attendance/attendanceLecturewiseRoutes');
 const holidarmasterRoutes = require('./routes/holidarmaster/holidarmasterRoutes');
 const eventmasterRoutes = require('./routes/eventmaster/eventmasterRoutes');
@@ -96,6 +97,10 @@ const semesterRoutes = require('./routes/semesterRoutes');
 const studenttypeRoutes = require('./routes/studenttypeRoutes');
 const attendanceCronRecordRoutes = require('./routes/attendanceCronRecordRoutes');
 const studentDashboardRoutes = require('./routes/studentDashboard/studentDashboardRoutes');
+const accessRoleRoutes = require('./routes/accessPermission/roleRoutes');
+const moduleRoutes = require('./routes/accessPermission/moduleRoutes');
+const rolePermissionRoutes = require('./routes/accessPermission/rolePermissionRoutes');
+const staffPermissionRoutes = require('./routes/accessPermission/staffPermissionRoutes');
 //start all jobs
 //startAllJobs();
 // In your app.js or server.js
@@ -134,6 +139,7 @@ console.log('🚀 RFID Attendance Worker Started Successfully');
 
 //app.use('/api/db', dbRoutes);
 app.use('/api/in-out-attendance', inOutAttendanceRoutes);
+app.use('/api/staff-in-out-attendance', staffInAndOutAttendanceRoutes);
 app.use('/api/attendance-cron-records', attendanceCronRecordRoutes);
 app.use('/api/attendance-lecturewise', attendanceLecturewiseRoutes);
 app.use('/api/holiday-masters', holidarmasterRoutes);
@@ -153,6 +159,10 @@ app.use('/api/studenttypes', studenttypeRoutes);
 app.use('/api/error',errorRoutes)
 app.use('/api/admin-dashboard', adminDashBoardRoutes);
 app.use('/api/staff', staffRegistrationRoutes);
+app.use('/api/access-roles', accessRoleRoutes);
+app.use('/api/modules', moduleRoutes);
+app.use('/api/role-permissions', rolePermissionRoutes);
+app.use('/api/staff-permissions', staffPermissionRoutes);
 
 
 //fee module routes

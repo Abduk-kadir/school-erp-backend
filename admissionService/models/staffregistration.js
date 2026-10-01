@@ -17,6 +17,10 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'title',
         as: 'titleInfo',
       });
+      StaffRegistration.belongsTo(models.Role, {
+        foreignKey: 'role_id',
+        as: 'roleInfo',
+      });
     }
   }
 
@@ -42,6 +46,7 @@ module.exports = (sequelize, DataTypes) => {
       departmentid: DataTypes.INTEGER,
       designationid: DataTypes.INTEGER,
       userType: DataTypes.STRING,
+      role_id: DataTypes.INTEGER,
       address: DataTypes.TEXT,
       date_of_join: DataTypes.DATEONLY,
       emergency_contact_number: DataTypes.STRING,
