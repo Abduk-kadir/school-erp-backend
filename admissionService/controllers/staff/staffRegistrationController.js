@@ -2,7 +2,7 @@ const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs');
 const { Op, QueryTypes } = require('sequelize');
-const { StaffRegistration, staffFcmtoken, department, designation, sequelize } = require('../../models');
+const { StaffRegistration, staffFcmtoken, department, designation, Role, sequelize } = require('../../models');
 const generateToken = require('../../utils/generateToken');
 const saveStaffFcmToken = require('../../utils/saveStaffFcmToken');
 const { STAFF_DOCUMENT_UPLOAD_ROOT } = require('../../middlewares/multerConfig');
@@ -70,6 +70,20 @@ function verifyPassword(plain, stored) {
   return decrypted !== '' && decrypted === String(plain);
 }
 
+/**
+ * Validates role_id from the request (multipart sends strings).
+ * Returns { skip: true } when not provided, { roleId } when valid, or { error }.
+ */
+async function resolveRoleId(value) {
+  if (value === undefined) return { skip: true };
+  if (value === null || value === '' || value === 'null') return { roleId: null };
+  const roleId = Number(value);
+  if (!Number.isInteger(roleId)) return { error: 'role_id must be a numeric id' };
+  const role = await Role.findByPk(roleId, { attributes: ['id'] });
+  if (!role) return { error: 'Role not found' };
+  return { roleId };
+}
+
 function toPublicStaff(row) {
   if (!row) return null;
   const o = typeof row.toJSON === 'function' ? row.toJSON() : { ...row };
@@ -95,7 +109,8 @@ const registration = async (req, res) => {
       address,
       date_of_join,
       emergency_contact_number,
-      password
+      password,
+      role_id
     } = req.body;
 
     if (!email || !mobile_number || !password) {
@@ -103,6 +118,11 @@ const registration = async (req, res) => {
         success: false,
         message: 'email, mobile_number, and password are required'
       });
+    }
+
+    const roleCheck = await resolveRoleId(role_id);
+    if (roleCheck.error) {
+      return res.status(400).json({ success: false, message: roleCheck.error });
     }
 
     const existing = await StaffRegistration.findOne({
@@ -133,7 +153,8 @@ const registration = async (req, res) => {
       address,
       date_of_join,
       emergency_contact_number,
-      password: encryptPassword(password)
+      password: encryptPassword(password),
+      role_id: roleCheck.skip ? null : roleCheck.roleId
     });
 
     const photoFile = req.files?.staff_photo?.[0] || null;
@@ -370,8 +391,14 @@ const editStaff = async (req, res) => {
       address,
       date_of_join,
       emergency_contact_number,
-      password
+      password,
+      role_id
     } = req.body;
+
+    const roleCheck = await resolveRoleId(role_id);
+    if (roleCheck.error) {
+      return res.status(400).json({ success: false, message: roleCheck.error });
+    }
 
     if (email || mobile_number) {
       const orConditions = [];
@@ -407,6 +434,7 @@ const editStaff = async (req, res) => {
     if (departmentid !== undefined) updates.departmentid = departmentid ?? null;
     if (designationid !== undefined) updates.designationid = designationid ?? null;
     if (userType !== undefined) updates.userType = userType;
+    if (!roleCheck.skip) updates.role_id = roleCheck.roleId;
     if (address !== undefined) updates.address = address;
     if (date_of_join !== undefined) updates.date_of_join = date_of_join;
     if (emergency_contact_number !== undefined) updates.emergency_contact_number = emergency_contact_number;

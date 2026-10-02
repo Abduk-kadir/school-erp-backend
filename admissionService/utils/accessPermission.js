@@ -1,6 +1,6 @@
 const { StaffRegistration, Role, Module, RolePermission, StaffPermission } = require('../models');
 
-const ACTIONS = ['display', 'add', 'edit', 'delete', 'view', 'import', 'export'];
+const ACTIONS = ['display', 'add', 'edit', 'delete', 'view', 'import', 'export','is_assign_permissions'];
 
 function parseAllowedActions(value) {
   if (value == null || value === '') return [...ACTIONS];

@@ -227,6 +227,15 @@ const staffPermissionController = {
     });
   }),
 
+  /** Final permissions of the logged-in staff (requires verifystaff). */
+  getMine: asyncHandler(async (req, res) => {
+    const result = await getEffectivePermissions(req.staff);
+    if (!result) {
+      return res.status(404).json({ success: false, message: 'Staff not found' });
+    }
+    return res.status(200).json({ success: true, data: result });
+  }),
+
   /** Final permissions keyed by module_key, e.g. { subject: { display: true, add: false, ... } } */
   getEffective: asyncHandler(async (req, res) => {
     const result = await getEffectivePermissions(req.params.staffId);

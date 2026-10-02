@@ -39,6 +39,7 @@ module.exports = (sequelize, DataTypes) => {
       can_view: action(),
       can_import: action(),
       can_export: action(),
+      can_is_assign_permissions: action(),
     },
     {
       sequelize,

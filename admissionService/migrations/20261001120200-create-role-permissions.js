@@ -43,6 +43,7 @@ module.exports = {
       can_view: action(),
       can_import: action(),
       can_export: action(),
+      can_is_assign_permissions: action(),
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,

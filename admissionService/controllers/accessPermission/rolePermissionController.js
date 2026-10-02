@@ -68,6 +68,7 @@ const rolePermissionController = {
     }
 
     const rows = getRowsFromBody(req.body);
+    console.log('rows******************************',rows)
     if (!rows || rows.length === 0) {
       return res.status(400).json({
         success: false,
@@ -105,7 +106,7 @@ const rolePermissionController = {
       }
       payload.push(record);
     }
-
+    console.log('payload**************************************',payload)
     await sequelize.transaction(async (transaction) => {
       await RolePermission.bulkCreate(payload, {
         transaction,

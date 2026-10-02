@@ -1,5 +1,7 @@
 const express = require('express');
 const router = express.Router();
+const verifystaff = require('../middlewares/verifystaff');
+const checkPermission = require('../middlewares/checkPermission');
 const {
   createClass,
   getClasses,
@@ -9,10 +11,10 @@ const {
 } = require('../controllers/classController');
 
 // CRUD routes
-router.post('/', createClass);           // Create
+router.post('/', verifystaff, checkPermission('class','add'),createClass);           // Create
 router.get('/', getClasses);             // Get all
 router.get('/:id', getClassById);        // Get one
 router.put('/:id', updateClass);         // Update
-router.delete('/:id', deleteClass);      // Delete
+router.delete('/:id',verifystaff,checkPermission('class','delete'), deleteClass);      // Delete
 
 module.exports = router;
