@@ -102,7 +102,7 @@ const moduleRoutes = require('./routes/accessPermission/moduleRoutes');
 const rolePermissionRoutes = require('./routes/accessPermission/rolePermissionRoutes');
 const staffPermissionRoutes = require('./routes/accessPermission/staffPermissionRoutes');
 //start all jobs
-//startAllJobs();
+startAllJobs();
 // In your app.js or server.js
                  // Ensure Redis connects first
                  

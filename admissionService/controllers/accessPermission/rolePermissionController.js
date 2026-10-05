@@ -1,6 +1,7 @@
 const asyncHandler = require('express-async-handler');
 const { Role, Module, RolePermission, sequelize } = require('../../models');
 const { ACTIONS, parseAllowedActions, parseTriState, readAction } = require('../../utils/accessPermission');
+const { clearPermissionCache } = require('../../utils/accessPermission');
 
 function getRowsFromBody(body) {
   if (Array.isArray(body)) return body;
@@ -115,7 +116,7 @@ const rolePermissionController = {
     });
 
     const data = await buildRoleGrid(role.id);
-
+    await clearPermissionCache()
     return res.status(200).json({
       success: true,
       message: 'Role permissions saved',

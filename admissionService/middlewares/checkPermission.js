@@ -1,4 +1,4 @@
-const { ACTIONS, getEffectivePermissions } = require('../utils/accessPermission');
+const { ACTIONS, getEffectivePermissionsCached } = require('../utils/accessPermission');
 
 /**
  * Must run after verifystaff (needs req.staff).
@@ -15,7 +15,7 @@ function checkPermission(moduleKey, action) {
         return res.status(401).json({ success: false, message: 'Access denied. Staff login required' });
       }
 
-      const result = await getEffectivePermissions(req.staff);
+      const result = await getEffectivePermissionsCached(req.staff);
       if (!result) {
         return res.status(401).json({ success: false, message: 'Staff not found' });
       }

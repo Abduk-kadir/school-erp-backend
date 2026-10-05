@@ -1,6 +1,11 @@
 const asyncHandler = require('express-async-handler');
 const { Module } = require('../../models');
-const { ACTIONS, normalizeAllowedActions, parseAllowedActions } = require('../../utils/accessPermission');
+const {
+  ACTIONS,
+  normalizeAllowedActions,
+  parseAllowedActions,
+  clearPermissionCache,
+} = require('../../utils/accessPermission');
 
 function getRowsFromBody(body) {
   if (Array.isArray(body)) return body;
@@ -68,6 +73,7 @@ const moduleController = {
     }
 
     const records = await Module.bulkCreate(payload, { validate: true });
+    await clearPermissionCache();
 
     return res.status(201).json({
       success: true,
@@ -138,6 +144,7 @@ const moduleController = {
     if (body.is_active !== undefined) updates.is_active = Boolean(body.is_active);
 
     await record.update(updates);
+    await clearPermissionCache();
 
     return res.status(200).json({ success: true, message: 'Module updated', data: toResponse(record) });
   }),
@@ -149,6 +156,7 @@ const moduleController = {
     }
 
     await record.destroy();
+    await clearPermissionCache();
 
     return res.status(200).json({ success: true, message: 'Module deleted' });
   }),

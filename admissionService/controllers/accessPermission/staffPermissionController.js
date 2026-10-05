@@ -14,6 +14,8 @@ const {
   readAction,
   isOverrideActive,
   getEffectivePermissions,
+  getEffectivePermissionsCached,
+  clearPermissionCache,
 } = require('../../utils/accessPermission');
 
 function getRowsFromBody(body) {
@@ -215,7 +217,7 @@ const staffPermissionController = {
     });
 
     const data = await buildStaffGrid(staff);
-
+    await clearPermissionCache(staff.id)
     return res.status(200).json({
       success: true,
       message: 'Staff permissions saved',
@@ -229,7 +231,7 @@ const staffPermissionController = {
 
   /** Final permissions of the logged-in staff (requires verifystaff). */
   getMine: asyncHandler(async (req, res) => {
-    const result = await getEffectivePermissions(req.staff);
+    const result = await getEffectivePermissionsCached(req.staff);
     if (!result) {
       return res.status(404).json({ success: false, message: 'Staff not found' });
     }

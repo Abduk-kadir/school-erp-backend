@@ -5,6 +5,7 @@ const { Op, QueryTypes } = require('sequelize');
 const { StaffRegistration, staffFcmtoken, department, designation, Role, sequelize } = require('../../models');
 const generateToken = require('../../utils/generateToken');
 const saveStaffFcmToken = require('../../utils/saveStaffFcmToken');
+const { clearPermissionCache } = require('../../utils/accessPermission');
 const { STAFF_DOCUMENT_UPLOAD_ROOT } = require('../../middlewares/multerConfig');
 
 const STAFF_DOCUMENT_ROOT = STAFF_DOCUMENT_UPLOAD_ROOT;
@@ -453,6 +454,7 @@ const editStaff = async (req, res) => {
     }
 
     await staff.update(updates);
+    if (!roleCheck.skip) await clearPermissionCache(staff.id);
 
     return res.status(200).json({
       success: true,

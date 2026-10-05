@@ -1,6 +1,7 @@
 const asyncHandler = require('express-async-handler');
 const { Role, StaffRegistration } = require('../../models');
 const { getDataTable } = require('../../helper');
+const { clearPermissionCache } = require('../../utils/accessPermission');
 
 const roleController = {
   create: asyncHandler(async (req, res) => {
@@ -60,6 +61,7 @@ const roleController = {
     if (req.body?.is_active !== undefined) updates.is_active = Boolean(req.body.is_active);
 
     await record.update(updates);
+    await clearPermissionCache();
 
     return res.status(200).json({ success: true, message: 'Role updated', data: record });
   }),
@@ -101,6 +103,7 @@ const roleController = {
       { role_id: record.id },
       { where: { id: staffIds } }
     );
+    await Promise.all(staffIds.map((id) => clearPermissionCache(id)));
 
     return res.status(200).json({
       success: true,

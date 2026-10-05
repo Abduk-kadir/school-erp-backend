@@ -1,5 +1,7 @@
 const { StaffRegistration, Role, Module, RolePermission, StaffPermission } = require('../models');
-
+const redis = require('../config/redisConfig');
+// Kept short so expired staff overrides and direct DB edits take effect quickly.
+const CACHE_SECONDS = 60 * 5;
 const ACTIONS = ['display', 'add', 'edit', 'delete', 'view', 'import', 'export','is_assign_permissions'];
 
 function parseAllowedActions(value) {
@@ -39,6 +41,35 @@ function isOverrideActive(override) {
   if (!override) return false;
   if (!override.expires_at) return true;
   return new Date(override.expires_at) > new Date();
+}
+async function getEffectivePermissionsCached(staffId) {
+  const key = `perm:staff:${staffId}`;
+  try {
+    console.log(':::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::')
+    const saved = await redis.get(key);
+    console.log('redis data found**************************::::::::::::::',saved)
+    if (saved) return JSON.parse(saved);
+  } catch (e) {
+    console.error('Permission cache read failed:', e.message);
+  }
+  const result = await getEffectivePermissions(staffId);
+  if (result) {
+    redis.set(key, JSON.stringify(result), 'EX', CACHE_SECONDS).catch(() => {});
+  }
+  return result;
+}
+/** Clears one staff member's cached permissions, or everyone's when staffId is omitted. */
+async function clearPermissionCache(staffId) {
+  try {
+    if (staffId) {
+      await redis.del(`perm:staff:${staffId}`);
+      return;
+    }
+    const keys = await redis.keys('perm:staff:*');
+    if (keys.length > 0) await redis.del(...keys);
+  } catch (e) {
+    console.error('Permission cache clear failed:', e.message);
+  }
 }
 
 async function getEffectivePermissions(staffId) {
@@ -104,4 +135,6 @@ module.exports = {
   readAction,
   isOverrideActive,
   getEffectivePermissions,
+  getEffectivePermissionsCached,
+  clearPermissionCache,
 };

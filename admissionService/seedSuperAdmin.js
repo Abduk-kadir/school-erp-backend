@@ -9,6 +9,8 @@
 require('dotenv').config();
 
 const { Role, StaffRegistration, sequelize } = require('./models');
+const redis = require('./config/redisConfig');
+const { clearPermissionCache } = require('./utils/accessPermission');
 
 const ROLE_NAME = 'Super Admin';
 
@@ -39,6 +41,7 @@ async function main() {
   }
 
   await staff.update({ role_id: role.id });
+  await clearPermissionCache(staff.id);
   console.log(`Assigned "${ROLE_NAME}" to staff ${staff.id} (${staff.firstname || ''} ${staff.surname || ''})`.trim());
 }
 
@@ -47,4 +50,7 @@ main()
     console.error(err);
     process.exitCode = 1;
   })
-  .finally(() => sequelize.close());
+  .finally(async () => {
+    await sequelize.close();
+    redis.disconnect();
+  });
