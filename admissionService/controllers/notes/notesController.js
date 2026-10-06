@@ -3,6 +3,75 @@ const { QueryTypes } = require('sequelize');
 const { notes, sequelize, par_student_personal_information, student_subject,Subject,ProgramSubject} = require('../../models');
 const filterStudent = require('../../utils/filterStudent');
 const { sendBulkNotification } = require('../../services/notificationService');
+const { generatePdf } = require('../../utils/generatePdf');
+const { generateExcel } = require('../../utils/generateExcel');
+
+const NOTES_REPORT_COLUMNS = ['Date', 'Class', 'Division', 'Batch', 'Subject', 'Staff', 'Chapter', 'Topic', 'Url'];
+
+async function getNotesReportRows(query) {
+  const start = parseInt(query.start) || 0;
+  const length = parseInt(query.length) || 10;
+  const fromDate = query['filter[fromDate]'] || '';
+  const toDate = query['filter[toDate]'] || '';
+  const className = query['filter[className]'] || '';
+  const division = query['filter[divisionId]'] || '';
+  const batch = query['filter[batchId]'] || '';
+
+  const whereClause = [];
+  const replacements = { start, length };
+  if (fromDate && toDate) {
+    whereClause.push('DATE(nt.createdAt) BETWEEN :fromDate AND :toDate');
+    replacements.fromDate = fromDate;
+    replacements.toDate = toDate;
+  } else if (fromDate) {
+    whereClause.push('DATE(nt.createdAt) >= :fromDate');
+    replacements.fromDate = fromDate;
+  } else if (toDate) {
+    whereClause.push('DATE(nt.createdAt) <= :toDate');
+    replacements.toDate = toDate;
+  }
+  if (className) {
+    whereClause.push('nt.class = :className');
+    replacements.className = Number(className);
+  }
+  if (division) {
+    whereClause.push('nt.division = :division');
+    replacements.division = Number(division);
+  }
+  if (batch) {
+    whereClause.push('nt.batch = :batch');
+    replacements.batch = Number(batch);
+  }
+  const whereSql = whereClause.length ? `where ${whereClause.join(' and ')}` : '';
+
+  const rows = await sequelize.query(
+    `select DATE_FORMAT(nt.createdAt, '%Y-%m-%d') as date, cm.class_name, dv.division_name, bt.batch_name,
+      sb.value as subject_name, CONCAT_WS(' ', sf.surname, sf.firstname) as staff_name, nt.chapter, nt.topic, nt.url
+   from notes as nt
+   join batches as bt on nt.batch = bt.id
+   join division_masters as dv on nt.division = dv.id
+   join class_masters as cm on nt.class = cm.id
+   join Subjects as sb on nt.subject = sb.id
+   left join StaffRegistrations as sf on nt.staffid = sf.id
+   ${whereSql}
+   order by nt.createdAt desc
+   LIMIT :length OFFSET :start`,
+    { replacements, type: QueryTypes.SELECT, raw: true }
+  );
+
+  const cell = (v) => (v == null ? '' : String(v));
+  return rows.map((r) => [
+    cell(r.date),
+    cell(r.class_name),
+    cell(r.division_name),
+    cell(r.batch_name),
+    cell(r.subject_name),
+    cell(r.staff_name),
+    cell(r.chapter),
+    cell(r.topic),
+    cell(r.url),
+  ]);
+}
 
 const notesController = {
   create: asyncHandler(async (req, res) => {
@@ -132,6 +201,28 @@ const notesController = {
       count: result.length,
       data: result,
     });
+  }),
+
+  notesPdf: asyncHandler(async (req, res) => {
+    const buffer = await generatePdf({
+      title: 'Notes',
+      columns: NOTES_REPORT_COLUMNS,
+      data: await getNotesReportRows(req.query),
+    });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=notes.pdf');
+    res.send(buffer);
+  }),
+
+  notesExcel: asyncHandler(async (req, res) => {
+    const buffer = await generateExcel({
+      title: 'Notes',
+      columns: NOTES_REPORT_COLUMNS,
+      data: await getNotesReportRows(req.query),
+    });
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=notes.xlsx');
+    res.send(buffer);
   }),
 
   getNotesStudent: asyncHandler(async (req, res) => {

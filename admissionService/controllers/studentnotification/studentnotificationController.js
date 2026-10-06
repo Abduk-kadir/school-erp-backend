@@ -4,6 +4,71 @@ const { QueryTypes } = require('sequelize');
 const { studentnotification, sequelize, par_student_personal_information } = require('../../models');
 const filterStudent = require('../../utils/filterStudent');
 const { sendBulkNotification } = require('../../services/notificationService');
+const { generatePdf } = require('../../utils/generatePdf');
+const { generateExcel } = require('../../utils/generateExcel');
+
+const NOTIFICATION_REPORT_COLUMNS = ['Date', 'Class', 'Division', 'Batch', 'Staff', 'Message'];
+
+async function getNotificationReportRows(query) {
+  const start = parseInt(query.start) || 0;
+  const length = parseInt(query.length) || 10;
+  const fromDate = query['filter[fromDate]'] || '';
+  const toDate = query['filter[toDate]'] || '';
+  const className = query['filter[className]'] || '';
+  const division = query['filter[divisionId]'] || '';
+  const batch = query['filter[batchId]'] || '';
+
+  const whereClause = [];
+  const replacements = { start, length };
+  if (fromDate && toDate) {
+    whereClause.push('DATE(sn.createdAt) BETWEEN :fromDate AND :toDate');
+    replacements.fromDate = fromDate;
+    replacements.toDate = toDate;
+  } else if (fromDate) {
+    whereClause.push('DATE(sn.createdAt) >= :fromDate');
+    replacements.fromDate = fromDate;
+  } else if (toDate) {
+    whereClause.push('DATE(sn.createdAt) <= :toDate');
+    replacements.toDate = toDate;
+  }
+  if (className) {
+    whereClause.push('sn.class = :className');
+    replacements.className = Number(className);
+  }
+  if (division) {
+    whereClause.push('sn.division = :division');
+    replacements.division = Number(division);
+  }
+  if (batch) {
+    whereClause.push('sn.batch = :batch');
+    replacements.batch = Number(batch);
+  }
+  const whereSql = whereClause.length ? `where ${whereClause.join(' and ')}` : '';
+
+  const rows = await sequelize.query(
+    `select DATE_FORMAT(sn.createdAt, '%Y-%m-%d') as date, cm.class_name, dv.division_name, bt.batch_name,
+      CONCAT_WS(' ', sf.surname, sf.firstname) as staff_name, sn.message
+   from student_notifications as sn
+   join batches as bt on sn.batch = bt.id
+   join division_masters as dv on sn.division = dv.id
+   join class_masters as cm on sn.class = cm.id
+   left join StaffRegistrations as sf on sn.staffid = sf.id
+   ${whereSql}
+   order by sn.createdAt desc
+   LIMIT :length OFFSET :start`,
+    { replacements, type: QueryTypes.SELECT, raw: true }
+  );
+
+  const cell = (v) => (v == null ? '' : String(v));
+  return rows.map((r) => [
+    cell(r.date),
+    cell(r.class_name),
+    cell(r.division_name),
+    cell(r.batch_name),
+    cell(r.staff_name),
+    cell(r.message),
+  ]);
+}
 
 const DOCUMENT_FIELD_NAMES = [
   'document',
@@ -192,10 +257,11 @@ const studentnotificationController = {
    join batches as bt on sn.batch=bt.id
    join division_masters as dv on sn.division= dv.id
    join class_masters as cm on sn.class = cm.id
-   left join StaffRegistrations as sf on sn.staffid = sf.id order by sn.createdAt desc`;
+   left join StaffRegistrations as sf on sn.staffid = sf.id`;
 
     const query = `select sn.*, bt.batch_name, cm.class_name, dv.division_name, CONCAT_WS(' ', sf.surname, sf.firstname) as staff_name ${fromJoins}
    ${whereSql}
+   order by sn.createdAt desc
    LIMIT ${length} OFFSET ${start}`;
 
     const [[totalRow], [filteredRow], result] = await Promise.all([
@@ -224,6 +290,28 @@ const studentnotificationController = {
       count: result.length,
       data: result,
     });
+  }),
+
+  notificationPdf: asyncHandler(async (req, res) => {
+    const buffer = await generatePdf({
+      title: 'Student Notifications',
+      columns: NOTIFICATION_REPORT_COLUMNS,
+      data: await getNotificationReportRows(req.query),
+    });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=student-notifications.pdf');
+    res.send(buffer);
+  }),
+
+  notificationExcel: asyncHandler(async (req, res) => {
+    const buffer = await generateExcel({
+      title: 'Student Notifications',
+      columns: NOTIFICATION_REPORT_COLUMNS,
+      data: await getNotificationReportRows(req.query),
+    });
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=student-notifications.xlsx');
+    res.send(buffer);
   }),
 
   getNotificationStudent: asyncHandler(async (req, res) => {

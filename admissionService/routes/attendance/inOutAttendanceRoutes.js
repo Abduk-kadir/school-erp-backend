@@ -6,8 +6,10 @@ const inOutAttendanceController = require('../../controllers/attendance/inOutAtt
 router.post('/', inOutAttendanceController.create);
 router.get('/reports/detail', inOutAttendanceController.getDetailReport);
 router.get('/reports/detail/pdf', inOutAttendanceController.detailReportPdf);
+router.get('/reports/detail/excel', inOutAttendanceController.detailReportExcel);
 router.get('/reports/summary', inOutAttendanceController.getSummaryReport);
 router.get('/reports/summary/pdf', inOutAttendanceController.summaryReportPdf);
+router.get('/reports/summary/excel', inOutAttendanceController.summaryReportExcel);
 router.get('/reports/monthly', inOutAttendanceController.getMonthlyReport);
 router.get('/reports/yearly', inOutAttendanceController.getYearlyReport);
 router.get('/:reg_no/month/:month', inOutAttendanceController.getattendancebyRegAndMonth);

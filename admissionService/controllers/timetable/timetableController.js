@@ -3,6 +3,72 @@ const { QueryTypes } = require('sequelize');
 const { timetable, batch, class_master, division_master, sequelize, par_student_personal_information } = require('../../models');
 const filterStudent = require('../../utils/filterStudent');
 const { sendBulkNotification } = require('../../services/notificationService');
+const { generatePdf } = require('../../utils/generatePdf');
+const { generateExcel } = require('../../utils/generateExcel');
+
+const TIMETABLE_REPORT_COLUMNS = ['Date', 'Valid From', 'Class', 'Division', 'Batch', 'Staff'];
+
+async function getTimetableReportRows(query) {
+  const start = parseInt(query.start) || 0;
+  const length = parseInt(query.length) || 10;
+  const fromDate = query['filter[fromDate]'] || '';
+  const toDate = query['filter[toDate]'] || '';
+  const className = query['filter[className]'] || '';
+  const division = query['filter[divisionId]'] || '';
+  const batch = query['filter[batchId]'] || '';
+
+  const whereClause = [];
+  const replacements = { start, length };
+  if (fromDate && toDate) {
+    whereClause.push('DATE(tm.createdAt) BETWEEN :fromDate AND :toDate');
+    replacements.fromDate = fromDate;
+    replacements.toDate = toDate;
+  } else if (fromDate) {
+    whereClause.push('DATE(tm.createdAt) >= :fromDate');
+    replacements.fromDate = fromDate;
+  } else if (toDate) {
+    whereClause.push('DATE(tm.createdAt) <= :toDate');
+    replacements.toDate = toDate;
+  }
+  if (className) {
+    whereClause.push('tm.class = :className');
+    replacements.className = Number(className);
+  }
+  if (division) {
+    whereClause.push('tm.division = :division');
+    replacements.division = Number(division);
+  }
+  if (batch) {
+    whereClause.push('tm.batch = :batch');
+    replacements.batch = Number(batch);
+  }
+  const whereSql = whereClause.length ? `where ${whereClause.join(' and ')}` : '';
+
+  const rows = await sequelize.query(
+    `select DATE_FORMAT(tm.createdAt, '%Y-%m-%d') as date, DATE_FORMAT(tm.valid_from, '%Y-%m-%d') as valid_from,
+      cm.class_name, dv.division_name, bt.batch_name, CONCAT_WS(' ', sf.surname, sf.firstname) as staff_name
+   from timetables as tm
+   join batches as bt on tm.batch = bt.id
+   join division_masters as dv on tm.division = dv.id
+   join class_masters as cm on tm.class = cm.id
+   left join StaffRegistrations as sf on tm.staffid = sf.id
+   ${whereSql}
+   order by tm.createdAt desc
+   LIMIT :length OFFSET :start`,
+    { replacements, type: QueryTypes.SELECT, raw: true }
+  );
+
+  const cell = (v) => (v == null ? '' : String(v));
+  return rows.map((r) => [
+    cell(r.date),
+    cell(r.valid_from),
+    cell(r.class_name),
+    cell(r.division_name),
+    cell(r.batch_name),
+    cell(r.staff_name),
+  ]);
+}
+
 const timetableController = {
   create: asyncHandler(async (req, res) => {
     const batchId = req.body.batch ?? req.body.batchId;
@@ -79,7 +145,7 @@ const timetableController = {
       whereClause.push(`DATE(tm.\`createdAt\`) <= '${toDate}'`);
     }
     if (className) {
-      whereClause.push(`cm.\`class_name\` LIKE '%${className}%'`);
+      whereClause.push(`tm.\`class\` = ${className}`);
     }
     if (division) {
       whereClause.push(`tm.\`division\` = ${division}`);
@@ -125,6 +191,28 @@ const timetableController = {
       count: result.length,
       data: result,
     });
+  }),
+
+  timetablePdf: asyncHandler(async (req, res) => {
+    const buffer = await generatePdf({
+      title: 'Timetable',
+      columns: TIMETABLE_REPORT_COLUMNS,
+      data: await getTimetableReportRows(req.query),
+    });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=timetable.pdf');
+    res.send(buffer);
+  }),
+
+  timetableExcel: asyncHandler(async (req, res) => {
+    const buffer = await generateExcel({
+      title: 'Timetable',
+      columns: TIMETABLE_REPORT_COLUMNS,
+      data: await getTimetableReportRows(req.query),
+    });
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=timetable.xlsx');
+    res.send(buffer);
   }),
 
   getTimetableStudent: asyncHandler(async (req, res) => {

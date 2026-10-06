@@ -5,6 +5,8 @@ const assignmentController = require('../../controllers/assignment/assignmentCon
 
 router.post('/', uploadAssignment.single('assignment'), assignmentController.create);
 router.get('/student/:reg_no', assignmentController.getAssignmentStudent);
+router.get('/pdf', assignmentController.assignmentPdf);
+router.get('/excel', assignmentController.assignmentExcel);
 router.get('/', assignmentController.getAll);
 
 module.exports = router;

@@ -1,13 +1,13 @@
+const ExcelJS = require('exceljs');
 
-const generateExcel=()=>{
+async function generateExcel({ title, columns, data }) {
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet(title);
 
-    new Promise((resolve,reject)=>{
-        try{
+  worksheet.addRow(columns).font = { bold: true };
+  worksheet.addRows(data);
 
-        }
-        catch(error){
-            
-        }
-    })
-
+  return workbook.xlsx.writeBuffer();
 }
+
+module.exports = { generateExcel };

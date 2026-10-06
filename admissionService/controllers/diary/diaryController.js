@@ -4,6 +4,73 @@ const { QueryTypes } = require('sequelize');
 const { diary, sequelize,studentFcmtoken,par_student_personal_information,student_subject,ProgramSubject} = require('../../models');
 const {sendBulkNotification} = require('../../services/notificationService');
 const filterStudent = require('../../utils/filterStudent');
+const { generatePdf } = require('../../utils/generatePdf');
+const { generateExcel } = require('../../utils/generateExcel');
+
+const DIARY_REPORT_COLUMNS = ['Date', 'Class', 'Division', 'Batch', 'Subject', 'Staff', 'Message'];
+
+async function getDiaryReportRows(query) {
+  const start = parseInt(query.start) || 0;
+  const length = parseInt(query.length) || 10;
+  const fromDate = query['filter[fromDate]'] || '';
+  const toDate = query['filter[toDate]'] || '';
+  const className = query['filter[className]'] || '';
+  const division = query['filter[divisionId]'] || '';
+  const batch = query['filter[batchId]'] || '';
+
+  const whereClause = [];
+  const replacements = { start, length };
+  if (fromDate && toDate) {
+    whereClause.push('DATE(dr.createdAt) BETWEEN :fromDate AND :toDate');
+    replacements.fromDate = fromDate;
+    replacements.toDate = toDate;
+  } else if (fromDate) {
+    whereClause.push('DATE(dr.createdAt) >= :fromDate');
+    replacements.fromDate = fromDate;
+  } else if (toDate) {
+    whereClause.push('DATE(dr.createdAt) <= :toDate');
+    replacements.toDate = toDate;
+  }
+  if (className) {
+    whereClause.push('dr.class = :className');
+    replacements.className = Number(className);
+  }
+  if (division) {
+    whereClause.push('dr.division = :division');
+    replacements.division = Number(division);
+  }
+  if (batch) {
+    whereClause.push('dr.batch = :batch');
+    replacements.batch = Number(batch);
+  }
+  const whereSql = whereClause.length ? `where ${whereClause.join(' and ')}` : '';
+
+  const rows = await sequelize.query(
+    `select DATE_FORMAT(dr.createdAt, '%Y-%m-%d') as date, cm.class_name, dv.division_name, bt.batch_name,
+      sb.value as subject_name, CONCAT_WS(' ', sf.surname, sf.firstname) as staff_name, dr.message
+   from diaries as dr
+   join batches as bt on dr.batch = bt.id
+   join division_masters as dv on dr.division = dv.id
+   join class_masters as cm on dr.class = cm.id
+   join Subjects as sb on dr.subject = sb.id
+   left join StaffRegistrations as sf on dr.staffid = sf.id
+   ${whereSql}
+   order by dr.createdAt desc
+   LIMIT :length OFFSET :start`,
+    { replacements, type: QueryTypes.SELECT, raw: true }
+  );
+
+  const cell = (v) => (v == null ? '' : String(v));
+  return rows.map((r) => [
+    cell(r.date),
+    cell(r.class_name),
+    cell(r.division_name),
+    cell(r.batch_name),
+    cell(r.subject_name),
+    cell(r.staff_name),
+    cell(r.message),
+  ]);
+}
 
 const DOCUMENT_FIELD_NAMES = [
   'diary',
@@ -203,10 +270,11 @@ const diaryController = {
    join division_masters as dv on dr.division= dv.id
    join class_masters as cm on dr.class = cm.id
    join Subjects as sb on dr.subject = sb.id
-   left join StaffRegistrations as sf on dr.staffid = sf.id order by dr.createdAt desc`;
+   left join StaffRegistrations as sf on dr.staffid = sf.id`;
 
     const query = `select dr.*, bt.batch_name, cm.class_name, dv.division_name, sb.value as subject_name, CONCAT_WS(' ', sf.surname, sf.firstname) as staff_name ${fromJoins}
    ${whereSql}
+   order by dr.createdAt desc
    LIMIT ${length} OFFSET ${start}`;
 
     const [[totalRow], [filteredRow], result] = await Promise.all([
@@ -235,6 +303,28 @@ const diaryController = {
       count: result.length,
       data: result,
     });
+  }),
+
+  diaryPdf: asyncHandler(async (req, res) => {
+    const buffer = await generatePdf({
+      title: 'Diary',
+      columns: DIARY_REPORT_COLUMNS,
+      data: await getDiaryReportRows(req.query),
+    });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=diary.pdf');
+    res.send(buffer);
+  }),
+
+  diaryExcel: asyncHandler(async (req, res) => {
+    const buffer = await generateExcel({
+      title: 'Diary',
+      columns: DIARY_REPORT_COLUMNS,
+      data: await getDiaryReportRows(req.query),
+    });
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=diary.xlsx');
+    res.send(buffer);
   }),
   getDiaryStudent:asyncHandler(async(req,res)=>{
     let {reg_no}=req.params;

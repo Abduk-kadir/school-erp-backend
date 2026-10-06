@@ -1,6 +1,7 @@
 const asyncHandler = require('express-async-handler');
 const { InOutAttendance, sequelize, Sequelize } = require('../../models');
 const {generatePdf} = require('../../utils/generatePdf');
+const { generateExcel } = require('../../utils/generateExcel');
 function getRowsFromBody(body) {
   if (Array.isArray(body)) return body;
   if (body && Array.isArray(body.rows)) return body.rows;
@@ -321,6 +322,91 @@ const inOutAttendanceController = {
 
   }),
 
+  detailReportExcel: asyncHandler(async (req, res) => {
+    const start = parseInt(req.query.start) || 0;
+    const length = parseInt(req.query.length) || 10;
+
+    // Express may parse as filter[key] string keys or nested filter object
+    const filter = req.query.filter || {};
+    const attendance_date =
+      req.query['filter[date]'] || filter.date || '';
+    const classId =
+      req.query['filter[className]'] ||
+      req.query['filter[classId]'] ||
+      filter.className ||
+      filter.classId ||
+      '';
+    const divisionId =
+      req.query['filter[divisionId]'] ||
+      req.query['filter[division]'] ||
+      filter.divisionId ||
+      filter.division ||
+      '';
+
+    // p.class / p.division are INTEGER FKs — match by id, not LIKE name
+    const whereClause = ['1 = 1'];
+    const replacements = { length, start };
+
+    if (classId) {
+      whereClause.push('p.class = :classId');
+      replacements.classId = Number(classId);
+    }
+    if (divisionId) {
+      whereClause.push('p.division = :divisionId');
+      replacements.divisionId = Number(divisionId);
+    }
+    if (attendance_date) {
+      whereClause.push('a.attendance_date = :attendance_date');
+      replacements.attendance_date = attendance_date;
+    }
+
+    const sql = `
+      SELECT
+        p.reg_no,
+        p.first_name AS name,
+        cm.class_name AS class,
+        dm.division_name AS \`div\`,
+        p.reg_no AS roll_no,
+        a.attendance_date AS \`date\`,
+        a.in_time,
+        a.out_time
+      FROM par_student_personal_informations p
+      INNER JOIN class_masters cm ON cm.id = p.class
+      INNER JOIN division_masters dm ON dm.id = p.division
+      INNER JOIN in_out_attendances a
+        ON a.reg_no = p.reg_no
+      WHERE ${whereClause.join(' AND ')}
+      ORDER BY p.reg_no ASC
+      LIMIT :length OFFSET :start
+    `;
+
+    const data = await sequelize.query(sql, {
+      replacements,
+      type: Sequelize.QueryTypes.SELECT,
+      raw: true,
+    });
+    const cell = (v) => (v == null ? '' : String(v));
+    const buffer = await generateExcel({
+      title: 'In-Out Attendance',
+      columns: ['Reg No','Name','Class','Division','Roll no','Date',"In Time","Out Time"],
+      data: data.map(r => [
+        cell(r.reg_no),
+        cell(r.name),
+        cell(r.class),
+        cell(r.div),
+        cell(r.roll_no),
+        cell(r.date),
+        cell(r.in_time),
+        cell(r.out_time),
+      ]),
+    });
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=attendance.xlsx');
+    res.send(buffer);
+  }),
+
+  
+
   /** report-summ: class, div, total student, present count, absent count */
   getSummaryReport: asyncHandler(async (req, res) => {
     const draw = parseInt(req.query.draw) || 1;
@@ -453,250 +539,183 @@ const inOutAttendanceController = {
     res.send(buffer);
   }),
 
-  /** report-monthly: filter[fromDate], filter[toDate], class, division + pagination */
-  getMonthlyReport: asyncHandler(async (req, res) => {
-    const draw = parseInt(req.query.draw) || 1;
+  summaryReportExcel: asyncHandler(async (req, res) => {
     const start = parseInt(req.query.start) || 0;
     const length = parseInt(req.query.length) || 10;
-    const search = req.query['search[value]'] || req.query.search?.value || '';
-    const from = req.query['filter[fromDate]'] || '';
-    const to = req.query['filter[toDate]'] || '';
+    const today = new Date().toISOString().slice(0, 10);
+    const attendance_date = req.query['filter[date]'] || today;
     const className = req.query['filter[className]'] || '';
-    const division = req.query['filter[division]'] || '';
-
-    const toDateKey = (value) => {
-      if (value == null) return null;
-      if (typeof value === 'string') return value.slice(0, 10);
-      if (value instanceof Date) {
-        const y = value.getFullYear();
-        const m = String(value.getMonth() + 1).padStart(2, '0');
-        const d = String(value.getDate()).padStart(2, '0');
-        return `${y}-${m}-${d}`;
-      }
-      return String(value).slice(0, 10);
-    };
-
-    const formatTimeRange = (inTime, outTime) => {
-      const fmt = (t) => {
-        if (!t) return '';
-        const s = String(t);
-        return s.length >= 8 ? s.slice(0, 8) : s;
-      };
-      const inn = fmt(inTime);
-      const out = fmt(outTime);
-      if (inn && out) return `${inn} - ${out}`;
-      if (inn) return inn;
-      if (out) return out;
-      return '';
-    };
-
-    const allDatesBetween = (fromStr, toStr) => {
-      const dates = [];
-      const [y0, m0, d0] = fromStr.split('-').map(Number);
-      const [y1, m1, d1] = toStr.split('-').map(Number);
-      const cur = new Date(y0, m0 - 1, d0);
-      const end = new Date(y1, m1 - 1, d1);
-      while (cur <= end) {
-        const y = cur.getFullYear();
-        const m = String(cur.getMonth() + 1).padStart(2, '0');
-        const d = String(cur.getDate()).padStart(2, '0');
-        dates.push(`${y}-${m}-${d}`);
-        cur.setDate(cur.getDate() + 1);
-      }
-      return dates;
-    };
+    const division = req.query['filter[divisionId]'] || '';
 
     const studentFilters = [];
-    const replacements = { length, start };
+    const replacements = { attendance_date, length, start };
 
-    if (from) replacements.from = from;
-    if (to) replacements.to = to;
-
-    const attendanceDateSql = [
-      from ? 'AND a.attendance_date >= :from' : '',
-      to ? 'AND a.attendance_date <= :to' : '',
-    ]
-      .filter(Boolean)
-      .join('\n       ');
+    const attendanceDateSql = 'AND a.attendance_date = :attendance_date';
 
     if (className) {
-      studentFilters.push(`p.class LIKE :className`);
-      replacements.className = `%${className}%`;
+      studentFilters.push(`p.class = :className`);
+      replacements.className = Number(className);
     }
     if (division) {
       studentFilters.push(`p.division = :division`);
-      replacements.division = division;
-    }
-    if (search) {
-      studentFilters.push(
-        `(p.first_name LIKE :search OR p.last_name LIKE :search OR CAST(p.reg_no AS CHAR) LIKE :search OR cm.class_name LIKE :search OR dm.division_name LIKE :search)`
-      );
-      replacements.search = `%${search}%`;
+      replacements.division = Number(division);
     }
 
     const studentWhere = studentFilters.length
       ? ` AND ${studentFilters.join(' AND ')}`
       : '';
 
-    const studentSql = `
+    const sql = `
       SELECT
-        p.reg_no,
-        TRIM(CONCAT(IFNULL(p.first_name, ''), ' ', IFNULL(p.last_name, ''))) AS name,
         cm.class_name AS class,
         dm.division_name AS \`div\`,
-        p.reg_no AS roll_no,
-        COUNT(a.attendance_date) AS total_working_days,
-        SUM(CASE WHEN a.in_time IS NOT NULL AND a.in_time > '00:00:00' THEN 1 ELSE 0 END) AS total_present,
-        SUM(
-          CASE WHEN a.attendance_date IS NOT NULL AND (a.in_time IS NULL OR a.in_time <= '00:00:00') THEN 1 ELSE 0 END
-        ) AS total_absent
+        COUNT(DISTINCT p.reg_no) AS total_student,
+        COUNT(DISTINCT CASE WHEN a.in_time IS NOT NULL AND a.in_time > '00:00:00' THEN a.reg_no END) AS present_count,
+        COUNT(DISTINCT CASE WHEN a.attendance_date IS NOT NULL AND (a.in_time IS NULL OR a.in_time <= '00:00:00') THEN a.reg_no END) AS absent_count
       FROM par_student_personal_informations p
       LEFT JOIN class_masters cm ON cm.id = p.class
       LEFT JOIN division_masters dm ON dm.id = p.division
       LEFT JOIN in_out_attendances a
         ON a.reg_no = p.reg_no
-       ${attendanceDateSql}
+        ${attendanceDateSql}
       WHERE 1 = 1
       ${studentWhere}
-      GROUP BY
+      GROUP BY p.class, p.division, cm.class_name, dm.division_name
+      ORDER BY cm.class_name, dm.division_name
+      LIMIT :length OFFSET :start
+    `;
+
+    const data = await sequelize.query(sql, {
+      replacements,
+      type: Sequelize.QueryTypes.SELECT,
+      raw: true,
+    });
+
+    const cell = (v) => (v == null ? '' : String(v));
+    const buffer = await generateExcel({
+      title: 'In-Out Attendance Summary',
+      columns: ['Class', 'Division', 'Total Student', 'Total Present', 'Total Absent'],
+      data: data.map((r) => [
+        cell(r.class),
+        cell(r.div),
+        cell(r.total_student),
+        cell(r.present_count),
+        cell(r.absent_count),
+      ]),
+    });
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=attendance-summary.xlsx');
+    res.send(buffer);
+  }),
+
+  /** report-monthly: filter[fromDate], filter[toDate], class, division + pagination */
+  getMonthlyReport: asyncHandler(async (req, res) => {
+    const draw = parseInt(req.query.draw) || 1;
+    const start = parseInt(req.query.start) || 0;
+    const length = parseInt(req.query.length) || 10;
+    const search = req.query['search[value]'] || req.query.search?.value || '';
+    const filter = req.query.filter || {};
+    const classId =
+      req.query['filter[className]'] ||
+      req.query['filter[classId]'] ||
+      filter.className ||
+      filter.classId ||
+      '';
+    const divisionId =
+      req.query['filter[divisionId]'] ||
+      req.query['filter[division]'] ||
+      filter.divisionId ||
+      filter.division ||
+      '';
+    if (!classId || !divisionId) {
+      return res.status(200).json({ success: true, count: 0, data: [], draw });
+    }
+    const fromDate = req.query['filter[fromDate]'];
+    const toDate = req.query['filter[toDate]'];
+    const startmonthNumber = fromDate ? Number(fromDate.split('-')[1]) : new Date().getMonth() + 1;
+    const endmonthNumber = toDate ? Number(toDate.split('-')[1]) : new Date().getMonth() + 1;
+    console.log('start month is:::::::::::::::::::::::::::',startmonthNumber)
+    console.log('end month is:::::::::::::::::::::::::::',endmonthNumber)
+    const whereClause = ['1 = 1'];
+    const replacements = { length, start };
+
+    if (classId) {
+      whereClause.push('p.class = :classId');
+      replacements.classId = Number(classId);
+    }
+    if (divisionId) {
+      whereClause.push('p.division = :divisionId');
+      replacements.divisionId = Number(divisionId);
+    }
+    if(startmonthNumber && endmonthNumber){
+      whereClause.push('a.month_number IN (:startmonthNumber, :endmonthNumber)');
+      replacements.startmonthNumber=startmonthNumber;
+      replacements.endmonthNumber=endmonthNumber;
+    }
+   
+    const sql = `
+      SELECT
+        a.id as id,
         p.reg_no,
-        p.first_name,
-        p.last_name,
-        cm.class_name,
-        dm.division_name
+        p.first_name AS name,
+        cm.class_name AS class,
+        dm.division_name AS \`div\`,
+        p.reg_no AS roll_no,
+        a.month_number AS \`month_number\`,
+        a.\`1\`,
+        a.\`2\`,
+        a.\`3\`,
+        a.\`4\`,
+        a.\`5\`,
+        a.\`6\`,
+        a.\`7\`,
+        a.\`8\`,
+        a.\`9\`,
+        a.\`10\`,
+        a.\`11\`,
+        a.\`12\`,
+        a.\`13\`,
+        a.\`14\`,
+        a.\`15\`,
+        a.\`16\`,
+        a.\`17\`,
+        a.\`18\`,
+        a.\`19\`,
+        a.\`20\`,
+        a.\`21\`,
+        a.\`22\`,
+        a.\`23\`,
+        a.\`24\`,
+        a.\`25\`,
+        a.\`26\`,
+        a.\`27\`,
+        a.\`28\`,
+        a.\`29\`,
+        a.\`30\`,
+        a.\`31\`,
+        a.total_present,
+        a.total_absent,
+        a.total_workingdays,
+        a.present_percent
+      FROM par_student_personal_informations p
+      INNER JOIN class_masters cm ON cm.id = p.class
+      INNER JOIN division_masters dm ON dm.id = p.division
+      INNER JOIN monthlyattendances a
+        ON a.reg_no = p.reg_no
+      WHERE ${whereClause.join(' AND ')}
       ORDER BY p.reg_no ASC
       LIMIT :length OFFSET :start
     `;
 
-    const countStudentsSql = `
-      SELECT COUNT(DISTINCT p.reg_no) AS total
-      FROM par_student_personal_informations p
-      LEFT JOIN class_masters cm ON cm.id = p.class
-      LEFT JOIN division_masters dm ON dm.id = p.division
-      WHERE 1 = 1
-      ${studentWhere}
-    `;
-
-    const filterOnly = {};
-    if (from) filterOnly.from = from;
-    if (to) filterOnly.to = to;
-    if (className) filterOnly.className = replacements.className;
-    if (division) filterOnly.division = replacements.division;
-    if (search) filterOnly.search = replacements.search;
-
-    const [students, [countStudentsRow]] = await Promise.all([
-      sequelize.query(studentSql, {
-        replacements,
-        type: Sequelize.QueryTypes.SELECT,
-      }),
-      sequelize.query(countStudentsSql, {
-        replacements: filterOnly,
-        type: Sequelize.QueryTypes.SELECT,
-      }),
-    ]);
-
-    const regNos = students.map((s) => s.reg_no);
-    let attendanceRows = [];
-
-    if (regNos.length > 0) {
-      const attendanceSql = `
-        SELECT
-          a.reg_no,
-          DATE_FORMAT(a.attendance_date, '%Y-%m-%d') AS attendance_date,
-          a.in_time,
-          a.out_time
-        FROM in_out_attendances a
-        INNER JOIN par_student_personal_informations p ON p.reg_no = a.reg_no
-        LEFT JOIN class_masters cm ON cm.id = p.class
-        LEFT JOIN division_masters dm ON dm.id = p.division
-        WHERE a.reg_no IN (:regNos)
-        ${attendanceDateSql}
-        ${studentWhere}
-        ORDER BY a.reg_no ASC, a.attendance_date ASC
-      `;
-
-      attendanceRows = await sequelize.query(attendanceSql, {
-        replacements: { ...filterOnly, regNos },
-        type: Sequelize.QueryTypes.SELECT,
-      });
-    }
-
-    const attendanceByRegNo = new Map();
-    for (const row of attendanceRows) {
-      const key = String(row.reg_no);
-      if (!attendanceByRegNo.has(key)) {
-        attendanceByRegNo.set(key, new Map());
-      }
-      const dateKey = toDateKey(row.attendance_date);
-      if (dateKey) {
-        attendanceByRegNo.get(key).set(dateKey, {
-          in_time: row.in_time,
-          out_time: row.out_time,
-        });
-      }
-    }
-
-    let rangeDates;
-    if (from && to) {
-      rangeDates = allDatesBetween(from, to);
-    } else {
-      rangeDates = [
-        ...new Set(attendanceRows.map((row) => toDateKey(row.attendance_date))),
-      ]
-        .filter(Boolean)
-        .sort();
-    }
-
-    const recordsTotal = Number(countStudentsRow?.total ?? 0);
-
-    const data = students.map((student, index) => {
-      const regKey = String(student.reg_no);
-      const byDate = attendanceByRegNo.get(regKey) || new Map();
-
-      const daily = rangeDates.map((date) => {
-        const att = byDate.get(date);
-        if (!att) {
-          return { date, status: '' };
-        }
-        return {
-          date,
-          status: formatTimeRange(att.in_time, att.out_time),
-        };
-      });
-
-      const total_working_days = Number(student.total_working_days ?? 0);
-      const total_present = Number(student.total_present ?? 0);
-      const total_absent = Number(student.total_absent ?? 0);
-      const present_percent =
-        total_working_days > 0
-          ? Math.round((total_present / total_working_days) * 10000) / 100
-          : 0;
-
-      return {
-        srno: start + index + 1,
-        reg_no: student.reg_no,
-        name: student.name,
-        class: student.class,
-        div: student.div,
-        roll_no: student.roll_no,
-        daily,
-        total_present,
-        total_absent,
-        total_working_days,
-        present_percent,
-      };
+    const data = await sequelize.query(sql, {
+      replacements,
+      type: Sequelize.QueryTypes.SELECT,
+      raw: true,
+     
     });
-
-    return res.status(200).json({
-      success: true,
-      draw,
-      recordsTotal,
-      recordsFiltered: recordsTotal,
-      from,
-      to,
-      count: data.length,
-      data,
-    });
+    
+    return res.status(200).json({ success: true, count: data.length, data ,draw});
+    
   }),
 
   /** report-yearly: monthly present/working + yearly totals */

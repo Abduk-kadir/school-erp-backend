@@ -5,6 +5,8 @@ const diaryController = require('../../controllers/diary/diaryController');
 
 router.post('/', uploadDiary.any(), diaryController.create);
 router.get('/student/:reg_no', diaryController.getDiaryStudent);
+router.get('/pdf', diaryController.diaryPdf);
+router.get('/excel', diaryController.diaryExcel);
 router.get('/', diaryController.getAll);
 
 module.exports = router;
