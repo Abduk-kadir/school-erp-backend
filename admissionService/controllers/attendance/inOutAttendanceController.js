@@ -21,6 +21,92 @@ function mapInOutAttendanceRow(row) {
   };
 }
 
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTHLY_FIXED_COLUMN_COUNT = 5;
+
+function getMonthlyRangeDates(fromDate, toDate) {
+  const [fy, fm, fd] = String(fromDate).split('-').map(Number);
+  const [ty, tm, td] = String(toDate).split('-').map(Number);
+  const cursor = new Date(Date.UTC(fy, fm - 1, fd));
+  const end = new Date(Date.UTC(ty, tm - 1, td));
+  const dates = [];
+  while (cursor <= end) {
+    dates.push({ year: cursor.getUTCFullYear(), month: cursor.getUTCMonth() + 1, day: cursor.getUTCDate() });
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return dates;
+}
+
+// One row per student; a range like 15 Sep - 12 Oct reads two monthlyattendances rows per student.
+async function getMonthlyReportExportData(query) {
+  const pick = (key) => query[`filter[${key}]`] || query[key] || '';
+  const classId = pick('className') || pick('classId');
+  const divisionId = pick('divisionId') || pick('division');
+  const today = new Date();
+  const fromDate = pick('fromDate') || `${today.getFullYear()}-${today.getMonth() + 1}-1`;
+  const toDate = pick('toDate') || `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
+  const dates = getMonthlyRangeDates(fromDate, toDate);
+
+  const columns = [
+    'Reg No', 'Name', 'Class', 'Division', 'Roll No',
+    ...dates.map((d) => `${d.day} ${MONTH_NAMES[d.month - 1]}`),
+    'Present', 'Absent', 'Working Days', 'Present %',
+  ];
+  if (!classId || !divisionId || dates.length === 0) {
+    return { columns, rows: [], dayCount: dates.length };
+  }
+
+  const months = [...new Map(dates.map((d) => [`${d.year}-${d.month}`, d])).values()];
+  const replacements = { classId: Number(classId), divisionId: Number(divisionId) };
+  const monthWhere = months
+    .map((m, i) => {
+      replacements[`year${i}`] = m.year;
+      replacements[`month${i}`] = m.month;
+      return `(a.year = :year${i} AND a.month_number = :month${i})`;
+    })
+    .join(' OR ');
+
+  const records = await sequelize.query(
+    `SELECT p.reg_no, p.first_name AS name, cm.class_name AS class, dm.division_name AS \`div\`,
+       p.reg_no AS roll_no, a.*
+     FROM par_student_personal_informations p
+     INNER JOIN class_masters cm ON cm.id = p.class
+     INNER JOIN division_masters dm ON dm.id = p.division
+     INNER JOIN monthlyattendances a ON a.reg_no = p.reg_no
+     WHERE p.class = :classId AND p.division = :divisionId AND (${monthWhere})
+     ORDER BY p.reg_no ASC`,
+    { replacements, type: Sequelize.QueryTypes.SELECT, raw: true }
+  );
+
+  const students = new Map();
+  for (const r of records) {
+    if (!students.has(r.reg_no)) students.set(r.reg_no, { info: r, months: {} });
+    students.get(r.reg_no).months[`${r.year}-${r.month_number}`] = r;
+  }
+
+  const cell = (v) => (v == null ? '' : String(v));
+  const rows = [...students.values()].map(({ info, months: studentMonths }) => {
+    let present = 0;
+    let absent = 0;
+    const dayValues = dates.map((d) => {
+      const value = cell(studentMonths[`${d.year}-${d.month}`]?.[d.day]);
+      const code = value.trim().charAt(0).toUpperCase();
+      if (code === 'P') present += 1;
+      if (code === 'A') absent += 1;
+      return value;
+    });
+    const workingDays = present + absent;
+    return [
+      cell(info.reg_no), cell(info.name), cell(info.class), cell(info.div), cell(info.roll_no),
+      ...dayValues,
+      String(present), String(absent), String(workingDays),
+      `${workingDays ? Math.round((present / workingDays) * 100) : 0}%`,
+    ];
+  });
+
+  return { columns, rows, dayCount: dates.length };
+}
+
 
 
 
@@ -716,6 +802,35 @@ const inOutAttendanceController = {
     
     return res.status(200).json({ success: true, count: data.length, data ,draw});
     
+  }),
+
+  monthlyReportPdf: asyncHandler(async (req, res) => {
+    const { columns, rows, dayCount } = await getMonthlyReportExportData(req.query);
+    const dayEnd = MONTHLY_FIXED_COLUMN_COUNT + dayCount;
+    // Up to 40 columns share one A4 page, so each day shows only its P / A code.
+    const pdfRows = rows.map((row) =>
+      row.map((v, i) => (i >= MONTHLY_FIXED_COLUMN_COUNT && i < dayEnd ? v.trim().charAt(0) : v))
+    );
+    const buffer = await generatePdf({
+      title: 'In-Out Monthly Attendance',
+      columns,
+      data: pdfRows,
+    });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=attendance-monthly.pdf');
+    res.send(buffer);
+  }),
+
+  monthlyReportExcel: asyncHandler(async (req, res) => {
+    const { columns, rows } = await getMonthlyReportExportData(req.query);
+    const buffer = await generateExcel({
+      title: 'In-Out Monthly Attendance',
+      columns,
+      data: rows,
+    });
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=attendance-monthly.xlsx');
+    res.send(buffer);
   }),
 
   /** report-yearly: monthly present/working + yearly totals */

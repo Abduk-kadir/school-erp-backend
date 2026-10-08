@@ -11,6 +11,8 @@ router.get('/reports/summary', inOutAttendanceController.getSummaryReport);
 router.get('/reports/summary/pdf', inOutAttendanceController.summaryReportPdf);
 router.get('/reports/summary/excel', inOutAttendanceController.summaryReportExcel);
 router.get('/reports/monthly', inOutAttendanceController.getMonthlyReport);
+router.get('/reports/monthly/pdf', inOutAttendanceController.monthlyReportPdf);
+router.get('/reports/monthly/excel', inOutAttendanceController.monthlyReportExcel);
 router.get('/reports/yearly', inOutAttendanceController.getYearlyReport);
 router.get('/:reg_no/month/:month', inOutAttendanceController.getattendancebyRegAndMonth);
 router.get('/:reg_no/:date', inOutAttendanceController.getattendancebyRegAndDate);
