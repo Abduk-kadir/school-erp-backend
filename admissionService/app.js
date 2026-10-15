@@ -101,6 +101,13 @@ const accessRoleRoutes = require('./routes/accessPermission/roleRoutes');
 const moduleRoutes = require('./routes/accessPermission/moduleRoutes');
 const rolePermissionRoutes = require('./routes/accessPermission/rolePermissionRoutes');
 const staffPermissionRoutes = require('./routes/accessPermission/staffPermissionRoutes');
+const gradeScaleRoutes = require('./routes/examination/gradeScaleRoutes');
+const componentRoutes = require('./routes/examination/componentRoutes');
+const termRoutes = require('./routes/examination/termRoutes');
+const examNameRoutes = require('./routes/examination/examNameRoutes');
+const examSchemeRoutes = require('./routes/examination/examSchemeRoutes');
+const examAssessmentRoutes = require('./routes/examination/examAssessmentRoutes');
+const assessmentComponentRoutes = require('./routes/examination/assessmentComponentRoutes');
 //start all jobs
 startAllJobs();
 // In your app.js or server.js
@@ -163,6 +170,15 @@ app.use('/api/access-roles', accessRoleRoutes);
 app.use('/api/modules', moduleRoutes);
 app.use('/api/role-permissions', rolePermissionRoutes);
 app.use('/api/staff-permissions', staffPermissionRoutes);
+
+//examination module routes
+app.use('/api/grade-scales', gradeScaleRoutes);
+app.use('/api/components', componentRoutes);
+app.use('/api/terms', termRoutes);
+app.use('/api/exam-names', examNameRoutes);
+app.use('/api/exam-schemes', examSchemeRoutes);
+app.use('/api/exam-assessments', examAssessmentRoutes);
+app.use('/api/assessment-components', assessmentComponentRoutes);
 
 
 //fee module routes
