@@ -1,6 +1,18 @@
 const asyncHandler = require('express-async-handler');
 const { Op } = require('sequelize');
-const { exam_scheme, exam_name, class_master, term, Program, semester, sequelize } = require('../../models');
+const {
+  exam_scheme,
+  exam_name,
+  class_master,
+  term,
+  Program,
+  semester,
+  exam_assessment,
+  assessment_component,
+  Subject,
+  component,
+  sequelize,
+} = require('../../models');
 const { httpError, toNumberOrNull, getQueryValue } = require('./examHelper');
 const { getDataTable } = require('../../helper');
 
@@ -166,6 +178,68 @@ const examSchemeController = {
     const data = await findScheme(req.params.id);
     if (!data) throw httpError(404, 'Exam scheme not found');
     res.json({ success: true, data });
+  }),
+
+  getSubjectsComponentsBySchemeClassTerm: asyncHandler(async (req, res) => {
+    const schemeId = toNumberOrNull(req.params.id);
+    const classId = toNumberOrNull(req.params.classId);
+    const termId = toNumberOrNull(req.params.termId);
+    if (!schemeId) throw httpError(400, 'Valid exam scheme id is required');
+    if (!classId) throw httpError(400, 'Valid class id is required');
+    if (!termId) throw httpError(400, 'Valid term id is required');
+
+    const scheme = await exam_scheme.findOne({
+      where: { id: schemeId, class_id: classId, term_id: termId },
+      include: schemeInclude,
+    });
+    if (!scheme) throw httpError(404, 'Exam scheme not found for this scheme, class and term');
+
+    const assessments = await exam_assessment.findAll({
+      where: { exam_scheme_id: schemeId },
+      include: [
+        { model: Subject, as: 'subjectInfo', attributes: ['id', 'value', 'abbreviation_name'] },
+        { model: component, as: 'componentInfo', attributes: ['id', 'component_name', 'type'] },
+        {
+          model: assessment_component,
+          as: 'components',
+          include: [{ model: component, as: 'componentInfo', attributes: ['id', 'component_name', 'type'] }],
+        },
+      ],
+      order: [
+        ['subject_id', 'ASC'],
+        ['sequence', 'ASC'],
+        ['id', 'ASC'],
+        [{ model: assessment_component, as: 'components' }, 'sequence', 'ASC'],
+      ],
+    });
+
+    const data = assessments.map((row) => ({
+      scheme_id: scheme.id,
+      exam_name: scheme.examNameInfo?.exam_name ?? null,
+      component: row.componentInfo?.component_name ?? null,
+      subject: row.subjectInfo?.value ?? null,
+      class: scheme.classInfo?.class_name ?? null,
+      term: scheme.termInfo?.term_name ?? null,
+      assessment_id: row.id,
+      subject_id: row.subject_id,
+      component_id: row.component_id,
+      class_id: scheme.class_id,
+      term_id: scheme.term_id,
+      subcomponents: row.components.map((item) => ({
+        id: item.id,
+        component_id: item.component_id,
+        component_name: item.componentInfo?.component_name ?? null,
+        type: item.componentInfo?.type ?? null,
+        max_marks: Number(item.max_marks),
+        sequence: item.sequence,
+      })),
+    }));
+
+    res.json({
+      success: true,
+      count: data.length,
+      data,
+    });
   }),
 
   update: asyncHandler(async (req, res) => {

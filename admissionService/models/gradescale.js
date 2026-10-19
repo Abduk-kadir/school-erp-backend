@@ -9,6 +9,10 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'grade_scale_id',
         as: 'ranges',
       });
+      grade_scale.hasMany(models.exam_configure, {
+        foreignKey: 'grade_scale_id',
+        as: 'examConfigures',
+      });
     }
   }
 

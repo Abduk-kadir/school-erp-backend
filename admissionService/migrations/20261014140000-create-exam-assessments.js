@@ -35,6 +35,13 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'RESTRICT',
       },
+      group_id: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: { model: 'assessment_groups', key: 'id' },
+        onUpdate: 'CASCADE',
+        onDelete: 'RESTRICT',
+      },
       max_marks: {
         type: Sequelize.DECIMAL(6, 2),
         allowNull: false,

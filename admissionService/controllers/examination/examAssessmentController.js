@@ -7,6 +7,7 @@ const {
   Subject,
   component,
   assessment_component,
+  assessment_group,
   sequelize,
 } = require('../../models');
 const { httpError, toNumberOrNull, getQueryValue } = require('./examHelper');
@@ -21,6 +22,7 @@ const assessmentInclude = [
   },
   { model: Subject, as: 'subjectInfo', attributes: ['id', 'value', 'abbreviation_name'] },
   { model: component, as: 'componentInfo', attributes: ['id', 'component_name'] },
+  { model: assessment_group, as: 'groupInfo', attributes: ['id', 'group'] },
 ];
 
 function readAssessment(body) {
@@ -29,6 +31,7 @@ function readAssessment(body) {
     subject_id: toNumberOrNull(body.subject_id),
     code: String(body.code ?? '').trim() || null,
     component_id: toNumberOrNull(body.component_id),
+    group_id: toNumberOrNull(body.group_id ?? body.group),
     max_marks: toNumberOrNull(body.max_marks),
     sequence: toNumberOrNull(body.sequence),
   };
@@ -38,6 +41,7 @@ async function validate(assessment, excludeId) {
   if (!assessment.exam_scheme_id) throw httpError(400, 'Exam scheme is required');
   if (!assessment.subject_id) throw httpError(400, 'Subject is required');
   if (!assessment.component_id) throw httpError(400, 'Component is required');
+  if (!assessment.group_id) throw httpError(400, 'Group is required');
   if (assessment.code && assessment.code.length > 20) {
     throw httpError(400, 'Code must be at most 20 characters');
   }
@@ -46,14 +50,16 @@ async function validate(assessment, excludeId) {
   }
   if (assessment.max_marks > 9999.99) throw httpError(400, 'Max marks is too large');
 
-  const [schemeRow, subjectRow, componentRow] = await Promise.all([
+  const [schemeRow, subjectRow, componentRow, groupRow] = await Promise.all([
     exam_scheme.findByPk(assessment.exam_scheme_id),
     Subject.findByPk(assessment.subject_id),
     component.findByPk(assessment.component_id),
+    assessment_group.findByPk(assessment.group_id),
   ]);
   if (!schemeRow) throw httpError(400, 'Selected exam scheme does not exist');
   if (!subjectRow) throw httpError(400, 'Selected subject does not exist');
   if (!componentRow) throw httpError(400, 'Selected component does not exist');
+  if (!groupRow) throw httpError(400, 'Selected group does not exist');
 
   if (!assessment.code) return;
 
@@ -104,7 +110,9 @@ async function validateAssessmentComponents(items) {
   if (!items.length) return;
 
   const found = await component.count({ where: { id: [...seen] } });
-  if (found !== seen.size) throw httpError(400, 'One or more selected assessment components do not exist');
+  if (found !== seen.size) {
+    throw httpError(400, 'One or more selected assessment components do not exist');
+  }
 }
 
 async function findExistingAssessment(body, assessment) {
@@ -202,7 +210,7 @@ const examAssessmentController = {
 
   getAll: asyncHandler(async (req, res) => {
     const where = {};
-    for (const field of ['exam_scheme_id', 'subject_id', 'component_id']) {
+    for (const field of ['exam_scheme_id', 'subject_id', 'component_id', 'group_id']) {
       const value = toNumberOrNull(getQueryValue(req.query, field));
       if (value) where[field] = value;
     }
@@ -233,6 +241,7 @@ const examAssessmentController = {
       subject_id: row.subject_id,
       code: row.code,
       component_id: row.component_id,
+      group_id: row.group_id,
       max_marks: Number(row.max_marks),
       sequence: row.sequence,
       assesmentcomponent: row.components.map((item) => ({
@@ -257,10 +266,16 @@ const examAssessmentController = {
     if (!record) throw httpError(404, 'Exam assessment not found');
 
     const assessment = readAssessment(req.body);
+    const items = readAssessmentComponents(req.body);
     await validate(assessment, record.id);
+    await validateAssessmentComponents(items ?? []);
     if (assessment.sequence === null) assessment.sequence = record.sequence;
 
-    await record.update(assessment);
+    await sequelize.transaction(async (transaction) => {
+      await record.update(assessment, { transaction });
+      if (items) await syncAssessmentComponents(record.id, items, transaction);
+    });
+
     res.json({
       success: true,
       message: 'Exam assessment updated',

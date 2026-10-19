@@ -104,6 +104,8 @@ const staffPermissionRoutes = require('./routes/accessPermission/staffPermission
 const gradeScaleRoutes = require('./routes/examination/gradeScaleRoutes');
 const componentRoutes = require('./routes/examination/componentRoutes');
 const termRoutes = require('./routes/examination/termRoutes');
+const assessmentGroupRoutes = require('./routes/examination/assessmentGroupRoutes');
+const examConfigureRoutes = require('./routes/examination/examConfigureRoutes');
 const examNameRoutes = require('./routes/examination/examNameRoutes');
 const examSchemeRoutes = require('./routes/examination/examSchemeRoutes');
 const examAssessmentRoutes = require('./routes/examination/examAssessmentRoutes');
@@ -175,6 +177,8 @@ app.use('/api/staff-permissions', staffPermissionRoutes);
 app.use('/api/grade-scales', gradeScaleRoutes);
 app.use('/api/components', componentRoutes);
 app.use('/api/terms', termRoutes);
+app.use('/api/assessment-groups', assessmentGroupRoutes);
+app.use('/api/exam-configures', examConfigureRoutes);
 app.use('/api/exam-names', examNameRoutes);
 app.use('/api/exam-schemes', examSchemeRoutes);
 app.use('/api/exam-assessments', examAssessmentRoutes);

@@ -17,6 +17,10 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'component_id',
         as: 'componentInfo',
       });
+      exam_assessment.belongsTo(models.assessment_group, {
+        foreignKey: 'group_id',
+        as: 'groupInfo',
+      });
       exam_assessment.hasMany(models.assessment_component, {
         foreignKey: 'exam_assessment_id',
         as: 'components',
@@ -39,6 +43,10 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: true,
       },
       component_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+      },
+      group_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
       },

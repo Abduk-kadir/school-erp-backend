@@ -1,14 +1,20 @@
 const asyncHandler = require('express-async-handler');
 const { Op } = require('sequelize');
 const { component, exam_assessment, assessment_component } = require('../../models');
-const { httpError } = require('./examHelper');
+const { httpError, getQueryValue } = require('./examHelper');
 const { getDataTable } = require('../../helper');
 
-function readComponentName(body) {
-  const name = String(body.component_name ?? '').trim();
-  if (!name) throw httpError(400, 'Component name is required');
-  if (name.length > 100) throw httpError(400, 'Component name must be at most 100 characters');
-  return name;
+function readComponent(body) {
+  const component_name = String(body.component_name ?? '').trim();
+  if (!component_name) throw httpError(400, 'Component name is required');
+  if (component_name.length > 100) throw httpError(400, 'Component name must be at most 100 characters');
+
+  const type = body.type === undefined || body.type === null
+    ? null
+    : String(body.type).trim() || null;
+  if (type && type.length > 100) throw httpError(400, 'Type must be at most 100 characters');
+
+  return { component_name, type };
 }
 
 async function ensureUniqueName(name, excludeId) {
@@ -21,15 +27,19 @@ async function ensureUniqueName(name, excludeId) {
 
 const componentController = {
   create: asyncHandler(async (req, res) => {
-    const component_name = readComponentName(req.body);
-    await ensureUniqueName(component_name);
+    const payload = readComponent(req.body);
+    await ensureUniqueName(payload.component_name);
 
-    const data = await component.create({ component_name });
+    const data = await component.create(payload);
     res.status(201).json({ success: true, message: 'Component created', data });
   }),
 
   getAll: asyncHandler(async (req, res) => {
-    const result = await getDataTable(req, component, ['component_name']);
+    const where = {};
+    const type = getQueryValue(req.query, 'type');
+    if (type !== '') where.type = type;
+
+    const result = await getDataTable(req, component, ['component_name', 'type'], where);
     res.json(result);
   }),
 
@@ -43,10 +53,10 @@ const componentController = {
     const record = await component.findByPk(req.params.id);
     if (!record) throw httpError(404, 'Component not found');
 
-    const component_name = readComponentName(req.body);
-    await ensureUniqueName(component_name, record.id);
+    const payload = readComponent(req.body);
+    await ensureUniqueName(payload.component_name, record.id);
 
-    await record.update({ component_name });
+    await record.update(payload);
     res.json({ success: true, message: 'Component updated', data: record });
   }),
 

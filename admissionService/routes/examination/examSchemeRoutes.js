@@ -8,7 +8,12 @@ router.get('/exam-name/:examNameId', examSchemeController.getByExamNameId);
 router.get(
   '/exam-name/:examNameId/class/:classId/term/:termId',
   examSchemeController.getExamSchemeByExamNameClassTerm
-);router.get('/:id', examSchemeController.getById);
+);
+router.get(
+  '/:id/class/:classId/term/:termId/subjects-components',
+  examSchemeController.getSubjectsComponentsBySchemeClassTerm
+);
+router.get('/:id', examSchemeController.getById);
 router.put('/:id', examSchemeController.update);
 router.delete('/:id', examSchemeController.delete);
 

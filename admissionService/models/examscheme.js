@@ -29,6 +29,10 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'exam_scheme_id',
         as: 'assessments',
       });
+      exam_scheme.hasOne(models.exam_configure, {
+        foreignKey: 'exam_id',
+        as: 'configure',
+      });
     }
   }
 

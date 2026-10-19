@@ -8,7 +8,7 @@ const itemInclude = [
   {
     model: exam_assessment,
     as: 'assessment',
-    attributes: ['id', 'exam_scheme_id', 'subject_id', 'code', 'max_marks'],
+    attributes: ['id', 'exam_scheme_id', 'subject_id', 'code', 'group_id', 'max_marks'],
   },
   { model: component, as: 'componentInfo', attributes: ['id', 'component_name'] },
 ];
