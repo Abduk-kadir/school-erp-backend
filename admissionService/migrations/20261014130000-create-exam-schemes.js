@@ -34,7 +34,7 @@ module.exports = {
       program_id: {
         type: Sequelize.INTEGER,
         allowNull: true,
-        references: { model: 'programs', key: 'id' },
+        references: { model: 'Programs', key: 'id' },
         onUpdate: 'CASCADE',
         onDelete: 'SET NULL',
       },

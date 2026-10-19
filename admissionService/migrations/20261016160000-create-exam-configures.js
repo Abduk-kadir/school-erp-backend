@@ -34,7 +34,7 @@ module.exports = {
       subject_id: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        references: { model: 'subjects', key: 'id' },
+        references: { model: 'Subjects', key: 'id' },
         onUpdate: 'CASCADE',
         onDelete: 'RESTRICT',
       },
