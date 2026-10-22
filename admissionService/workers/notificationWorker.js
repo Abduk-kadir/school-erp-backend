@@ -13,7 +13,7 @@ const worker = new Worker('student-notifications', async (job) => {
       tokens: batch,
       notification: {
         title,
-        body: `${body} (#${job.id})`,
+        body: `${body}`,
       },
       data: {
         ...data,

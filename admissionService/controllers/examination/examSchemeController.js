@@ -11,6 +11,7 @@ const {
   assessment_component,
   Subject,
   component,
+  assessment_group,
   sequelize,
 } = require('../../models');
 const { httpError, toNumberOrNull, getQueryValue } = require('./examHelper');
@@ -199,6 +200,7 @@ const examSchemeController = {
       include: [
         { model: Subject, as: 'subjectInfo', attributes: ['id', 'value', 'abbreviation_name'] },
         { model: component, as: 'componentInfo', attributes: ['id', 'component_name', 'type'] },
+        { model: assessment_group, as: 'groupInfo', attributes: ['id', 'group'] },
         {
           model: assessment_component,
           as: 'components',
@@ -217,6 +219,9 @@ const examSchemeController = {
       scheme_id: scheme.id,
       exam_name: scheme.examNameInfo?.exam_name ?? null,
       component: row.componentInfo?.component_name ?? null,
+      group_id:row.group_id,
+      group_name: row.groupInfo?.group ?? null,
+      max_marks:Number(row.max_marks),
       subject: row.subjectInfo?.value ?? null,
       class: scheme.classInfo?.class_name ?? null,
       term: scheme.termInfo?.term_name ?? null,

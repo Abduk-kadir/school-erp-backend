@@ -4,6 +4,7 @@ const gradeScaleController = require('../../controllers/examination/gradeScaleCo
 
 router.post('/', gradeScaleController.create);
 router.get('/', gradeScaleController.getAll);
+router.get('/:gradeScaleId/highest-max', gradeScaleController.getHighestMaxRange);
 router.get('/:id', gradeScaleController.getById);
 router.put('/:id', gradeScaleController.update);
 router.delete('/:id', gradeScaleController.delete);

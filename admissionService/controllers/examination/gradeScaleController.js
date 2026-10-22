@@ -114,6 +114,19 @@ const gradeScaleController = {
     res.json({ success: true, data });
   }),
 
+  getHighestMaxRange: asyncHandler(async (req, res) => {
+    const gradeScaleId = toNumberOrNull(req.params.gradeScaleId);
+    if (!gradeScaleId) throw httpError(400, 'Valid grade scale id is required');
+
+    const data = await grade_scale_range.findOne({
+      where: { grade_scale_id: gradeScaleId },
+      order: [['max_percent', 'DESC'], ['id', 'ASC']],
+    });
+    if (!data) throw httpError(404, 'No grade rows found for this grade scale');
+
+    res.json({ success: true, data });
+  }),
+
   update: asyncHandler(async (req, res) => {
     const record = await grade_scale.findByPk(req.params.id);
     if (!record) throw httpError(404, 'Grade scale not found');

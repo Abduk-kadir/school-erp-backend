@@ -8,6 +8,7 @@ const {
   class_master,
   term,
   Subject,
+  sequelize,
 } = require('../../models');
 const { httpError, toNumberOrNull, toBoolean, getQueryValue } = require('./examHelper');
 const { getDataTable } = require('../../helper');
@@ -24,6 +25,17 @@ const configureInclude = [
   { model: Subject, as: 'subjectInfo', attributes: ['id', 'value', 'abbreviation_name'] },
   { model: grade_scale, as: 'gradeScale', attributes: ['id', 'name', 'type'] },
 ];
+
+function getRowsFromBody(body) {
+  if (Array.isArray(body)) return body;
+  if (body && Array.isArray(body.rows)) return body.rows;
+  if (body && Array.isArray(body.data)) return body.data;
+  return null;
+}
+
+function configureKey(config) {
+  return [config.exam_id, config.class_id, config.term_id, config.subject_id].join('|');
+}
 
 function readConfigure(body) {
   return {
@@ -46,7 +58,9 @@ function readConfigure(body) {
   };
 }
 
-async function validate(config, excludeId) {
+const CONFIGURE_KEY_FIELDS = ['exam_id', 'class_id', 'term_id', 'subject_id'];
+
+async function validate(config, excludeId, { checkDuplicate = true } = {}) {
   if (!config.exam_id) throw httpError(400, 'Exam is required');
   if (!config.class_id) throw httpError(400, 'Class is required');
   if (!config.term_id) throw httpError(400, 'Term is required');
@@ -65,6 +79,7 @@ async function validate(config, excludeId) {
   if (!termRow) throw httpError(400, 'Selected term does not exist');
   if (!subjectRow) throw httpError(400, 'Selected subject does not exist');
   if (!gradeRow) throw httpError(400, 'Selected grade scale does not exist');
+  if (!checkDuplicate) return;
 
   const where = {
     exam_id: config.exam_id,
@@ -84,14 +99,52 @@ function findConfigure(id) {
 
 const examConfigureController = {
   create: asyncHandler(async (req, res) => {
-    const config = readConfigure(req.body);
-    await validate(config);
+    const rows = getRowsFromBody(req.body);
+    const payload = (rows ?? [req.body]).map((row) => readConfigure(row || {}));
+    if (!payload.length) throw httpError(400, 'At least one exam configure is required');
 
-    const created = await exam_configure.create(config);
+    const seen = new Set();
+    for (let index = 0; index < payload.length; index++) {
+      const config = payload[index];
+      const prefix = payload.length > 1 ? `Row ${index + 1}: ` : '';
+      try {
+        await validate(config, null, { checkDuplicate: false });
+      } catch (err) {
+        err.message = prefix + err.message;
+        throw err;
+      }
+      const key = configureKey(config);
+      if (seen.has(key)) {
+        throw httpError(409, `${prefix}Exam configure is repeated for the same exam, class, term and subject`);
+      }
+      seen.add(key);
+    }
+
+    const updateFields = Object.keys(payload[0])
+      .filter((field) => !CONFIGURE_KEY_FIELDS.includes(field))
+      .concat('updatedAt');
+
+    await sequelize.transaction((transaction) =>
+      exam_configure.bulkCreate(payload, { transaction, updateOnDuplicate: updateFields })
+    );
+
+    const data = await exam_configure.findAll({
+      where: {
+        [Op.or]: payload.map((config) => ({
+          exam_id: config.exam_id,
+          class_id: config.class_id,
+          term_id: config.term_id,
+          subject_id: config.subject_id,
+        })),
+      },
+      include: configureInclude,
+      order: [['id', 'ASC']],
+    });
     res.status(201).json({
       success: true,
-      message: 'Exam configure created',
-      data: await findConfigure(created.id),
+      message: `${data.length} exam configure(s) saved`,
+      count: data.length,
+      data,
     });
   }),
 
