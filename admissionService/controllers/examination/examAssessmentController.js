@@ -8,6 +8,8 @@ const {
   component,
   assessment_component,
   assessment_group,
+  class_master,
+  term,
   sequelize,
 } = require('../../models');
 const { httpError, toNumberOrNull, getQueryValue } = require('./examHelper');
@@ -215,7 +217,19 @@ const examAssessmentController = {
       if (value) where[field] = value;
     }
 
-    const result = await getDataTable(req, exam_assessment, ['code'], where, assessmentInclude);
+    const result = await getDataTable(req, exam_assessment, ['code'], where, [
+      {
+        model: exam_scheme,
+        as: 'scheme',
+        attributes: ['id', 'exam_name_id', 'class_id', 'term_id'],
+        include: [
+          { model: exam_name, as: 'examNameInfo', attributes: ['id', 'exam_name'] },
+          { model: class_master, as: 'classInfo', attributes: ['id', 'class_name'] },
+          { model: term, as: 'termInfo', attributes: ['id', 'term_name'] },
+        ],
+      },
+      ...assessmentInclude.filter((item) => item.as !== 'scheme'),
+    ]);
     res.json(result);
   }),
 
