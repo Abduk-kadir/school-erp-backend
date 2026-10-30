@@ -16,5 +16,6 @@ router.get(
 router.get('/:id', examSchemeController.getById);
 router.put('/:id', examSchemeController.update);
 router.delete('/:id', examSchemeController.delete);
+router.get('/:id/assessment-and-components', examSchemeController.getAssessmentAndComponentbySchemeId);
 
 module.exports = router;

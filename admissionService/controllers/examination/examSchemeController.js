@@ -247,6 +247,43 @@ const examSchemeController = {
     });
   }),
 
+  getAssessmentAndComponentbySchemeId:asyncHandler(async(req,res)=>{
+    const schemeId=toNumberOrNull(req.params.id);
+    if(!schemeId) throw httpError(400, 'Valid scheme id is required');
+
+    const scheme=await exam_scheme.findOne({
+      where: { id: schemeId },
+      include: schemeInclude,
+    });
+    if(!scheme) throw httpError(404, 'Exam scheme not found for this scheme id');
+
+    const where = { exam_scheme_id: schemeId };
+    const subjectId = toNumberOrNull(getQueryValue(req.query, 'subject_id') || getQueryValue(req.query, 'subjectId'));
+    if (subjectId) where.subject_id = subjectId;
+
+    const assessments = await exam_assessment.findAll({
+      where,
+      include: [
+        { model: Subject, as: 'subjectInfo', attributes: ['id', 'value', 'abbreviation_name'] },
+        { model: component, as: 'componentInfo', attributes: ['id', 'component_name', 'type'] },
+        {
+          model: assessment_component,
+          as: 'components',
+          include: [{ model: component, as: 'componentInfo', attributes: ['id', 'component_name', 'type'] }],
+        },
+        { model: assessment_group, as: 'groupInfo', attributes: ['id', 'group'] },
+      ],
+      order: [
+       
+        ['sequence', 'ASC'],
+        [{ model: assessment_component, as: 'components' }, 'sequence', 'ASC'],
+      ],
+    });
+    res.json({ success: true, count: assessments.length, data: { scheme, assessments } })
+
+    
+  }),
+
   update: asyncHandler(async (req, res) => {
     const record = await exam_scheme.findByPk(req.params.id);
     if (!record) throw httpError(404, 'Exam scheme not found');
