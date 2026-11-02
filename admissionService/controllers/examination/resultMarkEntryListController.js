@@ -40,20 +40,23 @@ const marksInclude = {
   order: [['student_id', 'ASC'], ['exam_assessment_id', 'ASC'], ['assessment_component_id', 'ASC']],
 };
 
-const getAssessmentAndComponent=async(exam_scheme_id)=>{
-  let query=`select ea.exam_scheme_id, ea.id as exam_assessment_id,ac.id as assessment_component_id from exam_assessments ea left join assessment_components as ac on ea.id=ac.exam_assessment_id where ea.exam_scheme_id=${exam_scheme_id};`
-  let result=await sequelize.query(query,{type:sequelize.QueryTypes.SELECT})
+const getAssessmentAndComponent=async(exam_scheme_id,subject_id)=>{
+  let query=`select ea.exam_scheme_id, ea.id as exam_assessment_id,ac.id as assessment_component_id from exam_assessments ea left join assessment_components as ac on ea.id=ac.exam_assessment_id where ea.exam_scheme_id=:exam_scheme_id and ea.subject_id=:subject_id order by ea.sequence, ac.sequence;`
+  let result=await sequelize.query(query,{replacements:{exam_scheme_id,subject_id},type:sequelize.QueryTypes.SELECT})
   return result
 }
 const getStudents=async(class_id,division_id)=>{
-  let query=`select id,first_name,last_name,class,division from par_student_personal_informations where class=${class_id} and division=${division_id};`
-  let result=await sequelize.query(query,{type:sequelize.QueryTypes.SELECT})
+  let query=`select id,first_name,last_name,class,division from par_student_personal_informations where class=:class_id and division=:division_id;`
+  let result=await sequelize.query(query,{replacements:{class_id,division_id},type:sequelize.QueryTypes.SELECT})
   return result
 }
+
+const markKey = (row) => [row.student_id, row.exam_assessment_id, row.assessment_component_id ?? 0].join('|');
+
 const makePayload=(result_mark_entry_list_id,allassesmentandcomponentData,studentsData)=>{
   let payload=[]
-  for(let assessment of allassesmentandcomponentData){
-    for(let student of studentsData){
+  for(let student of studentsData){
+    for(let assessment of allassesmentandcomponentData){
       payload.push({
         result_mark_entry_list_id:result_mark_entry_list_id,
         student_id:student.id,
@@ -69,10 +72,16 @@ const resultMarkEntryListController = {
   create: asyncHandler(async (req, res) => {
    let body=req.body;
    let {class_id,division_id,exam_scheme_id,term_id,subject_id,sort_by}=body
-   console.log('exam_scheme_id class divsiion***',exam_scheme_id,class_id,division_id)
-   let [allassesmentandcomponent,students]=await Promise.allSettled([getAssessmentAndComponent(exam_scheme_id),getStudents(class_id,division_id)])
+   if(!exam_scheme_id || !class_id || !division_id || !subject_id){
+    return res.status(400).json({message:'exam_scheme_id, class_id, division_id and subject_id are required'})
+   }
+   let [allassesmentandcomponent,students]=await Promise.allSettled([getAssessmentAndComponent(exam_scheme_id,subject_id),getStudents(class_id,division_id)])
+
    let allassesmentandcomponentData=[];
    let studentsData=[]
+   console.log('students****************>',students.value)
+   
+   console.log('allassesmentandcomponentData****>>>>>',allassesmentandcomponentData);
 
    if(allassesmentandcomponent.status==='fulfilled' && students.status==='fulfilled'){
     allassesmentandcomponentData=allassesmentandcomponent.value
@@ -82,10 +91,12 @@ const resultMarkEntryListController = {
    else{
     return res.status(400).json({message:'Failed to get assessment and component or students'})
    }
-    const entryWhere = { exam_scheme_id, division_id, subject_id };
 
-    const { entryId, inserted, existing } = await sequelize.transaction(async (transaction) => {
+
+    const entryWhere = { exam_scheme_id, division_id, subject_id };
+    const { entryId, isNewEntry, inserted, existing } = await sequelize.transaction(async (transaction) => {
       let entry = await result_mark_entry_list.findOne({ where: entryWhere, transaction });
+      const isNewEntry = !entry;
       if (entry) {
         await entry.update({ searchbystudent: sort_by ?? null }, { transaction });
       } else {
@@ -94,51 +105,41 @@ const resultMarkEntryListController = {
           { transaction }
         );
       }
-      
+
       const payload = makePayload(entry.id, allassesmentandcomponentData, studentsData);
-      console.log('allassesmentandcomponentData****>>>>>',allassesmentandcomponentData);
-      console.log('studentsData****>>>>>',studentsData);
-      console.log('payload****>>>>>',payload);
-      if (!payload.length) return { entryId: entry.id, inserted: 0, existing: 0 };
 
-      const markKey = (row) => [row.student_id, row.exam_assessment_id, row.assessment_component_id ?? 0].join('|');
-      const existingRows = await student_mark.findAll({
-        where: {
-          student_id: [...new Set(payload.map((row) => row.student_id))],
-          exam_assessment_id: [...new Set(payload.map((row) => row.exam_assessment_id))],
-        },
-        attributes: ['id', 'student_id', 'exam_assessment_id', 'assessment_component_id', 'result_mark_entry_list_id'],
-        transaction,
-      });
-      const existingByKey = new Map(existingRows.map((row) => [markKey(row), row]));
-
-      const newRows = [];
-      const moveIds = [];
-      for (const row of payload) {
-        const current = existingByKey.get(markKey(row));
-        if (!current) newRows.push(row);
-        else if (current.result_mark_entry_list_id !== entry.id) moveIds.push(current.id);
+      let newRows = payload;
+      if (!isNewEntry) {
+        const existingRows = await student_mark.findAll({
+          where: { result_mark_entry_list_id: entry.id },
+          attributes: ['student_id', 'exam_assessment_id', 'assessment_component_id'],
+          raw: true,
+          transaction,
+        });
+        const existingKeys = new Set(existingRows.map(markKey));
+        newRows = payload.filter((row) => !existingKeys.has(markKey(row)));
       }
 
-      if (moveIds.length) {
-        await student_mark.update(
-          { result_mark_entry_list_id: entry.id },
-          { where: { id: moveIds }, transaction }
-        );
-      }
       for (let i = 0; i < newRows.length; i += 1000) {
         await student_mark.bulkCreate(newRows.slice(i, i + 1000), { transaction });
       }
 
-      return { entryId: entry.id, inserted: newRows.length, existing: payload.length - newRows.length };
+      return {
+        entryId: entry.id,
+        isNewEntry,
+        inserted: newRows.length,
+        existing: payload.length - newRows.length,
+      };
     });
 
     const data = await result_mark_entry_list.findByPk(entryId, {
       include: [...entryListInclude, marksInclude],
     });
-    res.status(201).json({
+    res.status(isNewEntry ? 201 : 200).json({
       success: true,
-      message: `${inserted} mark row(s) created, ${existing} already existed`,
+      message: isNewEntry
+        ? `Mark entry list created with ${inserted} mark row(s)`
+        : `Mark entry list updated: ${inserted} mark row(s) added, ${existing} already existed`,
       data,
     });
 

@@ -222,6 +222,7 @@ const examSchemeController = {
       group_id:row.group_id,
       group_name: row.groupInfo?.group ?? null,
       max_marks:Number(row.max_marks),
+      ratio: row.ratio === null ? null : Number(row.ratio),
       subject: row.subjectInfo?.value ?? null,
       class: scheme.classInfo?.class_name ?? null,
       term: scheme.termInfo?.term_name ?? null,

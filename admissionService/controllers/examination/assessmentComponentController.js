@@ -8,7 +8,7 @@ const itemInclude = [
   {
     model: exam_assessment,
     as: 'assessment',
-    attributes: ['id', 'exam_scheme_id', 'subject_id', 'code', 'group_id', 'max_marks'],
+    attributes: ['id', 'exam_scheme_id', 'subject_id', 'code', 'group_id', 'max_marks', 'ratio'],
   },
   { model: component, as: 'componentInfo', attributes: ['id', 'component_name'] },
 ];
@@ -28,7 +28,6 @@ async function validate(item, excludeId) {
   if (item.max_marks === null || item.max_marks <= 0) {
     throw httpError(400, 'Max marks must be greater than 0');
   }
-
   const [assessmentRow, componentRow] = await Promise.all([
     exam_assessment.findByPk(item.exam_assessment_id),
     component.findByPk(item.component_id),

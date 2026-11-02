@@ -46,6 +46,10 @@ module.exports = {
         type: Sequelize.DECIMAL(6, 2),
         allowNull: false,
       },
+      ratio: {
+        type: Sequelize.DECIMAL(6, 2),
+        allowNull: true,
+      },
       sequence: {
         type: Sequelize.INTEGER,
         allowNull: false,

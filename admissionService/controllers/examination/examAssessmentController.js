@@ -35,6 +35,7 @@ function readAssessment(body) {
     component_id: toNumberOrNull(body.component_id),
     group_id: toNumberOrNull(body.group_id ?? body.group),
     max_marks: toNumberOrNull(body.max_marks),
+    ratio: toNumberOrNull(body.ratio),
     sequence: toNumberOrNull(body.sequence),
   };
 }
@@ -51,6 +52,10 @@ async function validate(assessment, excludeId) {
     throw httpError(400, 'Max marks must be greater than 0');
   }
   if (assessment.max_marks > 9999.99) throw httpError(400, 'Max marks is too large');
+  if (assessment.ratio !== null && assessment.ratio < 0) {
+    throw httpError(400, 'Ratio must be 0 or greater');
+  }
+  if (assessment.ratio !== null && assessment.ratio > 9999.99) throw httpError(400, 'Ratio is too large');
 
   const [schemeRow, subjectRow, componentRow, groupRow] = await Promise.all([
     exam_scheme.findByPk(assessment.exam_scheme_id),
@@ -257,6 +262,7 @@ const examAssessmentController = {
       component_id: row.component_id,
       group_id: row.group_id,
       max_marks: Number(row.max_marks),
+      ratio: row.ratio === null ? null : Number(row.ratio),
       sequence: row.sequence,
       assesmentcomponent: row.components.map((item) => ({
         id: item.id,
