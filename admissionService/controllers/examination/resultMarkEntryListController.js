@@ -10,13 +10,26 @@ const {
   Subject,
   exam_assessment,
   assessment_component,
-  par_student_personal_information,
+  assessment_group,
+  component,
+  Program,
+  semester,
   sequelize,
 } = require('../../models');
 const { httpError, toNumberOrNull, toBoolean, getQueryValue } = require('./examHelper');
 const { getDataTable } = require('../../helper');
+const ExcelJS=require('exceljs');
+const schemeInclude = [
+  { model: exam_name, as: 'examNameInfo', attributes: ['id', 'exam_name'] },
+  { model: class_master, as: 'classInfo', attributes: ['id', 'class_name'] },
+  { model: term, as: 'termInfo', attributes: ['id', 'term_name'] },
+  { model: Program, as: 'programInfo', attributes: ['id', 'program_name'] },
+  { model: semester, as: 'semesterInfo', attributes: ['id', 'semester'] },
+];
+
 
 const MARK_STATUSES = ['present', 'absent', 'exempt'];
+
 
 const entryListInclude = [
   {
@@ -68,7 +81,131 @@ const makePayload=(result_mark_entry_list_id,allassesmentandcomponentData,studen
   return payload
 }
 
+
+
+const loadColumns=async(exam_scheme_id,subject_id)=>{
+  const schemeId=exam_scheme_id;
+   const subjectId=subject_id;
+    const scheme=await exam_scheme.findOne({
+      where: { id: schemeId },
+      include: schemeInclude,
+    });
+    const where = { exam_scheme_id: schemeId, subject_id: subjectId };
+    const assessments = await exam_assessment.findAll({
+      where,
+      include: [
+        { model: Subject, as: 'subjectInfo', attributes: ['id', 'value', 'abbreviation_name'] },
+        { model: component, as: 'componentInfo', attributes: ['id', 'component_name', 'type'] },
+        {
+          model: assessment_component,
+          as: 'components',
+          include: [{ model: component, as: 'componentInfo', attributes: ['id', 'component_name', 'type'] }],
+        },
+        { model: assessment_group, as: 'groupInfo', attributes: ['id', 'group'] },
+      ],
+      order: [
+       
+        ['sequence', 'ASC'],
+        [{ model: assessment_component, as: 'components' }, 'sequence', 'ASC'],
+      ],
+    });
+    return assessments
+
+}
+
+
+
+
+  
+
+  
+
+ 
+
 const resultMarkEntryListController = {
+  importMarks:asyncHandler(async(req,res)=>{
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: "Excel file is required (form-data key: file)" });
+    }
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(req.file.buffer);
+    const sheet = workbook.getWorksheet('Marks');
+    const meta = workbook.getWorksheet('Meta');
+    if (!sheet || !meta) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid file. Please upload the marks sheet downloaded from Marks Entry.",
+      });
+    }
+
+    const metaValues = {};
+    meta.eachRow((r) => {
+      metaValues[r.getCell(1).text] = r.getCell(2).text;
+    });
+    const toId = (v) => (v === undefined || v === "" ? null : Number(v));
+    const ids = {
+      result_mark_entry_id: toId(metaValues.result_mark_entry_id),
+      exam_scheme_id: toId(metaValues.exam_scheme_id),
+      subject_id: toId(metaValues.subject_id),
+      division_id: toId(metaValues.division_id),
+    };
+
+    const dataStartRow = Number(metaValues.data_start_row) || 6;
+    if (!metaValues.layout) {
+      return res.status(400).json({ success: false, message: "Column details are missing from the file." });
+    }
+    
+    const layout = JSON.parse(metaValues.layout);
+    const row6=sheet.getRow(6);
+
+    const columns=await loadColumns(ids.exam_scheme_id,ids.subject_id)
+    let firstvalue=columns[0];
+    let secondvalue=columns[1];
+    let thirdvalue=columns[2];
+
+    let numofsubheadfirst=firstvalue?.components.length;
+    let numofsubheadsecond=secondvalue?.components.length;
+    let numofsubheadthird=thirdvalue?.components.length;
+
+    let start=6
+    let fa1startcolumnno=start
+    let fa1totalcolumnno=numofsubheadfirst+fa1startcolumnno
+    let fa1totalconvertedcolno=fa1totalcolumnno+1
+
+    let fa2startcolumnno=fa1totalconvertedcolno+1
+    let fa2totalcolumnno=numofsubheadsecond+fa2startcolumnno
+    let fa2totalconvertedcolno=fa2totalcolumnno+1
+    let formativevetotalcolumnno=fa2totalconvertedcolno+1
+
+    let s
+    
+
+
+    
+   
+    res.send({
+      //ids,
+      //row6values:row6.values,
+      ///dataStartRow,
+      //columns,
+      numofsubheadfirst,
+      fa1startcolumnno,
+      fa1totalcolumnno,
+      fa1totalconvertedcolno,
+      numofsubheadsecond,
+      fa2startcolumnno,
+      fa2totalcolumnno,
+      fa2totalconvertedcolno,
+      numofsubheadthird,
+
+      
+      
+      
+    })
+
+  }),
+
+
   create: asyncHandler(async (req, res) => {
    let body=req.body;
    let {class_id,division_id,exam_scheme_id,term_id,subject_id,sort_by}=body
@@ -172,6 +309,23 @@ const resultMarkEntryListController = {
 
     const result = await getDataTable(req, result_mark_entry_list, ['searchbystudent'], where, include);
     res.json(result);
+  }),
+
+  getallstudentbyresultmarkentrylist: asyncHandler(async (req, res) => {
+    const entryListId = toNumberOrNull(req.params.id);
+    if (!entryListId) throw httpError(400, 'Valid result mark entry list id is required');
+
+    const query = `select distinct p.id, p.reg_no, p.rollnumber, p.first_name, p.last_name, p.father_name
+      from student_marks sm
+      inner join par_student_personal_informations p on p.id = sm.student_id
+      where sm.result_mark_entry_list_id = :entryListId
+      order by p.rollnumber, p.first_name;`;
+    const data = await sequelize.query(query, {
+      replacements: { entryListId },
+      type: sequelize.QueryTypes.SELECT,
+    });
+
+    res.json({ success: true, count: data.length, data });
   }),
 };
 
