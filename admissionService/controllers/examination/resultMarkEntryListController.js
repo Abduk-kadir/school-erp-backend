@@ -11,6 +11,7 @@ const {
   exam_assessment,
   assessment_component,
   assessment_group,
+  exam_configure,
   component,
   Program,
   semester,
@@ -18,6 +19,8 @@ const {
 } = require('../../models');
 const { httpError, toNumberOrNull, toBoolean, getQueryValue } = require('./examHelper');
 const { getDataTable } = require('../../helper');
+const { buildStudentSubjectResults } = require('../../utils/buildStudentSubject');
+const { buildStudentHeadResults } = require('../../utils/buildStudentHead');
 const ExcelJS=require('exceljs');
 const schemeInclude = [
   { model: exam_name, as: 'examNameInfo', attributes: ['id', 'exam_name'] },
@@ -124,84 +127,130 @@ const loadColumns=async(exam_scheme_id,subject_id)=>{
 
 const resultMarkEntryListController = {
   importMarks:asyncHandler(async(req,res)=>{
-    if (!req.file) {
-      return res.status(400).json({ success: false, message: "Excel file is required (form-data key: file)" });
-    }
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(req.file.buffer);
-    const sheet = workbook.getWorksheet('Marks');
-    const meta = workbook.getWorksheet('Meta');
+    const sheet = workbook.getWorksheet("Marks");
+    const meta = workbook.getWorksheet("Meta");
     if (!sheet || !meta) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid file. Please upload the marks sheet downloaded from Marks Entry.",
+      return res.status(400).json({ success: false, message: "Invalid file" });
+    }
+    // 1. Read the Meta sheet
+    const metaValues = {};
+    meta.eachRow((r) => { metaValues[r.getCell(1).text] = r.getCell(2).text; });
+    const resultMarkEntryId = Number(metaValues.result_mark_entry_id);
+    const startRow = Number(metaValues.data_start_row) || 6;
+    const layout = JSON.parse(metaValues.layout);
+    const studentIdByRow = new Map(
+      JSON.parse(metaValues.students || "[]").map((s) => [s.row, s.student_id])
+    );
+    console.log('termid************************',metaValues.term_id)
+
+
+    
+
+    const markColumns = layout.groups.flatMap((g) =>
+      g.heads.flatMap((h) =>
+        h.marks.map((m) => ({
+          col: m.col,
+          assessment_id: h.assessment_id,
+          assessment_component_id: m.assessment_component_id,
+          max_marks: m.max_marks,
+        }))
+      )
+    );
+
+    const rows = [];
+    const errors = [];
+    const studentIds = new Set();
+    for (let r = startRow; r <= sheet.rowCount; r += 1) {
+      const studentId = studentIdByRow.get(r);
+      if (!studentId) continue;
+      studentIds.add(studentId);
+      markColumns.forEach((c) => {
+        const raw = sheet.getCell(r, c.col).value;
+        const value = raw && typeof raw === "object" && "result" in raw ? raw.result : raw;
+        const marks = value === null || value === "" ? null : Number(value);
+        if (marks !== null && (!Number.isFinite(marks) || marks < 0 || marks > c.max_marks)) {
+          errors.push({ row: r, column: sheet.getColumn(c.col).letter, message: `Marks must be 0-${c.max_marks}` });
+          return;
+        }
+        rows.push({
+          result_mark_entry_id: resultMarkEntryId,
+          student_id: studentId,
+          assessment_id: c.assessment_id,
+          assessment_component_id: c.assessment_component_id,
+          marks,
+        });
       });
     }
 
-    const metaValues = {};
-    meta.eachRow((r) => {
-      metaValues[r.getCell(1).text] = r.getCell(2).text;
+    const groupIds = layout.groups.map((g) => g.group_id);
+    const groups = await assessment_group.findAll({ where: { id: groupIds } });
+    const groupNameById = new Map(groups.map((g) => [g.id, g.group]));
+    const examConfigure = await exam_configure.findOne({
+      where: {
+        exam_id: Number(metaValues.exam_scheme_id),
+        term_id: Number(metaValues.term_id),
+        subject_id: Number(metaValues.subject_id),
+      },
+      attributes: ['id'],
     });
-    const toId = (v) => (v === undefined || v === "" ? null : Number(v));
-    const ids = {
-      result_mark_entry_id: toId(metaValues.result_mark_entry_id),
-      exam_scheme_id: toId(metaValues.exam_scheme_id),
-      subject_id: toId(metaValues.subject_id),
-      division_id: toId(metaValues.division_id),
-    };
 
-    const dataStartRow = Number(metaValues.data_start_row) || 6;
-    if (!metaValues.layout) {
-      return res.status(400).json({ success: false, message: "Column details are missing from the file." });
-    }
-    
-    const layout = JSON.parse(metaValues.layout);
-    const row6=sheet.getRow(6);
+    const studentRows = JSON.parse(metaValues.students || "[]");
+const examSchemeId = Number(metaValues.exam_scheme_id);
+const subjectId = Number(metaValues.subject_id);
+    const subjectResults = buildStudentSubjectResults({
+      sheet,
+      layout,
+      studentRows: studentRows,
+      examSchemeId: examSchemeId,
+      subjectId: subjectId,
+      examConfigureId: examConfigure?.id,
+      groupNameById,
+    });
 
-    const columns=await loadColumns(ids.exam_scheme_id,ids.subject_id)
-    let firstvalue=columns[0];
-    let secondvalue=columns[1];
-    let thirdvalue=columns[2];
-
-    let numofsubheadfirst=firstvalue?.components.length;
-    let numofsubheadsecond=secondvalue?.components.length;
-    let numofsubheadthird=thirdvalue?.components.length;
-
-    let start=6
-    let fa1startcolumnno=start
-    let fa1totalcolumnno=numofsubheadfirst+fa1startcolumnno
-    let fa1totalconvertedcolno=fa1totalcolumnno+1
-
-    let fa2startcolumnno=fa1totalconvertedcolno+1
-    let fa2totalcolumnno=numofsubheadsecond+fa2startcolumnno
-    let fa2totalconvertedcolno=fa2totalcolumnno+1
-    let formativevetotalcolumnno=fa2totalconvertedcolno+1
-
-    let s
+    const headResults = buildStudentHeadResults({
+      sheet,
+      layout,
+      studentRows,
+      examSchemeId,
+      subjectId,
+    });
     
 
+
+    await sequelize.transaction(async (transaction) => {
+     
+      
+      await student_mark.bulkCreate(rows, { transaction });
+      // Head results
+     
+      await student_head_result.bulkCreate(headResults, { transaction });
+      // Subject results
+      
+      await student_subject_result.bulkCreate(subjectResults, { transaction });
+    });
+    return res.json({
+      success: true,
+      message: "Marks imported successfully",
+      students: ids.length,
+      saved: {
+        marks: rows.length,
+        head_results: headResults.length,
+        subject_results: subjectResults.length,
+      },
+    });
+
+
+    res.send({rows, sujectResults: subjectResults,headResults:headResults })
+   
+    
+
+   
 
     
    
-    res.send({
-      //ids,
-      //row6values:row6.values,
-      ///dataStartRow,
-      //columns,
-      numofsubheadfirst,
-      fa1startcolumnno,
-      fa1totalcolumnno,
-      fa1totalconvertedcolno,
-      numofsubheadsecond,
-      fa2startcolumnno,
-      fa2totalcolumnno,
-      fa2totalconvertedcolno,
-      numofsubheadthird,
-
-      
-      
-      
-    })
+   
 
   }),
 
@@ -218,7 +267,7 @@ const resultMarkEntryListController = {
    let studentsData=[]
    console.log('students****************>',students.value)
    
-   console.log('allassesmentandcomponentData****>>>>>',allassesmentandcomponentData);
+   
 
    if(allassesmentandcomponent.status==='fulfilled' && students.status==='fulfilled'){
     allassesmentandcomponentData=allassesmentandcomponent.value
@@ -228,8 +277,9 @@ const resultMarkEntryListController = {
    else{
     return res.status(400).json({message:'Failed to get assessment and component or students'})
    }
+   console.log('allassesmentandcomponentData****>>>>>',allassesmentandcomponentData);
 
-
+    
     const entryWhere = { exam_scheme_id, division_id, subject_id };
     const { entryId, isNewEntry, inserted, existing } = await sequelize.transaction(async (transaction) => {
       let entry = await result_mark_entry_list.findOne({ where: entryWhere, transaction });
@@ -244,7 +294,7 @@ const resultMarkEntryListController = {
       }
 
       const payload = makePayload(entry.id, allassesmentandcomponentData, studentsData);
-
+     
       let newRows = payload;
       if (!isNewEntry) {
         const existingRows = await student_mark.findAll({
@@ -279,6 +329,7 @@ const resultMarkEntryListController = {
         : `Mark entry list updated: ${inserted} mark row(s) added, ${existing} already existed`,
       data,
     });
+    
 
   }),
 
