@@ -12,16 +12,20 @@ const {
   assessment_component,
   assessment_group,
   exam_configure,
+  student_head_result,
+  student_subject_result,
   component,
   Program,
   semester,
+  grade_scale,
+  grade_scale_range,
   sequelize,
 } = require('../../models');
 const { httpError, toNumberOrNull, toBoolean, getQueryValue } = require('./examHelper');
 const { getDataTable } = require('../../helper');
 const { buildStudentSubjectResults } = require('../../utils/buildStudentSubject');
 const { buildStudentHeadResults } = require('../../utils/buildStudentHead');
-const ExcelJS=require('exceljs');
+const ExcelJS = require('exceljs');
 const schemeInclude = [
   { model: exam_name, as: 'examNameInfo', attributes: ['id', 'exam_name'] },
   { model: class_master, as: 'classInfo', attributes: ['id', 'class_name'] },
@@ -56,28 +60,28 @@ const marksInclude = {
   order: [['student_id', 'ASC'], ['exam_assessment_id', 'ASC'], ['assessment_component_id', 'ASC']],
 };
 
-const getAssessmentAndComponent=async(exam_scheme_id,subject_id)=>{
-  let query=`select ea.exam_scheme_id, ea.id as exam_assessment_id,ac.id as assessment_component_id from exam_assessments ea left join assessment_components as ac on ea.id=ac.exam_assessment_id where ea.exam_scheme_id=:exam_scheme_id and ea.subject_id=:subject_id order by ea.sequence, ac.sequence;`
-  let result=await sequelize.query(query,{replacements:{exam_scheme_id,subject_id},type:sequelize.QueryTypes.SELECT})
+const getAssessmentAndComponent = async (exam_scheme_id, subject_id) => {
+  let query = `select ea.exam_scheme_id, ea.id as exam_assessment_id,ac.id as assessment_component_id from exam_assessments ea left join assessment_components as ac on ea.id=ac.exam_assessment_id where ea.exam_scheme_id=:exam_scheme_id and ea.subject_id=:subject_id order by ea.sequence, ac.sequence;`
+  let result = await sequelize.query(query, { replacements: { exam_scheme_id, subject_id }, type: sequelize.QueryTypes.SELECT })
   return result
 }
-const getStudents=async(class_id,division_id)=>{
-  let query=`select id,first_name,last_name,class,division from par_student_personal_informations where class=:class_id and division=:division_id;`
-  let result=await sequelize.query(query,{replacements:{class_id,division_id},type:sequelize.QueryTypes.SELECT})
+const getStudents = async (class_id, division_id) => {
+  let query = `select id,first_name,last_name,class,division from par_student_personal_informations where class=:class_id and division=:division_id;`
+  let result = await sequelize.query(query, { replacements: { class_id, division_id }, type: sequelize.QueryTypes.SELECT })
   return result
 }
 
 const markKey = (row) => [row.student_id, row.exam_assessment_id, row.assessment_component_id ?? 0].join('|');
 
-const makePayload=(result_mark_entry_list_id,allassesmentandcomponentData,studentsData)=>{
-  let payload=[]
-  for(let student of studentsData){
-    for(let assessment of allassesmentandcomponentData){
+const makePayload = (result_mark_entry_list_id, allassesmentandcomponentData, studentsData) => {
+  let payload = []
+  for (let student of studentsData) {
+    for (let assessment of allassesmentandcomponentData) {
       payload.push({
-        result_mark_entry_list_id:result_mark_entry_list_id,
-        student_id:student.id,
-        exam_assessment_id:assessment.exam_assessment_id,
-        assessment_component_id:assessment.assessment_component_id
+        result_mark_entry_list_id: result_mark_entry_list_id,
+        student_id: student.id,
+        exam_assessment_id: assessment.exam_assessment_id,
+        assessment_component_id: assessment.assessment_component_id
       })
     }
   }
@@ -86,47 +90,103 @@ const makePayload=(result_mark_entry_list_id,allassesmentandcomponentData,studen
 
 
 
-const loadColumns=async(exam_scheme_id,subject_id)=>{
-  const schemeId=exam_scheme_id;
-   const subjectId=subject_id;
-    const scheme=await exam_scheme.findOne({
-      where: { id: schemeId },
-      include: schemeInclude,
-    });
-    const where = { exam_scheme_id: schemeId, subject_id: subjectId };
-    const assessments = await exam_assessment.findAll({
-      where,
-      include: [
-        { model: Subject, as: 'subjectInfo', attributes: ['id', 'value', 'abbreviation_name'] },
-        { model: component, as: 'componentInfo', attributes: ['id', 'component_name', 'type'] },
-        {
-          model: assessment_component,
-          as: 'components',
-          include: [{ model: component, as: 'componentInfo', attributes: ['id', 'component_name', 'type'] }],
-        },
-        { model: assessment_group, as: 'groupInfo', attributes: ['id', 'group'] },
-      ],
-      order: [
-       
-        ['sequence', 'ASC'],
-        [{ model: assessment_component, as: 'components' }, 'sequence', 'ASC'],
-      ],
-    });
-    return assessments
+const loadColumns = async (exam_scheme_id, subject_id) => {
+  const schemeId = exam_scheme_id;
+  const subjectId = subject_id;
+  const scheme = await exam_scheme.findOne({
+    where: { id: schemeId },
+    include: schemeInclude,
+  });
+  const where = { exam_scheme_id: schemeId, subject_id: subjectId };
+  const assessments = await exam_assessment.findAll({
+    where,
+    include: [
+      { model: Subject, as: 'subjectInfo', attributes: ['id', 'value', 'abbreviation_name'] },
+      { model: component, as: 'componentInfo', attributes: ['id', 'component_name', 'type'] },
+      {
+        model: assessment_component,
+        as: 'components',
+        include: [{ model: component, as: 'componentInfo', attributes: ['id', 'component_name', 'type'] }],
+      },
+      { model: assessment_group, as: 'groupInfo', attributes: ['id', 'group'] },
+    ],
+    order: [
+
+      ['sequence', 'ASC'],
+      [{ model: assessment_component, as: 'components' }, 'sequence', 'ASC'],
+    ],
+  });
+  return assessments
 
 }
 
+const groupKind = (name) => {
+  const n = String(name || '').trim().toLowerCase();
+  if (n === 'formative') return 'formative';
+  if (n === 'summative' || n === 'submative') return 'summative';
+  return null;
+};
+
+// Head max = sum of its sub-component max marks (or its own max_marks when it has none).
+// Group max = sum of (head max x head ratio), same as buildStudentSubjectResults.
+const buildMaxMarks = (assessments) => {
+  const heads = assessments.map((a) => {
+    const headMax = a.components.length
+      ? a.components.reduce((s, c) => s + Number(c.max_marks || 0), 0)
+      : Number(a.max_marks || 0);
+    return {
+      exam_assessment_id: a.id,
+      max_marks: headMax,
+      kind: groupKind(a.groupInfo?.group),
+      weighted: headMax * (Number(a.ratio) || 1),
+    };
+  });
+
+  const sumKind = (kind) => {
+    const list = heads.filter((h) => h.kind === kind);
+    return list.length ? list.reduce((s, h) => s + h.weighted, 0) : null;
+  };
+  const formative_max = sumKind('formative');
+  const summative_max = sumKind('summative');
+
+  return {
+    heads,
+    formative_max,
+    summative_max,
+    total_max: (formative_max || 0) + (summative_max || 0),
+  };
+};
 
 
 
-  
 
-  
 
- 
+
+
+
+
+
+// Updates existing rows in one UPDATE ... JOIN per 500 rows instead of one query per row.
+// keyCols find the row (<=> so NULL matches NULL), valueCols are the only columns changed.
+const bulkUpdate = async (table, keyCols, valueCols, rows, transaction) => {
+  const cols = [...keyCols, ...valueCols];
+  for (let i = 0; i < rows.length; i += 500) {
+    const chunk = rows.slice(i, i + 500);
+    const replacements = [];
+    const selects = chunk.map((row, index) => {
+      cols.forEach((c) => replacements.push(row[c] ?? null));
+      return 'SELECT ' + cols.map((c) => (index === 0 ? `? AS \`${c}\`` : '?')).join(', ');
+    });
+    const sql = `UPDATE \`${table}\` t
+      JOIN (${selects.join(' UNION ALL ')}) v
+        ON ${keyCols.map((c) => `t.\`${c}\` <=> v.\`${c}\``).join(' AND ')}
+      SET ${valueCols.map((c) => `t.\`${c}\` = v.\`${c}\``).join(', ')}, t.updatedAt = NOW()`;
+    await sequelize.query(sql, { replacements, transaction });
+  }
+};
 
 const resultMarkEntryListController = {
-  importMarks:asyncHandler(async(req,res)=>{
+  importMarks: asyncHandler(async (req, res) => {
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(req.file.buffer);
     const sheet = workbook.getWorksheet("Marks");
@@ -143,10 +203,10 @@ const resultMarkEntryListController = {
     const studentIdByRow = new Map(
       JSON.parse(metaValues.students || "[]").map((s) => [s.row, s.student_id])
     );
-    console.log('termid************************',metaValues.term_id)
+    console.log('termid************************', metaValues.term_id)
 
 
-    
+
 
     const markColumns = layout.groups.flatMap((g) =>
       g.heads.flatMap((h) =>
@@ -175,10 +235,10 @@ const resultMarkEntryListController = {
           return;
         }
         rows.push({
-          result_mark_entry_id: resultMarkEntryId,
+          result_mark_entry_list_id: resultMarkEntryId,
           student_id: studentId,
-          assessment_id: c.assessment_id,
-          assessment_component_id: c.assessment_component_id,
+          exam_assessment_id: c.assessment_id,
+          assessment_component_id: c.assessment_component_id ?? null,
           marks,
         });
       });
@@ -187,101 +247,125 @@ const resultMarkEntryListController = {
     const groupIds = layout.groups.map((g) => g.group_id);
     const groups = await assessment_group.findAll({ where: { id: groupIds } });
     const groupNameById = new Map(groups.map((g) => [g.id, g.group]));
-    const examConfigure = await exam_configure.findOne({
-      where: {
-        exam_id: Number(metaValues.exam_scheme_id),
-        term_id: Number(metaValues.term_id),
-        subject_id: Number(metaValues.subject_id),
-      },
-      attributes: ['id'],
-    });
 
     const studentRows = JSON.parse(metaValues.students || "[]");
-const examSchemeId = Number(metaValues.exam_scheme_id);
-const subjectId = Number(metaValues.subject_id);
-    const subjectResults = buildStudentSubjectResults({
-      sheet,
-      layout,
-      studentRows: studentRows,
-      examSchemeId: examSchemeId,
-      subjectId: subjectId,
-      examConfigureId: examConfigure?.id,
-      groupNameById,
-    });
-
     const headResults = buildStudentHeadResults({
       sheet,
       layout,
       studentRows,
-      examSchemeId,
-      subjectId,
+      examSchemeId: Number(metaValues.exam_scheme_id),
+      subjectId: Number(metaValues.subject_id),
     });
-    
+    const subjectResults = buildStudentSubjectResults({
+      sheet,
+      layout,
+      studentRows,
+      headResults,
+      groupNameById,
+      examSchemeId: Number(metaValues.exam_scheme_id),
+      subjectId: Number(metaValues.subject_id),
+    });
 
+    if (errors.length) {
+      return res.status(400).json({ success: false, message: "Some marks are invalid. Nothing was saved.", errors });
+    }
 
     await sequelize.transaction(async (transaction) => {
-     
-      
-      await student_mark.bulkCreate(rows, { transaction });
-      // Head results
-     
-      await student_head_result.bulkCreate(headResults, { transaction });
-      // Subject results
-      
-      await student_subject_result.bulkCreate(subjectResults, { transaction });
+      await bulkUpdate(
+        'student_marks',
+        ['result_mark_entry_list_id', 'student_id', 'exam_assessment_id', 'assessment_component_id'],
+        ['marks'],
+        rows,
+        transaction
+      );
+      await bulkUpdate(
+        'student_subject_results',
+        ['exam_scheme_id', 'student_id', 'subject_id'],
+        ['formative_obtained', 'summative_obtained', 'total_obtained'],
+        subjectResults,
+        transaction
+      );
+      await bulkUpdate(
+        'student_head_results',
+        ['exam_scheme_id', 'student_id', 'subject_id', 'exam_assessment_id'],
+        ['obtained', 'converted'],
+        headResults,
+        transaction
+      );
     });
-    return res.json({
-      success: true,
-      message: "Marks imported successfully",
-      students: ids.length,
-      saved: {
-        marks: rows.length,
-        head_results: headResults.length,
-        subject_results: subjectResults.length,
-      },
-    });
+
+    res.json({ success: true, message: "Marks entered successfully" });
 
 
-    res.send({rows, sujectResults: subjectResults,headResults:headResults })
-   
-    
 
-   
 
-    
-   
-   
+
+
+
+
 
   }),
 
 
   create: asyncHandler(async (req, res) => {
-   let body=req.body;
-   let {class_id,division_id,exam_scheme_id,term_id,subject_id,sort_by}=body
-   if(!exam_scheme_id || !class_id || !division_id || !subject_id){
-    return res.status(400).json({message:'exam_scheme_id, class_id, division_id and subject_id are required'})
-   }
-   let [allassesmentandcomponent,students]=await Promise.allSettled([getAssessmentAndComponent(exam_scheme_id,subject_id),getStudents(class_id,division_id)])
+    let body = req.body;
+    let { class_id, division_id, exam_scheme_id, term_id, subject_id, sort_by } = body
+    if (!exam_scheme_id || !class_id || !division_id || !subject_id) {
+      return res.status(400).json({ message: 'exam_scheme_id, class_id, division_id and subject_id are required' })
+    }
+    let [allassesmentandcomponent, students] = await Promise.allSettled([getAssessmentAndComponent(exam_scheme_id, subject_id), getStudents(class_id, division_id)])
 
-   let allassesmentandcomponentData=[];
-   let studentsData=[]
-   console.log('students****************>',students.value)
-   
-   
+    let allassesmentandcomponentData = [];
+    let studentsData = []
+    console.log('students****************>', students.value)
 
-   if(allassesmentandcomponent.status==='fulfilled' && students.status==='fulfilled'){
-    allassesmentandcomponentData=allassesmentandcomponent.value
-    studentsData=students.value
-   
-   }
-   else{
-    return res.status(400).json({message:'Failed to get assessment and component or students'})
-   }
-   console.log('allassesmentandcomponentData****>>>>>',allassesmentandcomponentData);
 
-    
+
+    if (allassesmentandcomponent.status === 'fulfilled' && students.status === 'fulfilled') {
+      allassesmentandcomponentData = allassesmentandcomponent.value
+      studentsData = students.value
+
+    }
+    else {
+      return res.status(400).json({ message: 'Failed to get assessment and component or students' })
+    }
+    console.log('allassesmentandcomponentData****>>>>>', allassesmentandcomponentData);
+
+    const [assessments, examConfigure] = await Promise.all([
+      loadColumns(exam_scheme_id, subject_id),
+      exam_configure.findOne({
+        where: { exam_id: exam_scheme_id, class_id, term_id, subject_id },
+        attributes: ['id', 'is_included_in_total'],
+      }),
+    ]);
+    const maxMarks = buildMaxMarks(assessments);
+
+    const headRows = [];
+    const subjectRows = [];
+    for (const student of studentsData) {
+      for (const head of maxMarks.heads) {
+        headRows.push({
+          exam_scheme_id,
+          student_id: student.id,
+          subject_id,
+          exam_assessment_id: head.exam_assessment_id,
+          max_marks: head.max_marks,
+        });
+      }
+      subjectRows.push({
+        exam_scheme_id,
+        student_id: student.id,
+        subject_id,
+        exam_configure_id: examConfigure?.id ?? null,
+        formative_max: maxMarks.formative_max,
+        summative_max: maxMarks.summative_max,
+        total_max: maxMarks.total_max,
+        is_included_in_total: examConfigure?.is_included_in_total ?? true,
+      });
+    }
+
     const entryWhere = { exam_scheme_id, division_id, subject_id };
-    const { entryId, isNewEntry, inserted, existing } = await sequelize.transaction(async (transaction) => {
+    const { entryId, isNewEntry } = await sequelize.transaction(async (transaction) => {
       let entry = await result_mark_entry_list.findOne({ where: entryWhere, transaction });
       const isNewEntry = !entry;
       if (entry) {
@@ -294,7 +378,7 @@ const subjectId = Number(metaValues.subject_id);
       }
 
       const payload = makePayload(entry.id, allassesmentandcomponentData, studentsData);
-     
+
       let newRows = payload;
       if (!isNewEntry) {
         const existingRows = await student_mark.findAll({
@@ -311,12 +395,42 @@ const subjectId = Number(metaValues.subject_id);
         await student_mark.bulkCreate(newRows.slice(i, i + 1000), { transaction });
       }
 
-      return {
-        entryId: entry.id,
-        isNewEntry,
-        inserted: newRows.length,
-        existing: payload.length - newRows.length,
-      };
+      // Existing rows keep their obtained/grade/pass values; only the max marks and config are refreshed
+      const headKey = (row) => `${row.student_id}|${row.exam_assessment_id}`;
+      const existingHeads = await student_head_result.findAll({
+        where: { exam_scheme_id, subject_id, student_id: studentsData.map((s) => s.id) },
+        attributes: ['student_id', 'exam_assessment_id'],
+        raw: true,
+        transaction,
+      });
+      const existingHeadKeys = new Set(existingHeads.map(headKey));
+      const newHeadRows = headRows.filter((row) => !existingHeadKeys.has(headKey(row)));
+
+      for (const head of maxMarks.heads) {
+        await student_head_result.update(
+          { max_marks: head.max_marks },
+          { where: { exam_scheme_id, subject_id, exam_assessment_id: head.exam_assessment_id }, transaction }
+        );
+      }
+      for (let i = 0; i < newHeadRows.length; i += 1000) {
+        await student_head_result.bulkCreate(newHeadRows.slice(i, i + 1000), { transaction });
+      }
+
+      if (subjectRows.length) {
+        await student_subject_result.bulkCreate(subjectRows, {
+          updateOnDuplicate: [
+            'exam_configure_id',
+            'formative_max',
+            'summative_max',
+            'total_max',
+            'is_included_in_total',
+            'updatedAt',
+          ],
+          transaction,
+        });
+      }
+
+      return { entryId: entry.id, isNewEntry };
     });
 
     const data = await result_mark_entry_list.findByPk(entryId, {
@@ -324,13 +438,64 @@ const subjectId = Number(metaValues.subject_id);
     });
     res.status(isNewEntry ? 201 : 200).json({
       success: true,
-      message: isNewEntry
-        ? `Mark entry list created with ${inserted} mark row(s)`
-        : `Mark entry list updated: ${inserted} mark row(s) added, ${existing} already existed`,
+      message: isNewEntry ? 'Mark entry created successfully' : 'Mark entry updated successfully',
       data,
     });
-    
 
+
+  }),
+  generateresult: asyncHandler(async (req, res) => {
+    let body = req.body;
+    let { class_id, division_id, exam_scheme_id, term_id } = body
+    let student = await getStudents(class_id, division_id);
+
+    let allconfig = await exam_configure.findAll({ where: { exam_id: exam_scheme_id, class_id: class_id, term_id: term_id } })
+    for (let config of allconfig) {
+      let studentresults = await student_subject_result.findAll({
+        where: {
+          exam_scheme_id: exam_scheme_id,
+          subject_id: config.subject_id,
+          student_id: student.map((s) => s.id),
+        },
+      })
+      let grade = null;
+      grade = await grade_scale.findOne(
+        {
+          where: {
+            id: config.grade_scale_id
+          },
+          include: [
+            {
+              model: grade_scale_range,
+              as: 'ranges',
+              attributes: ['id', 'grade_scale_id', 'min_percent', 'max_percent', 'grade']
+            }
+          ],
+        })
+
+      for (let studentresult of studentresults) {
+
+       let formative_converted=config?.formative_ratio*studentresult?.formative_obtained
+       let summative_converted=config?.summative_ratio*studentresult?.summative_obtained
+       let total_converted_marks=formative_converted+summative_converted;
+
+        if(!config.is_separate_passing){
+          console.log('enter in loop')
+          await studentresult.update({
+            formative_converted:formative_converted,
+            summative_converted:summative_converted,
+            formative_pass:formative_converted>=config.formative_passing?1:0,
+            summative_pass:summative_converted>=config.summative_passing?1:0,
+            formative_grade:grade?.ranges.find(g=>formative_converted>=g.min_percent&&formative_converted<=g.max_percent)?.grade,
+            summative_grade:grade?.ranges.find(g=>summative_converted>=g.min_percent&&summative_converted<=g.max_percent)?.grade,
+            is_pass:total_converted_marks>=config.total_passing?1:0,
+            total_grade:grade?.ranges.find(g=>total_converted_marks>=g.min_percent&&total_converted_marks<=g.max_percent)?.grade,
+          })
+
+        }
+      }
+    }
+    res.json({ success: true, message:"Result generated successfully" })
   }),
 
   getAll: asyncHandler(async (req, res) => {

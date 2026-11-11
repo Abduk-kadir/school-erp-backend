@@ -6,5 +6,6 @@ router.post('/', resultMarkEntryListController.create);
 router.get('/', resultMarkEntryListController.getAll);
 router.get('/:id/students', resultMarkEntryListController.getallstudentbyresultmarkentrylist);
 router.post('/import-marks', upload.single('file'),resultMarkEntryListController.importMarks);
+router.post('/generate-result', resultMarkEntryListController.generateresult);
 
 module.exports = router;
