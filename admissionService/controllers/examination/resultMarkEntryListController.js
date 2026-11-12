@@ -1,6 +1,7 @@
 const asyncHandler = require('express-async-handler');
 const {
   result_mark_entry_list,
+  par_student_personal_information,
   student_mark,
   exam_scheme,
   exam_name,
@@ -26,6 +27,11 @@ const { getDataTable } = require('../../helper');
 const { buildStudentSubjectResults } = require('../../utils/buildStudentSubject');
 const { buildStudentHeadResults } = require('../../utils/buildStudentHead');
 const ExcelJS = require('exceljs');
+const pdfMake = require('pdfmake');
+const Roboto = require('pdfmake/fonts/Roboto');
+const { where } = require('sequelize');
+
+
 const schemeInclude = [
   { model: exam_name, as: 'examNameInfo', attributes: ['id', 'exam_name'] },
   { model: class_master, as: 'classInfo', attributes: ['id', 'class_name'] },
@@ -120,6 +126,45 @@ const loadColumns = async (exam_scheme_id, subject_id) => {
 
 }
 
+// Heads of every subject in the scheme, merged into one per group + head component,
+// so the report card header shows each head once. Sub-components are merged the same way.
+const loadSchemeHeads = async (exam_scheme_id, class_id, term_id) => {
+  const assessments = await exam_assessment.findAll({
+    where: { exam_scheme_id },
+    include: [
+      { model: exam_scheme, as: 'scheme', attributes: [], where: { class_id, term_id } },
+      { model: component, as: 'componentInfo', attributes: ['id', 'component_name', 'type'] },
+      {
+        model: assessment_component,
+        as: 'components',
+        include: [{ model: component, as: 'componentInfo', attributes: ['id', 'component_name', 'type'] }],
+      },
+      { model: assessment_group, as: 'groupInfo', attributes: ['id', 'group'] },
+    ],
+    order: [
+      ['sequence', 'ASC'],
+      ['subject_id', 'ASC'],
+      [{ model: assessment_component, as: 'components' }, 'sequence', 'ASC'],
+    ],
+  });
+
+  const heads = new Map();
+  for (const row of assessments) {
+    const assessment = row.get({ plain: true });
+    const key = `${assessment.group_id}|${assessment.component_id}`;
+    const head = heads.get(key);
+    if (!head) {
+      heads.set(key, assessment);
+      continue;
+    }
+    for (const sub of assessment.components) {
+      if (!head.components.some((c) => c.component_id === sub.component_id)) head.components.push(sub);
+    }
+  }
+  return [...heads.values()];
+
+}
+
 const groupKind = (name) => {
   const n = String(name || '').trim().toLowerCase();
   if (n === 'formative') return 'formative';
@@ -158,14 +203,6 @@ const buildMaxMarks = (assessments) => {
 };
 
 
-
-
-
-
-
-
-
-
 // Updates existing rows in one UPDATE ... JOIN per 500 rows instead of one query per row.
 // keyCols find the row (<=> so NULL matches NULL), valueCols are the only columns changed.
 const bulkUpdate = async (table, keyCols, valueCols, rows, transaction) => {
@@ -185,7 +222,338 @@ const bulkUpdate = async (table, keyCols, valueCols, rows, transaction) => {
   }
 };
 
+// Heads grouped the same way as the PDF header (groups in first-seen order)
+const groupHeads = (heads) => {
+  const groups = [];
+  heads.forEach((head) => {
+    let group = groups.find((g) => g.id === head.group_id);
+    if (!group) {
+      group = { id: head.group_id, name: head.groupInfo?.group, assessments: [] };
+      groups.push(group);
+    }
+    group.assessments.push(head);
+  });
+  return groups;
+};
+
+// Builds every student's table rows (one row per subject) in the same column order as the header:
+// marks come from student_marks, Total / Total Converted from student_head_results,
+// group totals, grades and the grand total from student_subject_results.
+// Returns Map(student_id -> rows).
+const getStudentMarksRow = async (exam_scheme_id, studentIds, heads) => {
+  const rowsByStudent = new Map();
+  if (!studentIds.length) return rowsByStudent;
+
+  const select = (sql) =>
+    sequelize.query(sql, {
+      replacements: { exam_scheme_id, studentIds },
+      type: sequelize.QueryTypes.SELECT,
+    });
+  const [assessmentRows, markRows, headRows, subjectRows] = await Promise.all([
+    select(`SELECT ea.id AS exam_assessment_id, ea.subject_id, s.value AS subject_name, ea.group_id, ea.component_id,
+              ac.id AS assessment_component_id, ac.component_id AS sub_component_id
+            FROM exam_assessments ea
+            JOIN Subjects s ON s.id = ea.subject_id
+            LEFT JOIN assessment_components ac ON ac.exam_assessment_id = ea.id
+            WHERE ea.exam_scheme_id = :exam_scheme_id
+            ORDER BY ea.subject_id`),
+    select(`SELECT sm.student_id, sm.exam_assessment_id, sm.assessment_component_id, sm.marks
+            FROM student_marks sm
+            JOIN exam_assessments ea ON ea.id = sm.exam_assessment_id
+            WHERE ea.exam_scheme_id = :exam_scheme_id AND sm.student_id IN (:studentIds)`),
+    select(`SELECT student_id, exam_assessment_id, obtained, converted
+            FROM student_head_results
+            WHERE exam_scheme_id = :exam_scheme_id AND student_id IN (:studentIds)`),
+    select(`SELECT student_id, subject_id, formative_obtained, formative_grade, summative_obtained, summative_grade,
+              total_obtained, total_grade
+            FROM student_subject_results
+            WHERE exam_scheme_id = :exam_scheme_id AND student_id IN (:studentIds)`),
+  ]);
+
+  // Each subject has its own assessment ids; find them by group + head component (+ sub component)
+  const subjects = new Map();
+  const assessmentByKey = new Map();
+  assessmentRows.forEach((r) => {
+    subjects.set(r.subject_id, r.subject_name);
+    const key = `${r.subject_id}|${r.group_id}|${r.component_id}`;
+    if (!assessmentByKey.has(key)) assessmentByKey.set(key, { id: r.exam_assessment_id, subs: new Map() });
+    if (r.assessment_component_id) {
+      assessmentByKey.get(key).subs.set(r.sub_component_id, r.assessment_component_id);
+    }
+  });
+  const marks = new Map(
+    markRows.map((r) => [`${r.student_id}|${r.exam_assessment_id}|${r.assessment_component_id ?? 0}`, r.marks])
+  );
+  const headResults = new Map(headRows.map((r) => [`${r.student_id}|${r.exam_assessment_id}`, r]));
+  const subjectResults = new Map(subjectRows.map((r) => [`${r.student_id}|${r.subject_id}`, r]));
+
+  const show = (v) => (v === null || v === undefined || v === '' ? '-' : String(Number.isNaN(Number(v)) ? v : Number(v)));
+  const cell = (v, bold = false) => ({ text: show(v), style: 'cell', bold });
+  const groups = groupHeads(heads);
+
+  studentIds.forEach((studentId) => {
+    const rows = [];
+    subjects.forEach((subjectName, subjectId) => {
+      const subjectResult = subjectResults.get(`${studentId}|${subjectId}`);
+      const row = [{ text: subjectName, style: 'subject' }];
+
+      groups.forEach((group) => {
+        group.assessments.forEach((head) => {
+          const assessment = assessmentByKey.get(`${subjectId}|${head.group_id}|${head.component_id}`);
+          const subs = head.components.length ? head.components : [null];
+          subs.forEach((sub) => {
+            const subId = sub ? assessment?.subs.get(sub.component_id) : 0;
+            row.push(cell(assessment && subId !== undefined ? marks.get(`${studentId}|${assessment.id}|${subId}`) : null));
+          });
+          const headResult = assessment ? headResults.get(`${studentId}|${assessment.id}`) : null;
+          row.push(cell(headResult?.obtained), cell(headResult?.converted));
+        });
+
+        const kind = groupKind(group.name);
+        row.push(cell(kind && subjectResult?.[`${kind}_obtained`], true), cell(kind && subjectResult?.[`${kind}_grade`], true));
+      });
+
+      row.push(cell(subjectResult?.total_obtained, true), cell(subjectResult?.total_grade, true));
+      rows.push(row);
+    });
+    rowsByStudent.set(studentId, rows);
+  });
+
+  return rowsByStudent;
+};
+
+const fonts = {
+  Roboto: {
+    normal: 'fonts/Roboto-Regular.ttf',
+    bold: 'fonts/Roboto-Medium.ttf',
+    italics: 'fonts/Roboto-Italic.ttf',
+    bolditalics: 'fonts/Roboto-MediumItalic.ttf'
+  }
+};
+
+
 const resultMarkEntryListController = {
+
+  generateResultPdf: asyncHandler(async (req, res) => {
+    
+    pdfMake.addFonts(Roboto);
+
+    const { exam_scheme_id, class_id, term_id ,division_id} = req.body;
+    if (!exam_scheme_id || !class_id || !term_id || !division_id) {
+      return res.status(400).json({ success: false, message: 'exam_scheme_id, class_id, term_id and division_id are required' });
+    }
+    
+    let students=await par_student_personal_information.findAll({
+      where:{
+        class:class_id,
+        division:division_id
+      },
+      attributes:['id','reg_no','rollnumber','first_name','last_name','father_name','dob'],
+      include:[
+        { model: class_master, as: 'classInfo', attributes: ['class_name'] },
+        { model: division_master, as: 'divisionInfo', attributes: ['division_name'] },
+      ],
+      order:[['rollnumber','ASC'],['first_name','ASC']],
+      raw:true,
+      nest:true,
+    })
+    if (!students.length) {
+      return res.status(404).json({ success: false, message: 'No students found for this class and division' });
+    }
+
+    const assessments = await loadSchemeHeads(exam_scheme_id, class_id, term_id);
+    const rowsByStudent = await getStudentMarksRow(exam_scheme_id, students.map((s) => s.id), assessments);
+    const columnCount = buildMarksHeader(assessments)[0].length;
+
+    // One page per student: title, student information, then the marks table with that student's subject rows
+    const show = (value) => (value === null || value === undefined || value === '' ? '-' : value);
+    // dob is a text column holding either "YYYY-MM-DD" or a full ISO timestamp
+    const showDate = (value) => {
+      const match = String(value ?? '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+      return match ? `${match[3]}/${match[2]}/${match[1]}` : show(value);
+    };
+    const studentPages = students.flatMap((student, index) => [
+      {
+        text: 'PROGRESS REPORT - 2025-26',
+        style: 'mainTitle',
+        alignment: 'center',
+        margin: [0, 0, 0, 10],
+        ...(index > 0 ? { pageBreak: 'before' } : {}),
+      },
+      {
+        // House, GR No., height, weight and attendance are not stored for students yet
+        table: {
+          widths: ['*', '*', '*', '*'],
+          body: [
+            [
+              { text: `Name of the Student : ${show([student.first_name, student.last_name, student.father_name].filter(Boolean).join(' '))}`, fontSize: 9 },
+              { text: `Date of Birth : ${showDate(student.dob)}`, fontSize: 9 },
+              { text: `Class : ${show(student.classInfo?.class_name)}`, fontSize: 9 },
+              { text: `Div : ${show(student.divisionInfo?.division_name)}`, fontSize: 9 }
+            ],
+            [
+              { text: `Roll No. : ${show(student.rollnumber)}`, fontSize: 9 },
+              { text: 'House : -', fontSize: 9 },
+              { text: `Reg No. : ${show(student.reg_no)}`, fontSize: 9 },
+              { text: 'Height : - cm', fontSize: 9 }
+            ],
+            [
+              { text: 'Weight : - kg', fontSize: 9 },
+              { text: 'Attendance : - / -', fontSize: 9 },
+              { text: '', fontSize: 9 },
+              { text: '', fontSize: 9 }
+            ]
+          ]
+        },
+        layout: {
+          hLineWidth: () => 0.5,
+          vLineWidth: () => 0.5,
+          hLineColor: () => '#444',
+          vLineColor: () => '#444',
+          paddingLeft: () => 4,
+          paddingRight: () => 4,
+          paddingTop: () => 3,
+          paddingBottom: () => 3
+        },
+        margin: [0, 0, 0, 10]
+      },
+      {
+        table: {
+          headerRows: 3,
+          widths: [70, ...Array(columnCount - 1).fill('*')],
+          body: [...buildMarksHeader(assessments), ...rowsByStudent.get(student.id)],
+        },
+        layout: {
+          hLineWidth: (i, node) => (i === 0 || i === 3 || i === node.table.body.length) ? 0.8 : 0.4,
+          vLineWidth: () => 0.4,
+          hLineColor: () => '#333',
+          vLineColor: () => '#333',
+          paddingLeft: () => 2,
+          paddingRight: () => 2,
+          paddingTop: () => 3,
+          paddingBottom: () => 3
+        }
+      },
+    ]);
+    console.log('student page*****************',studentPages)
+    console.log('assessments*****************',assessments)
+    const docDefinition = {
+      pageSize: 'A4',
+      pageOrientation: 'landscape',
+      pageMargins: [20, 25, 20, 25],
+    
+      content: [
+        // Data rows
+        //makeRow('ENGLISH LITERATURE', 16, 8, 5, 7, 16, 6, 5, 7, 14, 'B2', 75, 75, 'A1', 89, 'A2'),
+        ...studentPages,
+      ],
+    
+      styles: {
+        schoolName: { fontSize: 13, bold: true },
+        mainTitle: { fontSize: 12, bold: true },
+        tableHeader: {
+          fontSize: 6,
+          bold: true,
+          fillColor: '#e8e8e8',
+          alignment: 'center'
+        },
+        cell: { fontSize: 8, alignment: 'center' },
+        subject: { fontSize: 7.5, bold: true, alignment: 'left' }
+      },
+    
+      defaultStyle: {
+        fontSize: 8
+      }
+    };
+    
+    // Same columns as the marks entry Excel: SUBJECT is the only fixed column,
+    // and a Grade column follows every group total and the grand total.
+    function buildMarksHeader(assessments) {
+      const groups = groupHeads(assessments);
+
+      // Spanned cells still need {} placeholders so every row has the same number of cells
+      const rows = [[], [], []];
+      const add = (rowNo, text, rowSpan = 1, colSpan = 1) => {
+        const cell = { text, style: 'tableHeader' };
+        if (rowSpan > 1) cell.rowSpan = rowSpan;
+        if (colSpan > 1) cell.colSpan = colSpan;
+        rows[rowNo].push(cell);
+        for (let c = 1; c < colSpan; c++) rows[rowNo].push({});
+        for (let r = rowNo + 1; r < rowNo + rowSpan; r++) {
+          for (let c = 0; c < colSpan; c++) rows[r].push({});
+        }
+      };
+
+      add(0, 'SUBJECT', 3);
+      let grandMax = 0;
+      groups.forEach((group) => {
+        const groupMax = group.assessments.reduce((s, a) => s + Number(a.max_marks || 0), 0);
+        const groupCols = group.assessments.reduce((s, a) => s + (a.components.length || 1) + 2, 0);
+        grandMax += groupMax;
+
+        add(0, `${group.name} Marks`, 1, groupCols);
+        group.assessments.forEach((a) => {
+          const components = a.components || [];
+          add(1, `${a.componentInfo?.component_name} (${Number(a.max_marks)})`, 1, (components.length || 1) + 2);
+          if (components.length) {
+            components.forEach((c) => add(2, `${c.componentInfo?.component_name} (${Number(c.max_marks)})`));
+          } else {
+            add(2, `Marks (${Number(a.max_marks)})`);
+          }
+          const subHeadTotal = components.length
+            ? components.reduce((s, c) => s + Number(c.max_marks || 0), 0)
+            : Number(a.max_marks || 0);
+          add(2, `Total (${subHeadTotal})`);
+          add(2, `Total Converted (${Number(a.max_marks)})`);
+        });
+        add(0, `${group.name} Total Marks (${groupMax})`, 3);
+        add(0, `${group.name} Grade`, 3);
+      });
+      add(0, `Grand Total (${grandMax})`, 3);
+      add(0, 'Total Grade', 3);
+      return rows;
+    }
+
+
+
+    // Helper function
+    function makeRow(subject, w1, cp1, nb1, avg1, w2, cp2, nb2, avg2, formTotal, formGrade, sumAvg, sumTotal, sumGrade, marks, overall) {
+      return [
+        { text: subject, style: 'subject' },
+        { text: String(w1), style: 'cell' },
+        { text: String(cp1), style: 'cell' },
+        { text: String(nb1), style: 'cell' },
+        { text: String(avg1), style: 'cell' },
+        { text: String(w2), style: 'cell' },
+        { text: String(cp2), style: 'cell' },
+        { text: String(nb2), style: 'cell' },
+        { text: String(avg2), style: 'cell' },
+        { text: String(formTotal), style: 'cell', bold: true },
+        { text: formGrade, style: 'cell', bold: true },
+        { text: String(sumAvg), style: 'cell' },
+        { text: String(sumTotal), style: 'cell' },
+        { text: sumGrade, style: 'cell', bold: true },
+        { text: String(marks), style: 'cell', bold: true },
+        { text: overall, style: 'cell', bold: true }
+      ];
+    }
+    
+    const buffer = await pdfMake.createPdf(docDefinition).getBuffer();
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'inline; filename="Progress_Report_2025-26.pdf"');
+    res.setHeader('Content-Length', buffer.length);
+    res.end(buffer);
+  
+  
+  
+   
+   
+  
+  }),
+
+
+
+
   importMarks: asyncHandler(async (req, res) => {
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(req.file.buffer);

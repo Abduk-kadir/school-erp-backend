@@ -7,5 +7,6 @@ router.get('/', resultMarkEntryListController.getAll);
 router.get('/:id/students', resultMarkEntryListController.getallstudentbyresultmarkentrylist);
 router.post('/import-marks', upload.single('file'),resultMarkEntryListController.importMarks);
 router.post('/generate-result', resultMarkEntryListController.generateresult);
+router.post('/generate-result-pdf', resultMarkEntryListController.generateResultPdf);
 
 module.exports = router;
