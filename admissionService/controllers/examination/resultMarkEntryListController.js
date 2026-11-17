@@ -151,6 +151,9 @@ const loadSchemeHeads = async (exam_scheme_id, class_id, term_id) => {
   const heads = new Map();
   for (const row of assessments) {
     const assessment = row.get({ plain: true });
+    // Incomplete rows (no group/head) create "undefined" PDF columns — skip them
+    if (!assessment.group_id || !assessment.component_id || !assessment.groupInfo) continue;
+
     const key = `${assessment.group_id}|${assessment.component_id}`;
     const head = heads.get(key);
     if (!head) {
@@ -322,6 +325,81 @@ const getStudentMarksRow = async (exam_scheme_id, studentIds, heads) => {
   return rowsByStudent;
 };
 
+// Co-scholastic subject + grade per student (keyed by reg_no).
+// Layout is SUBJECT | GRADE | SUBJECT | GRADE — odd items left, even items right.
+const loadCoScholasticByStudent = async (exam_scheme_id, division_id) => {
+  const rows = await sequelize.query(
+    `SELECT csm.student_reg_no, csm.grade, s.value AS subject_name
+     FROM student_co_scholastic_marks csm
+     INNER JOIN result_mark_entry_lists rmel ON rmel.id = csm.result_mark_entry_list_id
+     INNER JOIN Subjects s ON s.id = rmel.subject_id
+     WHERE rmel.exam_scheme_id = :exam_scheme_id
+       AND rmel.division_id = :division_id
+     ORDER BY s.value ASC, csm.id ASC`,
+    {
+      replacements: { exam_scheme_id, division_id },
+      type: sequelize.QueryTypes.SELECT,
+    }
+  );
+
+  const byRegNo = new Map();
+  for (const row of rows) {
+    const key = String(row.student_reg_no);
+    if (!byRegNo.has(key)) byRegNo.set(key, []);
+    byRegNo.get(key).push({
+      subject: row.subject_name || '-',
+      grade: row.grade == null || String(row.grade).trim() === '' ? '-' : String(row.grade).trim(),
+    });
+  }
+  return byRegNo;
+};
+
+const buildCoScholasticTable = (items, title) => {
+  const list = Array.isArray(items) ? items : [];
+  const headerCell = (text) => ({ text, style: 'tableHeader', alignment: 'center' });
+  const subjectCell = (text) => ({ text: text || '', style: 'subject' });
+  const gradeCell = (text) => ({ text: text || '', style: 'cell', bold: true });
+  const empty = { text: '', style: 'cell' };
+
+  const body = [
+    [{ text: title, style: 'tableHeader', colSpan: 4, alignment: 'left' }, {}, {}, {}],
+    [headerCell('SUBJECT'), headerCell('GRADE'), headerCell('SUBJECT'), headerCell('GRADE')],
+  ];
+
+  if (!list.length) {
+    body.push([empty, empty, empty, empty]);
+  } else {
+    for (let i = 0; i < list.length; i += 2) {
+      const left = list[i];
+      const right = list[i + 1];
+      body.push([
+        subjectCell(left.subject),
+        gradeCell(left.grade),
+        right ? subjectCell(right.subject) : empty,
+        right ? gradeCell(right.grade) : empty,
+      ]);
+    }
+  }
+
+  return {
+    table: {
+      widths: ['*', 60, '*', 60],
+      body,
+    },
+    layout: {
+      hLineWidth: (i, node) => (i === 0 || i === 1 || i === 2 || i === node.table.body.length ? 0.8 : 0.4),
+      vLineWidth: () => 0.4,
+      hLineColor: () => '#333',
+      vLineColor: () => '#333',
+      paddingLeft: () => 4,
+      paddingRight: () => 4,
+      paddingTop: () => 3,
+      paddingBottom: () => 3,
+    },
+    margin: [0, 10, 0, 0],
+  };
+};
+
 const fonts = {
   Roboto: {
     normal: 'fonts/Roboto-Regular.ttf',
@@ -364,6 +442,41 @@ const resultMarkEntryListController = {
     const assessments = await loadSchemeHeads(exam_scheme_id, class_id, term_id);
     const rowsByStudent = await getStudentMarksRow(exam_scheme_id, students.map((s) => s.id), assessments);
     const columnCount = buildMarksHeader(assessments)[0].length;
+    const coScholasticByStudent = await loadCoScholasticByStudent(exam_scheme_id, division_id);
+
+    const termInfo = await term.findByPk(term_id, { attributes: ['term_name'] });
+    const termName = termInfo?.term_name || '';
+    const gradeScaleLegend = await sequelize.query(
+      `SELECT gsr.grade, gsr.description
+       FROM exam_configures ec
+       INNER JOIN grade_scales gs ON gs.id = ec.grade_scale_id AND gs.type = 'descriptor'
+       INNER JOIN grade_scale_ranges gsr ON gsr.grade_scale_id = gs.id
+       WHERE ec.exam_id = :exam_scheme_id
+         AND ec.class_id = :class_id
+         AND ec.term_id = :term_id
+         AND ec.subject_id IN (
+           SELECT DISTINCT rmel.subject_id
+           FROM result_mark_entry_lists rmel
+           INNER JOIN student_co_scholastic_marks csm ON csm.result_mark_entry_list_id = rmel.id
+           WHERE rmel.exam_scheme_id = :exam_scheme_id AND rmel.division_id = :division_id
+         )
+       ORDER BY gsr.sequence ASC, gsr.id ASC`,
+      {
+        replacements: { exam_scheme_id, class_id, term_id, division_id },
+        type: sequelize.QueryTypes.SELECT,
+      }
+    );
+    const uniqueScale = [];
+    const seenGrade = new Set();
+    for (const row of gradeScaleLegend) {
+      const key = String(row.grade || '').toUpperCase();
+      if (!key || seenGrade.has(key)) continue;
+      seenGrade.add(key);
+      uniqueScale.push(`${row.grade}${row.description ? ` - ${row.description}` : ''}`);
+    }
+    const coScholasticTitle = uniqueScale.length
+      ? `Co-Scholastic Area : ${termName} [Grading Scale as follows: ${uniqueScale.join(',')}]`
+      : `Co-Scholastic Area : ${termName}`;
 
     // One page per student: title, student information, then the marks table with that student's subject rows
     const show = (value) => (value === null || value === undefined || value === '' ? '-' : value);
@@ -421,7 +534,7 @@ const resultMarkEntryListController = {
         table: {
           headerRows: 3,
           widths: [70, ...Array(columnCount - 1).fill('*')],
-          body: [...buildMarksHeader(assessments), ...rowsByStudent.get(student.id)],
+          body: [...buildMarksHeader(assessments), ...(rowsByStudent.get(student.id) || [])],
         },
         layout: {
           hLineWidth: (i, node) => (i === 0 || i === 3 || i === node.table.body.length) ? 0.8 : 0.4,
@@ -434,9 +547,11 @@ const resultMarkEntryListController = {
           paddingBottom: () => 3
         }
       },
+      buildCoScholasticTable(
+        coScholasticByStudent.get(String(student.reg_no)) || [],
+        coScholasticTitle
+      ),
     ]);
-    console.log('student page*****************',studentPages)
-    console.log('assessments*****************',assessments)
     const docDefinition = {
       pageSize: 'A4',
       pageOrientation: 'landscape',
@@ -551,7 +666,7 @@ const resultMarkEntryListController = {
   
   }),
 
-
+ 
 
 
   importMarks: asyncHandler(async (req, res) => {
@@ -681,6 +796,8 @@ const resultMarkEntryListController = {
     if (!exam_scheme_id || !class_id || !division_id || !subject_id) {
       return res.status(400).json({ message: 'exam_scheme_id, class_id, division_id and subject_id are required' })
     }
+
+    // ---------- STEP 1: load the subject's heads / sub-components and the division's students ----------
     let [allassesmentandcomponent, students] = await Promise.allSettled([getAssessmentAndComponent(exam_scheme_id, subject_id), getStudents(class_id, division_id)])
 
     let allassesmentandcomponentData = [];
@@ -699,6 +816,7 @@ const resultMarkEntryListController = {
     }
     console.log('allassesmentandcomponentData****>>>>>', allassesmentandcomponentData);
 
+    // ---------- STEP 2: load the heads with max marks and the exam configure of this subject ----------
     const [assessments, examConfigure] = await Promise.all([
       loadColumns(exam_scheme_id, subject_id),
       exam_configure.findOne({
@@ -708,6 +826,8 @@ const resultMarkEntryListController = {
     ]);
     const maxMarks = buildMaxMarks(assessments);
 
+    // ---------- STEP 3: prepare rows for student_head_results and student_subject_results ----------
+    // One head row per student per head (with max marks) and one subject row per student
     const headRows = [];
     const subjectRows = [];
     for (const student of studentsData) {
@@ -732,8 +852,10 @@ const resultMarkEntryListController = {
       });
     }
 
+    // ---------- STEP 4: save everything in one transaction (any failure rolls back all of it) ----------
     const entryWhere = { exam_scheme_id, division_id, subject_id };
     const { entryId, isNewEntry } = await sequelize.transaction(async (transaction) => {
+      // Entry list: create it, or only update sort_by when it already exists
       let entry = await result_mark_entry_list.findOne({ where: entryWhere, transaction });
       const isNewEntry = !entry;
       if (entry) {
@@ -745,8 +867,9 @@ const resultMarkEntryListController = {
         );
       }
 
+      // ===== SAVE 1: student_marks (always saved) =====
+      // One row per student per head / sub-component; for an existing entry only missing rows are added
       const payload = makePayload(entry.id, allassesmentandcomponentData, studentsData);
-
       let newRows = payload;
       if (!isNewEntry) {
         const existingRows = await student_mark.findAll({
@@ -763,7 +886,8 @@ const resultMarkEntryListController = {
         await student_mark.bulkCreate(newRows.slice(i, i + 1000), { transaction });
       }
 
-      // Existing rows keep their obtained/grade/pass values; only the max marks and config are refreshed
+      // ===== SAVE 2: student_head_results =====
+      // Existing rows keep their obtained/grade/pass values; only max_marks is refreshed
       const headKey = (row) => `${row.student_id}|${row.exam_assessment_id}`;
       const existingHeads = await student_head_result.findAll({
         where: { exam_scheme_id, subject_id, student_id: studentsData.map((s) => s.id) },
@@ -784,6 +908,8 @@ const resultMarkEntryListController = {
         await student_head_result.bulkCreate(newHeadRows.slice(i, i + 1000), { transaction });
       }
 
+      // ===== SAVE 3: student_subject_results =====
+      // Inserts new rows; existing rows only get the config link and max marks refreshed
       if (subjectRows.length) {
         await student_subject_result.bulkCreate(subjectRows, {
           updateOnDuplicate: [
@@ -801,6 +927,7 @@ const resultMarkEntryListController = {
       return { entryId: entry.id, isNewEntry };
     });
 
+    // ---------- STEP 5: response ----------
     const data = await result_mark_entry_list.findByPk(entryId, {
       include: [...entryListInclude, marksInclude],
     });
@@ -897,12 +1024,30 @@ const resultMarkEntryListController = {
 
   getallstudentbyresultmarkentrylist: asyncHandler(async (req, res) => {
     const entryListId = toNumberOrNull(req.params.id);
+    console.log('entrylistid:::::::::::::::::::',entryListId)
     if (!entryListId) throw httpError(400, 'Valid result mark entry list id is required');
 
     const query = `select distinct p.id, p.reg_no, p.rollnumber, p.first_name, p.last_name, p.father_name
       from student_marks sm
       inner join par_student_personal_informations p on p.id = sm.student_id
       where sm.result_mark_entry_list_id = :entryListId
+      order by p.rollnumber, p.first_name;`;
+    const data = await sequelize.query(query, {
+      replacements: { entryListId },
+      type: sequelize.QueryTypes.SELECT,
+    });
+
+    res.json({ success: true, count: data.length, data });
+  }),
+
+  getallco_scholasticstudentbyresultmarkentrylist: asyncHandler(async (req, res) => {
+    const entryListId = toNumberOrNull(req.params.id);
+    if (!entryListId) throw httpError(400, 'Valid result mark entry list id is required');
+
+    const query = `select distinct p.id, p.reg_no, p.rollnumber, p.first_name, p.last_name, p.father_name
+      from student_co_scholastic_marks csm
+      inner join par_student_personal_informations p on p.reg_no = csm.student_reg_no
+      where csm.result_mark_entry_list_id = :entryListId
       order by p.rollnumber, p.first_name;`;
     const data = await sequelize.query(query, {
       replacements: { entryListId },

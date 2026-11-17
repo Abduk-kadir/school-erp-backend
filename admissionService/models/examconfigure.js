@@ -73,6 +73,11 @@ module.exports = (sequelize, DataTypes) => {
       summative_ratio: DataTypes.INTEGER,
       total_mark: DataTypes.INTEGER,
       total_passing: DataTypes.INTEGER,
+      sequence: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        defaultValue: 0,
+      },
     },
     {
       sequelize,

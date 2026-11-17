@@ -55,6 +55,7 @@ function readConfigure(body) {
     summative_ratio: toNumberOrNull(body.summative_ratio ?? body.submative_ratio),
     total_mark: toNumberOrNull(body.total_mark),
     total_passing: toNumberOrNull(body.total_passing),
+    sequence: toNumberOrNull(body.sequence) ?? 0,
   };
 }
 
@@ -66,6 +67,9 @@ async function validate(config, excludeId, { checkDuplicate = true } = {}) {
   if (!config.term_id) throw httpError(400, 'Term is required');
   if (!config.subject_id) throw httpError(400, 'Subject is required');
   if (!config.grade_scale_id) throw httpError(400, 'Grade scale is required');
+  if (!Number.isInteger(config.sequence) || config.sequence < 0) {
+    throw httpError(400, 'Sequence must be a whole number 0 or greater');
+  }
 
   const [examRow, classRow, termRow, subjectRow, gradeRow] = await Promise.all([
     exam_scheme.findByPk(config.exam_id),
@@ -138,7 +142,7 @@ const examConfigureController = {
         })),
       },
       include: configureInclude,
-      order: [['id', 'ASC']],
+      order: [['sequence', 'ASC'], ['id', 'ASC']],
     });
     res.status(201).json({
       success: true,
@@ -172,9 +176,27 @@ const examConfigureController = {
     const data = await exam_configure.findAll({
       where: { exam_id: examId },
       include: configureInclude,
-      order: [['subject_id', 'ASC'], ['id', 'ASC']],
+      order: [['sequence', 'ASC'], ['subject_id', 'ASC'], ['id', 'ASC']],
     });
     res.json({ success: true, count: data.length, data });
+  }),
+
+  // Finds the exam configure by exam scheme, class, term and subject
+  getByExamSchemeClassTermSubject: asyncHandler(async (req, res) => {
+    const where = {
+      exam_id: toNumberOrNull(getQueryValue(req.query, 'exam_scheme_id')),
+      class_id: toNumberOrNull(getQueryValue(req.query, 'class_id')),
+      term_id: toNumberOrNull(getQueryValue(req.query, 'term_id')),
+      subject_id: toNumberOrNull(getQueryValue(req.query, 'subject_id')),
+    };
+    if (!where.exam_id || !where.class_id || !where.term_id || !where.subject_id) {
+      throw httpError(400, 'exam_scheme_id, class_id, term_id and subject_id are required');
+    }
+
+    const examConfigure = await exam_configure.findOne({ where, include: configureInclude });
+    if (!examConfigure) throw httpError(404, 'Exam configure not found for this exam scheme, class, term and subject');
+
+    res.json({ success: true, data: examConfigure });
   }),
 
   update: asyncHandler(async (req, res) => {

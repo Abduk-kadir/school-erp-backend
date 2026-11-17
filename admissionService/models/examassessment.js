@@ -44,15 +44,15 @@ module.exports = (sequelize, DataTypes) => {
       },
       component_id: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        allowNull: true,
       },
       group_id: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        allowNull: true,
       },
       max_marks: {
         type: DataTypes.DECIMAL(6, 2),
-        allowNull: false,
+        allowNull: true,
       },
       ratio: {
         type: DataTypes.DECIMAL(6, 2),
@@ -60,8 +60,13 @@ module.exports = (sequelize, DataTypes) => {
       },
       sequence: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        allowNull: true,
         defaultValue: 0,
+      },
+      is_consider_inexam: {
+        type: DataTypes.BOOLEAN,
+        allowNull: true,
+        defaultValue: true,
       },
     },
     {

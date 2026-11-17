@@ -5,6 +5,7 @@ const examConfigureController = require('../../controllers/examination/examConfi
 router.post('/', examConfigureController.create);
 router.get('/', examConfigureController.getAll);
 router.get('/exam/:examId', examConfigureController.getByExamId);
+router.get('/search', examConfigureController.getByExamSchemeClassTermSubject);
 router.get('/:id', examConfigureController.getById);
 router.put('/:id', examConfigureController.update);
 router.delete('/:id', examConfigureController.delete);

@@ -30,21 +30,21 @@ module.exports = {
       },
       component_id: {
         type: Sequelize.INTEGER,
-        allowNull: false,
+        allowNull: true,
         references: { model: 'components', key: 'id' },
         onUpdate: 'CASCADE',
         onDelete: 'RESTRICT',
       },
       group_id: {
         type: Sequelize.INTEGER,
-        allowNull: false,
+        allowNull: true,
         references: { model: 'assessment_groups', key: 'id' },
         onUpdate: 'CASCADE',
         onDelete: 'RESTRICT',
       },
       max_marks: {
         type: Sequelize.DECIMAL(6, 2),
-        allowNull: false,
+        allowNull: true,
       },
       ratio: {
         type: Sequelize.DECIMAL(6, 2),
@@ -52,8 +52,13 @@ module.exports = {
       },
       sequence: {
         type: Sequelize.INTEGER,
-        allowNull: false,
+        allowNull: true,
         defaultValue: 0,
+      },
+      is_consider_inexam: {
+        type: Sequelize.BOOLEAN,
+        allowNull: true,
+        defaultValue: true,
       },
       createdAt: {
         allowNull: false,

@@ -111,6 +111,7 @@ const examSchemeRoutes = require('./routes/examination/examSchemeRoutes');
 const examAssessmentRoutes = require('./routes/examination/examAssessmentRoutes');
 const assessmentComponentRoutes = require('./routes/examination/assessmentComponentRoutes');
 const resultMarkEntryListRoutes = require('./routes/examination/resultMarkEntryListRoutes');
+const studentCoScholasticMarkRoutes = require('./routes/examination/studentCoScholasticMarkRoutes');
 //start all jobs
 startAllJobs();
 // In your app.js or server.js
@@ -185,6 +186,7 @@ app.use('/api/exam-schemes', examSchemeRoutes);
 app.use('/api/exam-assessments', examAssessmentRoutes);
 app.use('/api/assessment-components', assessmentComponentRoutes);
 app.use('/api/result-mark-entry-lists', resultMarkEntryListRoutes);
+app.use('/api/student-co-scholastic-marks', studentCoScholasticMarkRoutes);
 
 
 //fee module routes

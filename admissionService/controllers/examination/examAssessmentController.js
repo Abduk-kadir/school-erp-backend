@@ -12,7 +12,7 @@ const {
   term,
   sequelize,
 } = require('../../models');
-const { httpError, toNumberOrNull, getQueryValue } = require('./examHelper');
+const { httpError, toNumberOrNull, toBoolean, getQueryValue } = require('./examHelper');
 const { getDataTable } = require('../../helper');
 
 const assessmentInclude = [
@@ -32,23 +32,22 @@ function readAssessment(body) {
     exam_scheme_id: toNumberOrNull(body.exam_scheme_id),
     subject_id: toNumberOrNull(body.subject_id),
     code: String(body.code ?? '').trim() || null,
-    component_id: toNumberOrNull(body.component_id),
-    group_id: toNumberOrNull(body.group_id ?? body.group),
+    component_id: toNumberOrNull(body.component_id) || null,
+    group_id: toNumberOrNull(body.group_id ?? body.group) || null,
     max_marks: toNumberOrNull(body.max_marks),
     ratio: toNumberOrNull(body.ratio),
     sequence: toNumberOrNull(body.sequence),
+    is_consider_inexam: toBoolean(body.is_consider_inexam, true),
   };
 }
 
 async function validate(assessment, excludeId) {
   if (!assessment.exam_scheme_id) throw httpError(400, 'Exam scheme is required');
   if (!assessment.subject_id) throw httpError(400, 'Subject is required');
-  if (!assessment.component_id) throw httpError(400, 'Component is required');
-  if (!assessment.group_id) throw httpError(400, 'Group is required');
   if (assessment.code && assessment.code.length > 20) {
     throw httpError(400, 'Code must be at most 20 characters');
   }
-  if (assessment.max_marks === null || assessment.max_marks <= 0) {
+  if (assessment.max_marks !== null && assessment.max_marks <= 0) {
     throw httpError(400, 'Max marks must be greater than 0');
   }
   if (assessment.max_marks > 9999.99) throw httpError(400, 'Max marks is too large');
@@ -57,16 +56,17 @@ async function validate(assessment, excludeId) {
   }
   if (assessment.ratio !== null && assessment.ratio > 9999.99) throw httpError(400, 'Ratio is too large');
 
+  // Component and group are optional; when sent they must exist
   const [schemeRow, subjectRow, componentRow, groupRow] = await Promise.all([
     exam_scheme.findByPk(assessment.exam_scheme_id),
     Subject.findByPk(assessment.subject_id),
-    component.findByPk(assessment.component_id),
-    assessment_group.findByPk(assessment.group_id),
+    assessment.component_id ? component.findByPk(assessment.component_id) : null,
+    assessment.group_id ? assessment_group.findByPk(assessment.group_id) : null,
   ]);
   if (!schemeRow) throw httpError(400, 'Selected exam scheme does not exist');
   if (!subjectRow) throw httpError(400, 'Selected subject does not exist');
-  if (!componentRow) throw httpError(400, 'Selected component does not exist');
-  if (!groupRow) throw httpError(400, 'Selected group does not exist');
+  if (assessment.component_id && !componentRow) throw httpError(400, 'Selected component does not exist');
+  if (assessment.group_id && !groupRow) throw httpError(400, 'Selected group does not exist');
 
   if (!assessment.code) return;
 
@@ -129,6 +129,8 @@ async function findExistingAssessment(body, assessment) {
     if (!record) throw httpError(404, 'Exam assessment not found');
     return record;
   }
+  // Without a head component there is nothing to match on, so it is always a new assessment
+  if (!assessment.component_id) return null;
   return exam_assessment.findOne({
     where: {
       exam_scheme_id: assessment.exam_scheme_id,
@@ -261,9 +263,10 @@ const examAssessmentController = {
       code: row.code,
       component_id: row.component_id,
       group_id: row.group_id,
-      max_marks: Number(row.max_marks),
+      max_marks: row.max_marks === null ? null : Number(row.max_marks),
       ratio: row.ratio === null ? null : Number(row.ratio),
       sequence: row.sequence,
+      is_consider_inexam: row.is_consider_inexam,
       assesmentcomponent: row.components.map((item) => ({
         id: item.id,
         component_id: item.component_id,
