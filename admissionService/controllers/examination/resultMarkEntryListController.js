@@ -400,6 +400,64 @@ const buildCoScholasticTable = (items, title) => {
   };
 };
 
+// Descriptive remarks per student (keyed by reg_no), ordered by sequence.
+const loadDescriptiveRemarksByStudent = async (exam_scheme_id) => {
+  const rows = await sequelize.query(
+    `SELECT adr.reg_no, adr.sequence, dr.remark
+     FROM assign_descriptive_remarks adr
+     INNER JOIN descriptive_remarks dr ON dr.id = adr.remark_id
+     WHERE adr.exam_scheme_id = :exam_scheme_id
+     ORDER BY adr.sequence ASC, adr.id ASC`,
+    {
+      replacements: { exam_scheme_id },
+      type: sequelize.QueryTypes.SELECT,
+    }
+  );
+
+  const byRegNo = new Map();
+  for (const row of rows) {
+    const key = String(row.reg_no);
+    if (!byRegNo.has(key)) byRegNo.set(key, []);
+    const remark = row.remark == null ? '' : String(row.remark).trim();
+    if (remark) byRegNo.get(key).push(remark);
+  }
+  return byRegNo;
+};
+
+const buildDescriptiveRemarksSection = (remarks) => {
+  const list = Array.isArray(remarks) ? remarks.filter(Boolean) : [];
+  const content = [
+    { text: 'DESCRIPTIVE REMARKS :', bold: true, fontSize: 9, margin: [0, 0, 0, 6] },
+  ];
+
+  if (!list.length) {
+    content.push({ text: '-', fontSize: 8 });
+  } else {
+    content.push({
+      ol: list.map((remark) => ({ text: remark, fontSize: 8, bold: true })),
+      margin: [0, 0, 0, 0],
+    });
+  }
+
+  return {
+    table: {
+      widths: ['*'],
+      body: [[{ stack: content }]],
+    },
+    layout: {
+      hLineWidth: () => 0.8,
+      vLineWidth: () => 0.8,
+      hLineColor: () => '#000',
+      vLineColor: () => '#000',
+      paddingLeft: () => 8,
+      paddingRight: () => 8,
+      paddingTop: () => 6,
+      paddingBottom: () => 6,
+    },
+    margin: [0, 10, 0, 0],
+  };
+};
+
 const fonts = {
   Roboto: {
     normal: 'fonts/Roboto-Regular.ttf',
@@ -443,6 +501,7 @@ const resultMarkEntryListController = {
     const rowsByStudent = await getStudentMarksRow(exam_scheme_id, students.map((s) => s.id), assessments);
     const columnCount = buildMarksHeader(assessments)[0].length;
     const coScholasticByStudent = await loadCoScholasticByStudent(exam_scheme_id, division_id);
+    const descriptiveRemarksByStudent = await loadDescriptiveRemarksByStudent(exam_scheme_id);
 
     const termInfo = await term.findByPk(term_id, { attributes: ['term_name'] });
     const termName = termInfo?.term_name || '';
@@ -550,6 +609,9 @@ const resultMarkEntryListController = {
       buildCoScholasticTable(
         coScholasticByStudent.get(String(student.reg_no)) || [],
         coScholasticTitle
+      ),
+      buildDescriptiveRemarksSection(
+        descriptiveRemarksByStudent.get(String(student.reg_no)) || []
       ),
     ]);
     const docDefinition = {
@@ -1027,7 +1089,8 @@ const resultMarkEntryListController = {
     console.log('entrylistid:::::::::::::::::::',entryListId)
     if (!entryListId) throw httpError(400, 'Valid result mark entry list id is required');
 
-    const query = `select distinct p.id, p.reg_no, p.rollnumber, p.first_name, p.last_name, p.father_name
+    const query = `select distinct p.id, p.reg_no, p.rollnumber, p.first_name, p.last_name, p.father_name,
+    result_mark_entry_list_id,exam_assessment_id,assessment_component_id,marks,student_id
       from student_marks sm
       inner join par_student_personal_informations p on p.id = sm.student_id
       where sm.result_mark_entry_list_id = :entryListId
@@ -1044,7 +1107,7 @@ const resultMarkEntryListController = {
     const entryListId = toNumberOrNull(req.params.id);
     if (!entryListId) throw httpError(400, 'Valid result mark entry list id is required');
 
-    const query = `select distinct p.id, p.reg_no, p.rollnumber, p.first_name, p.last_name, p.father_name
+    const query = `select distinct p.id, p.reg_no, p.rollnumber, p.first_name, p.last_name, p.father_name,csm.grade
       from student_co_scholastic_marks csm
       inner join par_student_personal_informations p on p.reg_no = csm.student_reg_no
       where csm.result_mark_entry_list_id = :entryListId
