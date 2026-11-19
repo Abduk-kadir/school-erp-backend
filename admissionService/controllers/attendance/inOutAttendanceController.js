@@ -442,7 +442,7 @@ const inOutAttendanceController = {
         ON a.reg_no = p.reg_no
         ${attendanceDateSql}
       WHERE ${whereClause.join(' AND ')}
-      ORDER BY p.rollnumber ASC
+      ORDER BY cm.class_name ASC, dm.division_name ASC, CAST(p.rollnumber AS UNSIGNED) ASC
     `;
 
     const data = await sequelize.query(sql, {
@@ -538,7 +538,7 @@ const inOutAttendanceController = {
         ON a.reg_no = p.reg_no
         ${attendanceDateSql}
       WHERE ${whereClause.join(' AND ')}
-      ORDER BY p.class ASC, p.division ASC, p.rollnumber ASC
+      ORDER BY cm.class_name ASC, dm.division_name ASC, CAST(p.rollnumber AS UNSIGNED) ASC
     `;
 
     const data = await sequelize.query(sql, {
