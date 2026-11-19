@@ -342,7 +342,7 @@ const inOutAttendanceController = {
         a.in_time,
         a.out_time
       ${fromSql}
-      ORDER BY p.rollnumber ASC
+      ORDER BY cm.class_name ASC, dm.division_name ASC, CAST(p.rollnumber AS UNSIGNED) ASC
       LIMIT :length OFFSET :start
     `;
 
