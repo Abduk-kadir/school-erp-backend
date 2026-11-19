@@ -52,12 +52,21 @@ async function getMonthlyReportExportData(query) {
     ...dates.map((d) => `${d.day} ${MONTH_NAMES[d.month - 1]}`),
     'Present', 'Absent', 'Working Days', 'Present %',
   ];
-  if (!classId || !divisionId || dates.length === 0) {
+  if (dates.length === 0) {
     return { columns, rows: [], dayCount: dates.length };
   }
 
   const months = [...new Map(dates.map((d) => [`${d.year}-${d.month}`, d])).values()];
-  const replacements = { classId: Number(classId), divisionId: Number(divisionId) };
+  const replacements = {};
+  const studentWhere = ['1 = 1'];
+  if (classId) {
+    studentWhere.push('p.class = :classId');
+    replacements.classId = Number(classId);
+  }
+  if (divisionId) {
+    studentWhere.push('p.division = :divisionId');
+    replacements.divisionId = Number(divisionId);
+  }
   const monthWhere = months
     .map((m, i) => {
       replacements[`year${i}`] = m.year;
@@ -68,12 +77,18 @@ async function getMonthlyReportExportData(query) {
 
   const records = await sequelize.query(
     `SELECT p.reg_no, p.first_name AS name, cm.class_name AS class, dm.division_name AS \`div\`,
-       p.reg_no AS roll_no, a.*
+       p.reg_no AS roll_no, a.year, a.month_number,
+       a.\`1\`, a.\`2\`, a.\`3\`, a.\`4\`, a.\`5\`, a.\`6\`, a.\`7\`, a.\`8\`, a.\`9\`, a.\`10\`,
+       a.\`11\`, a.\`12\`, a.\`13\`, a.\`14\`, a.\`15\`, a.\`16\`, a.\`17\`, a.\`18\`, a.\`19\`, a.\`20\`,
+       a.\`21\`, a.\`22\`, a.\`23\`, a.\`24\`, a.\`25\`, a.\`26\`, a.\`27\`, a.\`28\`, a.\`29\`, a.\`30\`, a.\`31\`,
+       a.total_present, a.total_absent, a.total_workingdays, a.present_percent
      FROM par_student_personal_informations p
-     INNER JOIN class_masters cm ON cm.id = p.class
-     INNER JOIN division_masters dm ON dm.id = p.division
-     INNER JOIN monthlyattendances a ON a.reg_no = p.reg_no
-     WHERE p.class = :classId AND p.division = :divisionId AND (${monthWhere})
+     LEFT JOIN class_masters cm ON cm.id = p.class
+     LEFT JOIN division_masters dm ON dm.id = p.division
+     LEFT JOIN monthlyattendances a
+       ON a.reg_no = p.reg_no
+       AND (${monthWhere})
+     WHERE ${studentWhere.join(' AND ')}
      ORDER BY p.reg_no ASC`,
     { replacements, type: Sequelize.QueryTypes.SELECT, raw: true }
   );
@@ -81,7 +96,9 @@ async function getMonthlyReportExportData(query) {
   const students = new Map();
   for (const r of records) {
     if (!students.has(r.reg_no)) students.set(r.reg_no, { info: r, months: {} });
-    students.get(r.reg_no).months[`${r.year}-${r.month_number}`] = r;
+    if (r.year != null && r.month_number != null) {
+      students.get(r.reg_no).months[`${r.year}-${r.month_number}`] = r;
+    }
   }
 
   const cell = (v) => (v == null ? '' : String(v));
@@ -286,11 +303,24 @@ const inOutAttendanceController = {
       whereClause.push('p.division = :divisionId');
       replacements.divisionId = Number(divisionId);
     }
+    const attendanceDateSql = attendance_date
+      ? 'AND a.attendance_date = :attendance_date'
+      : '';
     if (attendance_date) {
-      whereClause.push('a.attendance_date = :attendance_date');
       replacements.attendance_date = attendance_date;
     }
 
+    const fromSql = `
+      FROM par_student_personal_informations p
+      LEFT JOIN class_masters cm ON cm.id = p.class
+      LEFT JOIN division_masters dm ON dm.id = p.division
+      LEFT JOIN in_out_attendances a
+        ON a.reg_no = p.reg_no
+        ${attendanceDateSql}
+      WHERE ${whereClause.join(' AND ')}
+    `;
+
+    const countSql = `SELECT COUNT(*) AS total ${fromSql}`;
     const sql = `
       SELECT
         p.reg_no,
@@ -301,24 +331,39 @@ const inOutAttendanceController = {
         a.attendance_date AS \`date\`,
         a.in_time,
         a.out_time
-      FROM par_student_personal_informations p
-      INNER JOIN class_masters cm ON cm.id = p.class
-      INNER JOIN division_masters dm ON dm.id = p.division
-      INNER JOIN in_out_attendances a
-        ON a.reg_no = p.reg_no
-      WHERE ${whereClause.join(' AND ')}
+      ${fromSql}
       ORDER BY p.reg_no ASC
       LIMIT :length OFFSET :start
     `;
 
-    const data = await sequelize.query(sql, {
-      replacements,
-      type: Sequelize.QueryTypes.SELECT,
-      raw: true,
-     
-    });
+    const countReplacements = { ...replacements };
+    delete countReplacements.length;
+    delete countReplacements.start;
 
-    return res.status(200).json({ success: true, count: data.length, data ,draw});
+    const [countRows, data] = await Promise.all([
+      sequelize.query(countSql, {
+        replacements: countReplacements,
+        type: Sequelize.QueryTypes.SELECT,
+        raw: true,
+      }),
+      sequelize.query(sql, {
+        replacements,
+        type: Sequelize.QueryTypes.SELECT,
+        raw: true,
+      }),
+    ]);
+
+    const recordsTotal = Number(countRows[0]?.total ?? 0);
+    const recordsFiltered = recordsTotal;
+
+    return res.status(200).json({
+      success: true,
+      draw,
+      recordsTotal,
+      recordsFiltered,
+      count: data.length,
+      data,
+    });
   }),
 
   detailReportPdf:asyncHandler(async(req,res)=>{
@@ -356,8 +401,10 @@ const inOutAttendanceController = {
       whereClause.push('p.division = :divisionId');
       replacements.divisionId = Number(divisionId);
     }
+    const attendanceDateSql = attendance_date
+      ? 'AND a.attendance_date = :attendance_date'
+      : '';
     if (attendance_date) {
-      whereClause.push('a.attendance_date = :attendance_date');
       replacements.attendance_date = attendance_date;
     }
 
@@ -372,10 +419,11 @@ const inOutAttendanceController = {
         a.in_time,
         a.out_time
       FROM par_student_personal_informations p
-      INNER JOIN class_masters cm ON cm.id = p.class
-      INNER JOIN division_masters dm ON dm.id = p.division
-      INNER JOIN in_out_attendances a
+      LEFT JOIN class_masters cm ON cm.id = p.class
+      LEFT JOIN division_masters dm ON dm.id = p.division
+      LEFT JOIN in_out_attendances a
         ON a.reg_no = p.reg_no
+        ${attendanceDateSql}
       WHERE ${whereClause.join(' AND ')}
       ORDER BY p.reg_no ASC
       LIMIT :length OFFSET :start
@@ -441,8 +489,10 @@ const inOutAttendanceController = {
       whereClause.push('p.division = :divisionId');
       replacements.divisionId = Number(divisionId);
     }
+    const attendanceDateSql = attendance_date
+      ? 'AND a.attendance_date = :attendance_date'
+      : '';
     if (attendance_date) {
-      whereClause.push('a.attendance_date = :attendance_date');
       replacements.attendance_date = attendance_date;
     }
 
@@ -457,10 +507,11 @@ const inOutAttendanceController = {
         a.in_time,
         a.out_time
       FROM par_student_personal_informations p
-      INNER JOIN class_masters cm ON cm.id = p.class
-      INNER JOIN division_masters dm ON dm.id = p.division
-      INNER JOIN in_out_attendances a
+      LEFT JOIN class_masters cm ON cm.id = p.class
+      LEFT JOIN division_masters dm ON dm.id = p.division
+      LEFT JOIN in_out_attendances a
         ON a.reg_no = p.reg_no
+        ${attendanceDateSql}
       WHERE ${whereClause.join(' AND ')}
       ORDER BY p.reg_no ASC
       LIMIT :length OFFSET :start
@@ -522,13 +573,7 @@ const inOutAttendanceController = {
       ? ` AND ${studentFilters.join(' AND ')}`
       : '';
 
-    const sql = `
-      SELECT
-        cm.class_name AS class,
-        dm.division_name AS \`div\`,
-        COUNT(DISTINCT p.reg_no) AS total_student,
-        COUNT(DISTINCT CASE WHEN a.in_time IS NOT NULL AND a.in_time > '00:00:00' THEN a.reg_no END) AS present_count,
-        COUNT(DISTINCT CASE WHEN a.attendance_date IS NOT NULL AND (a.in_time IS NULL OR a.in_time <= '00:00:00') THEN a.reg_no END) AS absent_count
+    const fromSql = `
       FROM par_student_personal_informations p
       LEFT JOIN class_masters cm ON cm.id = p.class
       LEFT JOIN division_masters dm ON dm.id = p.division
@@ -537,20 +582,56 @@ const inOutAttendanceController = {
         ${attendanceDateSql}
       WHERE 1 = 1
       ${studentWhere}
+    `;
+
+    const countSql = `
+      SELECT COUNT(*) AS total FROM (
+        SELECT p.class, p.division
+        ${fromSql}
+        GROUP BY p.class, p.division, cm.class_name, dm.division_name
+      ) AS summary_groups
+    `;
+
+    const sql = `
+      SELECT
+        p.class AS classId,
+        p.division AS divisionId,
+        cm.class_name AS class,
+        dm.division_name AS \`div\`,
+        COUNT(DISTINCT p.reg_no) AS total_student,
+        COUNT(DISTINCT CASE WHEN a.in_time IS NOT NULL AND a.in_time > '00:00:00' THEN a.reg_no END) AS present_count,
+        COUNT(DISTINCT CASE WHEN a.attendance_date IS NOT NULL AND (a.in_time IS NULL OR a.in_time <= '00:00:00') THEN a.reg_no END) AS absent_count
+      ${fromSql}
       GROUP BY p.class, p.division, cm.class_name, dm.division_name
       ORDER BY cm.class_name, dm.division_name
       LIMIT :length OFFSET :start
     `;
 
-    const data = await sequelize.query(sql, {
-      replacements,
-      type: Sequelize.QueryTypes.SELECT,
-      raw: true,
-    });
+    const countReplacements = { ...replacements };
+    delete countReplacements.length;
+    delete countReplacements.start;
+
+    const [countRows, data] = await Promise.all([
+      sequelize.query(countSql, {
+        replacements: countReplacements,
+        type: Sequelize.QueryTypes.SELECT,
+        raw: true,
+      }),
+      sequelize.query(sql, {
+        replacements,
+        type: Sequelize.QueryTypes.SELECT,
+        raw: true,
+      }),
+    ]);
+
+    const recordsTotal = Number(countRows[0]?.total ?? 0);
+    const recordsFiltered = recordsTotal;
 
     return res.status(200).json({
       success: true,
       draw,
+      recordsTotal,
+      recordsFiltered,
       count: data.length,
       data,
     });
@@ -713,9 +794,6 @@ const inOutAttendanceController = {
       filter.divisionId ||
       filter.division ||
       '';
-    if (!classId || !divisionId) {
-      return res.status(200).json({ success: true, count: 0, data: [], draw });
-    }
     const fromDate = req.query['filter[fromDate]'];
     const toDate = req.query['filter[toDate]'];
     const startmonthNumber = fromDate ? Number(fromDate.split('-')[1]) : new Date().getMonth() + 1;
@@ -733,10 +811,13 @@ const inOutAttendanceController = {
       whereClause.push('p.division = :divisionId');
       replacements.divisionId = Number(divisionId);
     }
-    if(startmonthNumber && endmonthNumber){
-      whereClause.push('a.month_number IN (:startmonthNumber, :endmonthNumber)');
-      replacements.startmonthNumber=startmonthNumber;
-      replacements.endmonthNumber=endmonthNumber;
+    const monthSql =
+      startmonthNumber && endmonthNumber
+        ? 'AND a.month_number IN (:startmonthNumber, :endmonthNumber)'
+        : '';
+    if (startmonthNumber && endmonthNumber) {
+      replacements.startmonthNumber = startmonthNumber;
+      replacements.endmonthNumber = endmonthNumber;
     }
    
     const sql = `
@@ -784,10 +865,11 @@ const inOutAttendanceController = {
         a.total_workingdays,
         a.present_percent
       FROM par_student_personal_informations p
-      INNER JOIN class_masters cm ON cm.id = p.class
-      INNER JOIN division_masters dm ON dm.id = p.division
-      INNER JOIN monthlyattendances a
+      LEFT JOIN class_masters cm ON cm.id = p.class
+      LEFT JOIN division_masters dm ON dm.id = p.division
+      LEFT JOIN monthlyattendances a
         ON a.reg_no = p.reg_no
+        ${monthSql}
       WHERE ${whereClause.join(' AND ')}
       ORDER BY p.reg_no ASC
       LIMIT :length OFFSET :start

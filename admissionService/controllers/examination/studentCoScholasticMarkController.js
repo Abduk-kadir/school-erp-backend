@@ -217,6 +217,7 @@ const studentCoScholasticMarkController = {
       updated: rows.length,
     });
   }),
+  
 };
 
 module.exports = studentCoScholasticMarkController;
