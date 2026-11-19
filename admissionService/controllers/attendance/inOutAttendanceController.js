@@ -377,9 +377,6 @@ const inOutAttendanceController = {
   }),
 
   detailReportPdf:asyncHandler(async(req,res)=>{
-    const draw = parseInt(req.query.draw) || 1;
-    const start = parseInt(req.query.start) || 0;
-    const length = parseInt(req.query.length) || 10;
     const search = req.query['search[value]'] || req.query.search?.value || '';
 
     // Express may parse as filter[key] string keys or nested filter object
@@ -401,7 +398,7 @@ const inOutAttendanceController = {
 
     // p.class / p.division are INTEGER FKs — match by id, not LIKE name
     const whereClause = ['1 = 1'];
-    const replacements = { length, start };
+    const replacements = {};
 
     if (classId) {
       whereClause.push('p.class = :classId');
@@ -410,6 +407,16 @@ const inOutAttendanceController = {
     if (divisionId) {
       whereClause.push('p.division = :divisionId');
       replacements.divisionId = Number(divisionId);
+    }
+    if (search) {
+      whereClause.push(`(
+        CAST(p.reg_no AS CHAR) LIKE :search
+        OR p.first_name LIKE :search
+        OR CAST(p.rollnumber AS CHAR) LIKE :search
+        OR cm.class_name LIKE :search
+        OR dm.division_name LIKE :search
+      )`);
+      replacements.search = `%${search}%`;
     }
     const attendanceDateSql = attendance_date
       ? 'AND a.attendance_date = :attendance_date'
@@ -436,7 +443,6 @@ const inOutAttendanceController = {
         ${attendanceDateSql}
       WHERE ${whereClause.join(' AND ')}
       ORDER BY p.reg_no ASC
-      LIMIT :length OFFSET :start
     `;
 
     const data = await sequelize.query(sql, {
@@ -467,8 +473,7 @@ const inOutAttendanceController = {
   }),
 
   detailReportExcel: asyncHandler(async (req, res) => {
-    const start = parseInt(req.query.start) || 0;
-    const length = parseInt(req.query.length) || 10;
+    const search = req.query['search[value]'] || req.query.search?.value || '';
 
     // Express may parse as filter[key] string keys or nested filter object
     const filter = req.query.filter || {};
@@ -489,7 +494,7 @@ const inOutAttendanceController = {
 
     // p.class / p.division are INTEGER FKs — match by id, not LIKE name
     const whereClause = ['1 = 1'];
-    const replacements = { length, start };
+    const replacements = {};
 
     if (classId) {
       whereClause.push('p.class = :classId');
@@ -498,6 +503,16 @@ const inOutAttendanceController = {
     if (divisionId) {
       whereClause.push('p.division = :divisionId');
       replacements.divisionId = Number(divisionId);
+    }
+    if (search) {
+      whereClause.push(`(
+        CAST(p.reg_no AS CHAR) LIKE :search
+        OR p.first_name LIKE :search
+        OR CAST(p.rollnumber AS CHAR) LIKE :search
+        OR cm.class_name LIKE :search
+        OR dm.division_name LIKE :search
+      )`);
+      replacements.search = `%${search}%`;
     }
     const attendanceDateSql = attendance_date
       ? 'AND a.attendance_date = :attendance_date'
@@ -524,7 +539,6 @@ const inOutAttendanceController = {
         ${attendanceDateSql}
       WHERE ${whereClause.join(' AND ')}
       ORDER BY p.reg_no ASC
-      LIMIT :length OFFSET :start
     `;
 
     const data = await sequelize.query(sql, {
