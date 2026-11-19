@@ -342,7 +342,7 @@ const inOutAttendanceController = {
         a.in_time,
         a.out_time
       ${fromSql}
-      ORDER BY p.reg_no ASC
+      ORDER BY p.rollnumber ASC
       LIMIT :length OFFSET :start
     `;
 
@@ -442,7 +442,7 @@ const inOutAttendanceController = {
         ON a.reg_no = p.reg_no
         ${attendanceDateSql}
       WHERE ${whereClause.join(' AND ')}
-      ORDER BY p.reg_no ASC
+      ORDER BY p.rollnumber ASC
     `;
 
     const data = await sequelize.query(sql, {
@@ -538,7 +538,7 @@ const inOutAttendanceController = {
         ON a.reg_no = p.reg_no
         ${attendanceDateSql}
       WHERE ${whereClause.join(' AND ')}
-      ORDER BY p.reg_no ASC
+      ORDER BY p.rollnumber ASC
     `;
 
     const data = await sequelize.query(sql, {
