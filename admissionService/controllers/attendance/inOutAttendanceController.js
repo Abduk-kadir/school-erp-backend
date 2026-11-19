@@ -303,6 +303,16 @@ const inOutAttendanceController = {
       whereClause.push('p.division = :divisionId');
       replacements.divisionId = Number(divisionId);
     }
+    if (search) {
+      whereClause.push(`(
+        CAST(p.reg_no AS CHAR) LIKE :search
+        OR p.first_name LIKE :search
+        OR CAST(p.rollnumber AS CHAR) LIKE :search
+        OR cm.class_name LIKE :search
+        OR dm.division_name LIKE :search
+      )`);
+      replacements.search = `%${search}%`;
+    }
     const attendanceDateSql = attendance_date
       ? 'AND a.attendance_date = :attendance_date'
       : '';
@@ -327,7 +337,7 @@ const inOutAttendanceController = {
         p.first_name AS name,
         cm.class_name AS class,
         dm.division_name AS \`div\`,
-        p.reg_no AS roll_no,
+        p.rollnumber AS roll_no,
         a.attendance_date AS \`date\`,
         a.in_time,
         a.out_time
@@ -414,7 +424,7 @@ const inOutAttendanceController = {
         p.first_name AS name,
         cm.class_name AS class,
         dm.division_name AS \`div\`,
-        p.reg_no AS roll_no,
+        p.rollnumber AS roll_no,
         a.attendance_date AS \`date\`,
         a.in_time,
         a.out_time
@@ -502,7 +512,7 @@ const inOutAttendanceController = {
         p.first_name AS name,
         cm.class_name AS class,
         dm.division_name AS \`div\`,
-        p.reg_no AS roll_no,
+        p.rollnumber AS roll_no,
         a.attendance_date AS \`date\`,
         a.in_time,
         a.out_time
@@ -567,6 +577,15 @@ const inOutAttendanceController = {
     if (division) {
       studentFilters.push(`p.division = :division`);
       replacements.division = Number(division);
+    }
+    if (search) {
+      studentFilters.push(`(
+        cm.class_name LIKE :search
+        OR dm.division_name LIKE :search
+        OR CAST(p.class AS CHAR) LIKE :search
+        OR CAST(p.division AS CHAR) LIKE :search
+      )`);
+      replacements.search = `%${search}%`;
     }
 
     const studentWhere = studentFilters.length
@@ -811,6 +830,16 @@ const inOutAttendanceController = {
       whereClause.push('p.division = :divisionId');
       replacements.divisionId = Number(divisionId);
     }
+    if (search) {
+      whereClause.push(`(
+        CAST(p.reg_no AS CHAR) LIKE :search
+        OR p.first_name LIKE :search
+        OR CAST(p.rollnumber AS CHAR) LIKE :search
+        OR cm.class_name LIKE :search
+        OR dm.division_name LIKE :search
+      )`);
+      replacements.search = `%${search}%`;
+    }
     const monthSql =
       startmonthNumber && endmonthNumber
         ? 'AND a.month_number IN (:startmonthNumber, :endmonthNumber)'
@@ -827,7 +856,7 @@ const inOutAttendanceController = {
         p.first_name AS name,
         cm.class_name AS class,
         dm.division_name AS \`div\`,
-        p.reg_no AS roll_no,
+        p.rollnumber AS roll_no,
         a.month_number AS \`month_number\`,
         a.\`1\`,
         a.\`2\`,
