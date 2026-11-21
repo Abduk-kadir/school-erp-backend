@@ -13,6 +13,7 @@ function getStaffDetailReportFilters(req) {
   const hasPaging = req.query.length !== undefined && req.query.length !== '';
   const start = parseInt(req.query.start) || 0;
   const length = hasPaging ? parseInt(req.query.length) : null;
+  const search = req.query['search[value]'] || req.query.search?.value || '';
   const filter = req.query.filter || {};
   const attendance_date =
     req.query['filter[date]'] || filter.date || req.query.date || '';
@@ -40,8 +41,10 @@ function getStaffDetailReportFilters(req) {
     replacements.start = start;
   }
 
+  const attendanceDateSql = !isAllFilter(attendance_date)
+    ? 'AND a.attendance_date = :attendance_date'
+    : '';
   if (!isAllFilter(attendance_date)) {
-    whereClause.push('a.attendance_date = :attendance_date');
     replacements.attendance_date = attendance_date;
   }
   if (!isAllFilter(departmentId)) {
@@ -52,12 +55,33 @@ function getStaffDetailReportFilters(req) {
     whereClause.push('s.designationid = :designationId');
     replacements.designationId = Number(designationId);
   }
+  if (search) {
+    whereClause.push(`(
+      CAST(s.id AS CHAR) LIKE :search
+      OR s.firstname LIKE :search
+      OR s.surname LIKE :search
+      OR TRIM(CONCAT(IFNULL(s.firstname, ''), ' ', IFNULL(s.surname, ''))) LIKE :search
+      OR dp.department_name LIKE :search
+      OR dg.designation_name LIKE :search
+    )`);
+    replacements.search = `%${search}%`;
+  }
 
-  return { whereClause, replacements, hasPaging };
+  return { whereClause, replacements, hasPaging, attendanceDateSql };
 }
 
 async function getStaffDetailReportRows(req) {
-  const { whereClause, replacements, hasPaging } = getStaffDetailReportFilters(req);
+  const { whereClause, replacements, hasPaging, attendanceDateSql } =
+    getStaffDetailReportFilters(req);
+  const fromSql = `
+      FROM StaffRegistrations s
+      LEFT JOIN departments dp ON dp.id = s.departmentid
+      LEFT JOIN designations dg ON dg.id = s.designationid
+      LEFT JOIN staff_in_and_out_attendances a
+        ON a.staff_id = s.id
+        ${attendanceDateSql}
+      WHERE ${whereClause.join(' AND ')}
+  `;
   const sql = `
       SELECT
         s.id AS staff_id,
@@ -67,12 +91,7 @@ async function getStaffDetailReportRows(req) {
         a.attendance_date AS \`date\`,
         a.in_time,
         a.out_time
-      FROM StaffRegistrations s
-      LEFT JOIN departments dp ON dp.id = s.departmentid
-      LEFT JOIN designations dg ON dg.id = s.designationid
-      INNER JOIN staff_in_and_out_attendances a
-        ON a.staff_id = s.id
-      WHERE ${whereClause.join(' AND ')}
+      ${fromSql}
       ORDER BY s.id ASC
       ${hasPaging ? 'LIMIT :length OFFSET :start' : ''}
     `;
@@ -82,6 +101,31 @@ async function getStaffDetailReportRows(req) {
     type: Sequelize.QueryTypes.SELECT,
     raw: true,
   });
+}
+
+async function getStaffDetailReportCount(req) {
+  const { whereClause, replacements, attendanceDateSql } =
+    getStaffDetailReportFilters(req);
+  const countReplacements = { ...replacements };
+  delete countReplacements.length;
+  delete countReplacements.start;
+
+  const countRows = await sequelize.query(
+    `SELECT COUNT(*) AS total
+     FROM StaffRegistrations s
+     LEFT JOIN departments dp ON dp.id = s.departmentid
+     LEFT JOIN designations dg ON dg.id = s.designationid
+     LEFT JOIN staff_in_and_out_attendances a
+       ON a.staff_id = s.id
+       ${attendanceDateSql}
+     WHERE ${whereClause.join(' AND ')}`,
+    {
+      replacements: countReplacements,
+      type: Sequelize.QueryTypes.SELECT,
+      raw: true,
+    }
+  );
+  return Number(countRows[0]?.total ?? 0);
 }
 
 const STAFF_DETAIL_COLUMNS = ['Staff Id', 'Name', 'Department', 'Designation', 'Date', 'In Time', 'Out Time'];
@@ -172,8 +216,19 @@ const staffInAndOutAttendanceController = {
 
   staffgetDetailReport: asyncHandler(async (req, res) => {
     const draw = parseInt(req.query.draw) || 1;
-    const data = await getStaffDetailReportRows(req);
-    return res.status(200).json({ success: true, count: data.length, data, draw });
+    const [recordsTotal, data] = await Promise.all([
+      getStaffDetailReportCount(req),
+      getStaffDetailReportRows(req),
+    ]);
+    const recordsFiltered = recordsTotal;
+    return res.status(200).json({
+      success: true,
+      draw,
+      recordsTotal,
+      recordsFiltered,
+      count: data.length,
+      data,
+    });
   }),
 
   staffDetailReportPdf: asyncHandler(async (req, res) => {
