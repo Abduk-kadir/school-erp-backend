@@ -335,6 +335,7 @@ const inOutAttendanceController = {
       SELECT
         p.reg_no,
         p.first_name AS name,
+        p.last_name AS last_name,
         cm.class_name AS class,
         dm.division_name AS \`div\`,
         p.rollnumber AS roll_no,
@@ -429,6 +430,7 @@ const inOutAttendanceController = {
       SELECT
         p.reg_no,
         p.first_name AS name,
+        p.last_name AS last_name,
         cm.class_name AS class,
         dm.division_name AS \`div\`,
         p.rollnumber AS roll_no,
@@ -454,10 +456,11 @@ const inOutAttendanceController = {
     const cell = (v) => (v == null ? '' : String(v));
     const buffer = await generatePdf({
       title: 'In-Out Attendance',
-      columns: ['Reg No','Name','Class','Division','Roll no','Date',"In Time","Out Time"],
+      columns: ['Reg No','Name','Last Name','Class','Division','Roll no','Date',"In Time","Out Time"],
       data: data.map(r => [
         cell(r.reg_no),
         cell(r.name),
+        cell(r.last_name),
         cell(r.class),
         cell(r.div),
         cell(r.roll_no),
@@ -549,10 +552,11 @@ const inOutAttendanceController = {
     const cell = (v) => (v == null ? '' : String(v));
     const buffer = await generateExcel({
       title: 'In-Out Attendance',
-      columns: ['Reg No','Name','Class','Division','Roll no','Date',"In Time","Out Time"],
+      columns: ['Reg No','Name','Last Name','Class','Division','Roll no','Date',"In Time","Out Time"],
       data: data.map(r => [
         cell(r.reg_no),
         cell(r.name),
+        cell(r.last_name),
         cell(r.class),
         cell(r.div),
         cell(r.roll_no),
