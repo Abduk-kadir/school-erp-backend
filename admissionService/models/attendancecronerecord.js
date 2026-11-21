@@ -25,6 +25,7 @@ module.exports = (sequelize, DataTypes) => {
       batchid: DataTypes.INTEGER,
       classid: DataTypes.INTEGER,
       divisionid: DataTypes.INTEGER,
+      attendance_date:DataTypes.DATEONLY,
       isrun: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,

@@ -81,10 +81,10 @@ function startAttendanceReminderJob() {
 
         if (diffSeconds <= 3600) continue;
 
-        const isrun = await attendancecronerecord.findOne({
-          where: { batchid, classid, divisionid },
+        const attendanceCronRecord = await attendancecronerecord.findOne({
+          where: { batchid, classid, divisionid,attendance_date:today },
         });
-        if (isrun) continue;
+        if (attendanceCronRecord) continue;
 
         const students = await sequelize.query(
           `SELECT id, reg_no, rfid, first_name, last_name
@@ -109,8 +109,9 @@ function startAttendanceReminderJob() {
             absentrecord.push({
               reg_no: student.reg_no,
               attendance_date: today,
-              in_time: null,
-              in_time_notification_flag: true,
+              in_time: '00:00:00',
+              out_time:'00:00:00',
+              in_time_notification_flag: false,
               out_time_notification_flag: false,
               machine_id: null,
             });
@@ -127,6 +128,7 @@ function startAttendanceReminderJob() {
             batchid,
             classid,
             divisionid,
+            attendance_date:today,
             isrun: true,
           });
 

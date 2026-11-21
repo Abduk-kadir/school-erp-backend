@@ -40,6 +40,10 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE',
       },
+      attendance_date:{
+        type: Sequelize.DATEONLY,
+        allowNull: false,
+      },
       isrun: {
         type: Sequelize.BOOLEAN,
         allowNull: false,
