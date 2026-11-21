@@ -7,7 +7,7 @@ const descriptiveRemarkController = {
   create: asyncHandler(async (req, res) => {
     const remark = req.body.remark != null ? String(req.body.remark).trim() : '';
     if (!remark) throw httpError(400, 'Remark is required');
-
+    console.log('remark',remark);
     const data = await descriptive_remark.create({ remark });
     res.status(201).json({ success: true, message: 'Descriptive remark created', data });
   }),
