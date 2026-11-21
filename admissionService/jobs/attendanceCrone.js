@@ -61,7 +61,7 @@ function startAttendanceReminderJob() {
     );
   }
 
-  cron.schedule('*/30 * * * * *', async () => {
+  cron.schedule('*/5 * * * *', async () => {
     console.log(`[Reminder] Sending reminder at ${new Date().toLocaleTimeString()}`);
 
     try {
