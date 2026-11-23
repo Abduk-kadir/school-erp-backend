@@ -2,7 +2,6 @@ const { Worker } = require('bullmq');
 const { QueryTypes } = require('sequelize');
 const redis = require('../config/redisConfig.js');
 const {
-  AllRfid,
   NotMatchedRfid,
   RfidUnknown,
   InOutAttendance,
@@ -253,10 +252,7 @@ async function processRfidBatch(job) {
   const rows = Array.isArray(job.data?.rows) ? job.data.rows : [];
   if (!rows.length) return { processed: 0 };
 
-  await AllRfid.bulkCreate(
-    rows.map((data) => ({ data })),
-    { validate: false }
-  );
+  // AllRfid is saved in rfidController before Done — worker only processes attendance
 
   const parsed = rows.map(parseRfidRow);
   console.log("parsed", parsed)

@@ -1,4 +1,5 @@
 const asyncHandler = require('express-async-handler');
+const { AllRfid } = require('../../models');
 const { rfidQueue } = require('../../queues/rfidQueue');
 
 const saveattendancebyrfid = asyncHandler(async (req, res) => {
@@ -12,9 +13,24 @@ const saveattendancebyrfid = asyncHandler(async (req, res) => {
     .split(';')
     .map((item) => item.trim())
     .filter(Boolean);
-    console.log("allRows",allRows);
-  // Fast ACK for machines — heavy work runs in rfidWorker
-  await rfidQueue.add('process-rfid-batch', { rows: allRows });
+
+  if (!allRows.length) {
+    return res.status(400).json({ message: 'Data query param is empty' });
+  }
+
+  // Durable first: machine gets Done only after MySQL save
+  await AllRfid.bulkCreate(
+    allRows.map((data) => ({ data })),
+    { validate: false }
+  );
+
+  // Attendance / notify — async; raw punch already safe in AllRfids
+  try {
+    await rfidQueue.add('process-rfid-batch', { rows: allRows });
+  } catch (err) {
+    console.error('RFID queue add failed (AllRfid already saved):', err.message);
+  }
+
   return res.send('Done');
 });
 
