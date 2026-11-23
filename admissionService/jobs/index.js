@@ -2,7 +2,7 @@ const startAttendanceReminderJob = require('./attendanceCrone.js');
 const startMonthlyAttendanceReminderJob = require('./monthlyAttendaceCrone.js');
 function startAllJobs() {
   console.log('Starting all cron jobs...');
-
+  console.log('start montly also')
     startAttendanceReminderJob();
     startMonthlyAttendanceReminderJob();
 
