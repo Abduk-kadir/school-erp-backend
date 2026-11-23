@@ -7,6 +7,7 @@ const generateToken = require('../../utils/generateToken');
 const saveStaffFcmToken = require('../../utils/saveStaffFcmToken');
 const { clearPermissionCache } = require('../../utils/accessPermission');
 const { STAFF_DOCUMENT_UPLOAD_ROOT } = require('../../middlewares/multerConfig');
+const { generateExcel } = require('../../utils/generateExcel');
 
 const STAFF_DOCUMENT_ROOT = STAFF_DOCUMENT_UPLOAD_ROOT;
 
@@ -531,4 +532,97 @@ const allStaff = async (req, res) => {
   }
 };
 
-module.exports = { registration, login, logout, staffDetail, staffDetailById, editStaff, allStaff };
+
+const staffExcelDownload = async (req, res) => {
+  try {
+    const { department: departmentQuery, designation: designationQuery } = req.query;
+    const where = {};
+
+    if (departmentQuery !== undefined && departmentQuery !== '') {
+      const departmentid = Number(departmentQuery);
+      if (!Number.isInteger(departmentid)) {
+        return res.status(400).json({ success: false, message: 'department must be a numeric id' });
+      }
+      where.departmentid = departmentid;
+    }
+
+    if (designationQuery !== undefined && designationQuery !== '') {
+      const designationid = Number(designationQuery);
+      if (!Number.isInteger(designationid)) {
+        return res.status(400).json({ success: false, message: 'designation must be a numeric id' });
+      }
+      where.designationid = designationid;
+    }
+
+    const rows = await StaffRegistration.findAll({
+      where,
+      attributes: { exclude: ['password'] },
+      include: [
+        { model: department, as: 'departmentInfo', attributes: ['id', 'department_name'] },
+        { model: designation, as: 'designationInfo', attributes: ['id', 'designation_name'] },
+      ],
+      order: [['surname', 'ASC'], ['firstname', 'ASC'], ['id', 'ASC']],
+    });
+
+    const columns = [
+      'Id', 'Surname', 'First Name', 'Mother Name', 'Father Name', 'Title',
+      'DOB', 'Gender', 'Email', 'Mobile Number',
+      'Department Id', 'Department', 'Designation Id', 'Designation',
+      'User Type', 'Role Id', 'Address', 'Date Of Join', 'Emergency Contact',
+      'Staff Photo', 'Staff Signature', 'Created At', 'Updated At',
+    ];
+
+    const cell = (v) => (v == null ? '' : String(v));
+    const data = rows.map((r) => {
+      const o = r.toJSON();
+      return [
+        cell(o.id),
+        cell(o.surname),
+        cell(o.firstname),
+        cell(o.mother_name),
+        cell(o.father_name),
+        cell(o.title),
+        cell(o.dob),
+        cell(o.gender),
+        cell(o.email),
+        cell(o.mobile_number),
+        cell(o.departmentid),
+        cell(o.departmentInfo?.department_name),
+        cell(o.designationid),
+        cell(o.designationInfo?.designation_name),
+        cell(o.userType),
+        cell(o.role_id),
+        cell(o.address),
+        cell(o.date_of_join),
+        cell(o.emergency_contact_number),
+        cell(o.staff_photo),
+        cell(o.staff_sig_photo),
+        cell(o.createdAt),
+        cell(o.updatedAt),
+      ];
+    });
+
+    const buffer = await generateExcel({
+      title: 'Staff Registration',
+      columns,
+      data,
+    });
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    res.setHeader('Content-Disposition', 'attachment; filename=staff-registration.xlsx');
+    res.send(buffer);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message,
+    });
+  }
+};
+
+
+module.exports = { registration, login, logout, staffDetail, staffDetailById, editStaff, allStaff, staffExcelDownload };

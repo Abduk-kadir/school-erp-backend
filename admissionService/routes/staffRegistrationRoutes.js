@@ -8,7 +8,8 @@ const {
   staffDetail,
   staffDetailById,
   editStaff,
-  allStaff
+  allStaff,
+  staffExcelDownload
 } = require('../controllers/staff/staffRegistrationController');
 const verifystaff = require('../middlewares/verifystaff');
 
@@ -33,5 +34,5 @@ router.put(
 );
 router.post('/login', login);
 router.post('/logout', logout);
-
+router.get('/excel', staffExcelDownload);
 module.exports = router;
