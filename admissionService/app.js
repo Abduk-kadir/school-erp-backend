@@ -115,12 +115,12 @@ const studentCoScholasticMarkRoutes = require('./routes/examination/studentCoSch
 const descriptiveRemarkRoutes = require('./routes/examination/descriptiveRemarkRoutes');
 const assignDescriptiveRemarkRoutes = require('./routes/examination/assignDescriptiveRemarkRoutes');
 //start all jobs
-startAllJobs();
+//startAllJobs();
 // In your app.js or server.js
                  // Ensure Redis connects first
                  
 const worker = require('./workers/notificationWorker.js');
-const rfidWorker = require('./workers/rfidWorker.js');
+//const rfidWorker = require('./workers/rfidWorker.js');
 
 // Optional: Add more event listeners
 worker.on('completed', (job) => {
@@ -135,6 +135,7 @@ worker.on('error', (err) => {
   console.error('Worker Error:', err);
 });
 
+/*
 rfidWorker.on('completed', (job) => {
   console.log(`✅ RFID Job ${job.id} completed`, job.returnvalue);
 });
@@ -146,9 +147,10 @@ rfidWorker.on('failed', (job, err) => {
 rfidWorker.on('error', (err) => {
   console.error('RFID Worker Error:', err);
 });
+*/
 
 console.log('🚀 Notification Worker Started Successfully');
-console.log('🚀 RFID Attendance Worker Started Successfully');
+//console.log('🚀 RFID Attendance Worker Started Successfully');
 
 //app.use('/api/db', dbRoutes);
 app.use('/api/in-out-attendance', inOutAttendanceRoutes);

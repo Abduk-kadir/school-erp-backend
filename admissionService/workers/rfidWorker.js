@@ -253,7 +253,7 @@ async function processRfidBatch(job) {
   if (!rows.length) return { processed: 0 };
 
   // AllRfid is saved in rfidController before Done — worker only processes attendance
-
+  console.log("rows in worker************",rows)
   const parsed = rows.map(parseRfidRow);
   console.log("parsed", parsed)
   const notMatched = parsed.filter((p) => p.flag !== '31');
@@ -281,6 +281,7 @@ async function processRfidBatch(job) {
       type: QueryTypes.SELECT,
     }
   );
+  console.log("students**********",students)
   const studentByRfid = new Map(
     students.map((s) => [String(s.rfid), s])
   );
