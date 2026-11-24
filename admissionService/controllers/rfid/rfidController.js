@@ -1,6 +1,7 @@
 const asyncHandler = require('express-async-handler');
 const { rfidQueue } = require('../../queues/rfidQueue');
 const { QueryTypes } = require('sequelize');
+const { generateExcel } = require('../../utils/generateExcel');
 
 const { notificationQueue } = require('../../queues/notificationQueue.js');
 const {
@@ -250,7 +251,7 @@ async function queueNotifications(notifyJobs) {
 
 const saveattendancebyrfid = asyncHandler(async (req, res) => {
   const rawData = req.query.Data;
-  console.log("rawData**************",rawData)
+  console.log("rawData**************", rawData)
 
   if (!rawData) {
     return res.status(400).json({ message: 'Data query param is required' });
@@ -285,7 +286,7 @@ const saveattendancebyrfid = asyncHandler(async (req, res) => {
   }
 
   if (!valid.length) {
-    res.status(200).json({ processed: rows.length, matched: 0 });
+    return res.send('Done');
   }
 
   //geting all rfids
@@ -329,7 +330,7 @@ const saveattendancebyrfid = asyncHandler(async (req, res) => {
 
   //sorting punches by punchedAt
   punches.sort((a, b) => a.punch.punchedAt - b.punch.punchedAt);
-  
+
   const byStudent = new Map();
   for (const item of punches) {
     const key = String(item.student.reg_no);
@@ -362,6 +363,141 @@ const saveattendancebyrfid = asyncHandler(async (req, res) => {
   return res.send('Done');
 });
 
+const allfridExcelDownload = asyncHandler(async (req, res) => {
+  try {
+    const rows = await AllRfid.findAll({
+      attributes: ['id', 'data'],
+      order: [['id', 'ASC']],
+    });
+
+    const columns = ['Id', 'Data'];
+
+    const cell = (v) => (v == null ? '' : String(v));
+
+    const data = rows.map((r) => {
+      const o = r.toJSON();
+      return [
+        cell(o.id),
+        cell(o.data),
+      ];
+    });
+
+    const buffer = await generateExcel({
+      title: 'All Rfid Data',
+      columns,
+      data,
+    });
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename=all-rfid.xlsx'
+    );
+    res.send(buffer);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message,
+    });
+  }
+});
+const allunknownexcelDownload= asyncHandler(async (req, res) => {
+  try {
+    const rows = await RfidUnknown.findAll({
+      attributes: ['id', 'data'],
+      order: [['id', 'ASC']],
+    });
+
+    const columns = ['Id', 'Data'];
+
+    const cell = (v) => (v == null ? '' : String(v));
+
+    const data = rows.map((r) => {
+      const o = r.toJSON();
+      return [
+        cell(o.id),
+        cell(o.data),
+      ];
+    });
+
+    const buffer = await generateExcel({
+      title: 'Unknown Rfid Data',
+      columns,
+      data,
+    });
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename=all-rfid.xlsx'
+    );
+    res.send(buffer);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message,
+    });
+  }
+});
+const notmatchedexcelDownload=asyncHandler(async(req,res)=>{
+  try {
+    const rows = await NotMatchedRfid.findAll({
+      attributes: ['id', 'data'],
+      order: [['id', 'ASC']],
+    });
+
+    const columns = ['Id', 'Data'];
+
+    const cell = (v) => (v == null ? '' : String(v));
+
+    const data = rows.map((r) => {
+      const o = r.toJSON();
+      return [
+        cell(o.id),
+        cell(o.data),
+      ];
+    });
+
+    const buffer = await generateExcel({
+      title: 'Not Matched Rfid Data',
+      columns,
+      data,
+    });
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename=all-rfid.xlsx'
+    );
+    res.send(buffer);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message,
+    });
+  }
+
+})
+
+
 module.exports = {
   saveattendancebyrfid,
+  allfridExcelDownload,
+  allunknownexcelDownload,
+  notmatchedexcelDownload,
 };
