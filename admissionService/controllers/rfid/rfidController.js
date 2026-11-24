@@ -346,20 +346,14 @@ const saveattendancebyrfid = asyncHandler(async (req, res) => {
           punch,
           student
         );
-        //allNotifyJobs.push(...notifyJobs);
+        allNotifyJobs.push(...notifyJobs);
       }
     })
   );
 
-  // Attendance / notify — async; raw punch already safe in AllRfids
-  /*
-  try {
-    await rfidQueue.add('process-rfid-batch', { rows: allRows });
-  } catch (err) {
-    console.error('RFID queue add failed (AllRfid already saved):', err.message);
-  }
-    */
-
+  console.log("allNotifyjobs********", allNotifyJobs)
+  // sending notification to students
+  await queueNotifications(allNotifyJobs);
   return res.send('Done');
 });
 

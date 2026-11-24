@@ -114,11 +114,11 @@ const resultMarkEntryListRoutes = require('./routes/examination/resultMarkEntryL
 const studentCoScholasticMarkRoutes = require('./routes/examination/studentCoScholasticMarkRoutes');
 const descriptiveRemarkRoutes = require('./routes/examination/descriptiveRemarkRoutes');
 const assignDescriptiveRemarkRoutes = require('./routes/examination/assignDescriptiveRemarkRoutes');
+
 //start all jobs
-//startAllJobs();
-// In your app.js or server.js
-                 // Ensure Redis connects first
-                 
+ startAllJobs();
+
+//notification worker start                 
 const worker = require('./workers/notificationWorker.js');
 //const rfidWorker = require('./workers/rfidWorker.js');
 
