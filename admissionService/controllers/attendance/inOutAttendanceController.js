@@ -58,6 +58,17 @@ function getDetailAttendanceSql(attendance_date) {
   };
 }
 
+// A batch covers several class/division pairs (batch_masters); it is ignored when both class and
+// division are already selected.
+function addBatchFilter(filters, replacements, query, classId, divisionId) {
+  const batchId = query['filter[batchId]'] || query.filter?.batchId || query.batchId || '';
+  if (!batchId || (classId && divisionId)) return;
+  filters.push(`(p.class, p.division) IN (
+        SELECT bm.classid, bm.divisionid FROM batch_masters bm WHERE bm.batchid = :batchId
+      )`);
+  replacements.batchId = Number(batchId);
+}
+
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const MONTHLY_FIXED_COLUMN_COUNT = 5;
 
@@ -96,6 +107,7 @@ async function getMonthlyReportExportData(query) {
   const months = [...new Map(dates.map((d) => [`${d.year}-${d.month}`, d])).values()];
   const replacements = {};
   const studentWhere = ['1 = 1'];
+  addBatchFilter(studentWhere, replacements, query, classId, divisionId);
   if (classId) {
     studentWhere.push('p.class = :classId');
     replacements.classId = Number(classId);
@@ -331,6 +343,7 @@ const inOutAttendanceController = {
     // p.class / p.division are INTEGER FKs — match by id, not LIKE name
     const whereClause = ['1 = 1'];
     const replacements = { length, start };
+    addBatchFilter(whereClause, replacements, req.query, classId, divisionId);
 
     if (classId) {
       whereClause.push('p.class = :classId');
@@ -437,6 +450,7 @@ const inOutAttendanceController = {
     // p.class / p.division are INTEGER FKs — match by id, not LIKE name
     const whereClause = ['1 = 1'];
     const replacements = {};
+    addBatchFilter(whereClause, replacements, req.query, classId, divisionId);
 
     if (classId) {
       whereClause.push('p.class = :classId');
@@ -535,6 +549,7 @@ const inOutAttendanceController = {
     // p.class / p.division are INTEGER FKs — match by id, not LIKE name
     const whereClause = ['1 = 1'];
     const replacements = {};
+    addBatchFilter(whereClause, replacements, req.query, classId, divisionId);
 
     if (classId) {
       whereClause.push('p.class = :classId');
@@ -623,6 +638,7 @@ const inOutAttendanceController = {
     
     const studentFilters = [];
     const replacements = { attendance_date, length, start };
+    addBatchFilter(studentFilters, replacements, req.query, className, division);
 
     const attendanceDateSql = 'AND a.attendance_date = :attendance_date';
 
@@ -721,6 +737,7 @@ const inOutAttendanceController = {
     
     const studentFilters = [];
     const replacements = { attendance_date, length, start };
+    addBatchFilter(studentFilters, replacements, req.query, className, division);
 
     const attendanceDateSql = 'AND a.attendance_date = :attendance_date';
 
@@ -789,6 +806,7 @@ const inOutAttendanceController = {
 
     const studentFilters = [];
     const replacements = { attendance_date, length, start };
+    addBatchFilter(studentFilters, replacements, req.query, className, division);
 
     const attendanceDateSql = 'AND a.attendance_date = :attendance_date';
 
@@ -874,6 +892,7 @@ const inOutAttendanceController = {
     console.log('end month is:::::::::::::::::::::::::::',endmonthNumber)
     const whereClause = ['1 = 1'];
     const replacements = { length, start };
+    addBatchFilter(whereClause, replacements, req.query, classId, divisionId);
 
     if (classId) {
       whereClause.push('p.class = :classId');
