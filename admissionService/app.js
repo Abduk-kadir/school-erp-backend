@@ -16,7 +16,6 @@ app.use(cors());
 
 //app.use(dbSwitcher);
 
-
 const roleRoutes = require('./routes/roleRoutes');
 const employeeRoutes = require('./routes/employeeRoutes');
 const classRoutes = require('./routes/classRoutes');
@@ -276,6 +275,7 @@ app.use('/api/staff-class-maps', staffclassmapRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api',formRoutes);
+
 
 
 const globalError = require('./middlewares/globalError');

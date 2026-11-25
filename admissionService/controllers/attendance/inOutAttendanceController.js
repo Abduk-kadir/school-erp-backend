@@ -21,6 +21,43 @@ function mapInOutAttendanceRow(row) {
   };
 }
 
+// Absent students have no in_out_attendances row; they count as absent only on a working day for
+// their class/division: the attendance cron marked it, or at least one classmate is present.
+// Older data may still hold absent rows (in_time 00:00:00), which keep counting as before.
+const WORKING_DAY_JOIN_SQL = `
+      LEFT JOIN (
+        SELECT classid, divisionid
+        FROM attendance_cron_records
+        WHERE attendance_date = :attendance_date AND isrun = 1
+        UNION
+        SELECT ps.class, ps.division
+        FROM in_out_attendances ia
+        JOIN par_student_personal_informations ps ON ps.reg_no = ia.reg_no
+        WHERE ia.attendance_date = :attendance_date AND ia.in_time > '00:00:00'
+      ) cr ON cr.classid = p.class AND cr.divisionid = p.division`;
+const SUMMARY_COUNTS_SQL = `
+        COUNT(DISTINCT CASE WHEN a.in_time IS NOT NULL AND a.in_time > '00:00:00' THEN a.reg_no END) AS present_count,
+        COUNT(DISTINCT CASE WHEN (a.in_time IS NULL OR a.in_time <= '00:00:00')
+          AND (a.attendance_date IS NOT NULL OR cr.classid IS NOT NULL) THEN p.reg_no END) AS absent_count`;
+
+// Absent students on a working day are shown with the date and 00:00:00 times, like the old absent rows.
+function getDetailAttendanceSql(attendance_date) {
+  if (!attendance_date) {
+    return {
+      workingDayJoinSql: '',
+      detailColumnsSql: 'a.attendance_date AS `date`, a.in_time, a.out_time',
+    };
+  }
+  const isAbsentSql = 'a.reg_no IS NULL AND cr.classid IS NOT NULL';
+  return {
+    workingDayJoinSql: WORKING_DAY_JOIN_SQL,
+    detailColumnsSql: `
+        CASE WHEN ${isAbsentSql} THEN :attendance_date ELSE a.attendance_date END AS \`date\`,
+        CASE WHEN ${isAbsentSql} THEN '00:00:00' ELSE a.in_time END AS in_time,
+        CASE WHEN ${isAbsentSql} THEN '00:00:00' ELSE a.out_time END AS out_time`,
+  };
+}
+
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const MONTHLY_FIXED_COLUMN_COUNT = 5;
 
@@ -316,6 +353,7 @@ const inOutAttendanceController = {
     const attendanceDateSql = attendance_date
       ? 'AND a.attendance_date = :attendance_date'
       : '';
+    const { workingDayJoinSql, detailColumnsSql } = getDetailAttendanceSql(attendance_date);
     if (attendance_date) {
       replacements.attendance_date = attendance_date;
     }
@@ -327,6 +365,7 @@ const inOutAttendanceController = {
       LEFT JOIN in_out_attendances a
         ON a.reg_no = p.reg_no
         ${attendanceDateSql}
+      ${workingDayJoinSql}
       WHERE ${whereClause.join(' AND ')}
     `;
 
@@ -339,9 +378,7 @@ const inOutAttendanceController = {
         cm.class_name AS class,
         dm.division_name AS \`div\`,
         p.rollnumber AS roll_no,
-        a.attendance_date AS \`date\`,
-        a.in_time,
-        a.out_time
+        ${detailColumnsSql}
       ${fromSql}
       ORDER BY cm.class_name ASC, dm.division_name ASC, CAST(p.rollnumber AS UNSIGNED) ASC
       LIMIT :length OFFSET :start
@@ -422,6 +459,7 @@ const inOutAttendanceController = {
     const attendanceDateSql = attendance_date
       ? 'AND a.attendance_date = :attendance_date'
       : '';
+    const { workingDayJoinSql, detailColumnsSql } = getDetailAttendanceSql(attendance_date);
     if (attendance_date) {
       replacements.attendance_date = attendance_date;
     }
@@ -434,15 +472,14 @@ const inOutAttendanceController = {
         cm.class_name AS class,
         dm.division_name AS \`div\`,
         p.rollnumber AS roll_no,
-        a.attendance_date AS \`date\`,
-        a.in_time,
-        a.out_time
+        ${detailColumnsSql}
       FROM par_student_personal_informations p
       LEFT JOIN class_masters cm ON cm.id = p.class
       LEFT JOIN division_masters dm ON dm.id = p.division
       LEFT JOIN in_out_attendances a
         ON a.reg_no = p.reg_no
         ${attendanceDateSql}
+      ${workingDayJoinSql}
       WHERE ${whereClause.join(' AND ')}
       ORDER BY cm.class_name ASC, dm.division_name ASC, CAST(p.rollnumber AS UNSIGNED) ASC
     `;
@@ -520,6 +557,7 @@ const inOutAttendanceController = {
     const attendanceDateSql = attendance_date
       ? 'AND a.attendance_date = :attendance_date'
       : '';
+    const { workingDayJoinSql, detailColumnsSql } = getDetailAttendanceSql(attendance_date);
     if (attendance_date) {
       replacements.attendance_date = attendance_date;
     }
@@ -528,18 +566,18 @@ const inOutAttendanceController = {
       SELECT
         p.reg_no,
         p.first_name AS name,
+        p.last_name AS last_name,
         cm.class_name AS class,
         dm.division_name AS \`div\`,
         p.rollnumber AS roll_no,
-        a.attendance_date AS \`date\`,
-        a.in_time,
-        a.out_time
+        ${detailColumnsSql}
       FROM par_student_personal_informations p
       LEFT JOIN class_masters cm ON cm.id = p.class
       LEFT JOIN division_masters dm ON dm.id = p.division
       LEFT JOIN in_out_attendances a
         ON a.reg_no = p.reg_no
         ${attendanceDateSql}
+      ${workingDayJoinSql}
       WHERE ${whereClause.join(' AND ')}
       ORDER BY cm.class_name ASC, dm.division_name ASC, CAST(p.rollnumber AS UNSIGNED) ASC
     `;
@@ -617,6 +655,7 @@ const inOutAttendanceController = {
       LEFT JOIN in_out_attendances a
         ON a.reg_no = p.reg_no
         ${attendanceDateSql}
+      ${WORKING_DAY_JOIN_SQL}
       WHERE 1 = 1
       ${studentWhere}
     `;
@@ -635,9 +674,7 @@ const inOutAttendanceController = {
         p.division AS divisionId,
         cm.class_name AS class,
         dm.division_name AS \`div\`,
-        COUNT(DISTINCT p.reg_no) AS total_student,
-        COUNT(DISTINCT CASE WHEN a.in_time IS NOT NULL AND a.in_time > '00:00:00' THEN a.reg_no END) AS present_count,
-        COUNT(DISTINCT CASE WHEN a.attendance_date IS NOT NULL AND (a.in_time IS NULL OR a.in_time <= '00:00:00') THEN a.reg_no END) AS absent_count
+        COUNT(DISTINCT p.reg_no) AS total_student,${SUMMARY_COUNTS_SQL}
       ${fromSql}
       GROUP BY p.class, p.division, cm.class_name, dm.division_name
       ORDER BY cm.class_name, dm.division_name
@@ -704,15 +741,14 @@ const inOutAttendanceController = {
       SELECT
         cm.class_name AS class,
         dm.division_name AS \`div\`,
-        COUNT(DISTINCT p.reg_no) AS total_student,
-        COUNT(DISTINCT CASE WHEN a.in_time IS NOT NULL AND a.in_time > '00:00:00' THEN a.reg_no END) AS present_count,
-        COUNT(DISTINCT CASE WHEN a.attendance_date IS NOT NULL AND (a.in_time IS NULL OR a.in_time <= '00:00:00') THEN a.reg_no END) AS absent_count
+        COUNT(DISTINCT p.reg_no) AS total_student,${SUMMARY_COUNTS_SQL}
       FROM par_student_personal_informations p
       LEFT JOIN class_masters cm ON cm.id = p.class
       LEFT JOIN division_masters dm ON dm.id = p.division
       LEFT JOIN in_out_attendances a
         ON a.reg_no = p.reg_no
         ${attendanceDateSql}
+      ${WORKING_DAY_JOIN_SQL}
       WHERE 1 = 1
       ${studentWhere}
       GROUP BY p.class, p.division, cm.class_name, dm.division_name
@@ -773,15 +809,14 @@ const inOutAttendanceController = {
       SELECT
         cm.class_name AS class,
         dm.division_name AS \`div\`,
-        COUNT(DISTINCT p.reg_no) AS total_student,
-        COUNT(DISTINCT CASE WHEN a.in_time IS NOT NULL AND a.in_time > '00:00:00' THEN a.reg_no END) AS present_count,
-        COUNT(DISTINCT CASE WHEN a.attendance_date IS NOT NULL AND (a.in_time IS NULL OR a.in_time <= '00:00:00') THEN a.reg_no END) AS absent_count
+        COUNT(DISTINCT p.reg_no) AS total_student,${SUMMARY_COUNTS_SQL}
       FROM par_student_personal_informations p
       LEFT JOIN class_masters cm ON cm.id = p.class
       LEFT JOIN division_masters dm ON dm.id = p.division
       LEFT JOIN in_out_attendances a
         ON a.reg_no = p.reg_no
         ${attendanceDateSql}
+      ${WORKING_DAY_JOIN_SQL}
       WHERE 1 = 1
       ${studentWhere}
       GROUP BY p.class, p.division, cm.class_name, dm.division_name

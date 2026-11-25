@@ -13,6 +13,11 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.BIGINT,
         allowNull: false,
       },
+      lastcronrecordid: {
+        type: DataTypes.BIGINT,
+        allowNull: false,
+        defaultValue: 0,
+      },
     },
     {
       sequelize,

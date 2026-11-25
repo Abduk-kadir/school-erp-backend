@@ -96,32 +96,20 @@ function startAttendanceReminderJob() {
           }
         );
 
-        const absentrecord = [];
-        const absentStudents = [];
-        const presentstudents = [];
+        if (!students.length) continue;
 
-        for (const student of students) {
-          const row = await InOutAttendance.findOne({
-            where: { reg_no: student.reg_no, attendance_date: today },
-          });
+        const attendedRows = await InOutAttendance.findAll({
+          where: { reg_no: students.map((s) => s.reg_no), attendance_date: today },
+          attributes: ['reg_no'],
+          raw: true,
+        });
+        const attendedRegNos = new Set(attendedRows.map((r) => String(r.reg_no)));
+        const absentStudents = students.filter((s) => !attendedRegNos.has(String(s.reg_no)));
+        const presentCount = students.length - absentStudents.length;
 
-          if (!row) {
-            absentrecord.push({
-              reg_no: student.reg_no,
-              attendance_date: today,
-              in_time: '00:00:00',
-              out_time:'00:00:00',
-              in_time_notification_flag: false,
-              out_time_notification_flag: false,
-              machine_id: null,
-            });
-            absentStudents.push(student);
-          } else {
-            presentstudents.push(student.reg_no);
-          }
-        }
-
-        if (presentstudents.length >= 5) {
+        // Absent students get no in_out_attendances row; this record marks the day as a
+        // working day for the class/division, which the reports use to count absents.
+        if (presentCount >= 5) {
           console.log('school is open');
 
           await attendancecronerecord.create({
@@ -131,10 +119,6 @@ function startAttendanceReminderJob() {
             attendance_date:today,
             isrun: true,
           });
-
-          if (absentrecord.length) {
-            await InOutAttendance.bulkCreate(absentrecord);
-          }
 
           await sendAbsentNotifications(absentStudents, today);
         } else {

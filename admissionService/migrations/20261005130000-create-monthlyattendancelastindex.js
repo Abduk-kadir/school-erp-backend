@@ -14,6 +14,11 @@ module.exports = {
         type: Sequelize.BIGINT,
         allowNull: false,
       },
+      lastcronrecordid: {
+        type: Sequelize.BIGINT,
+        allowNull: false,
+        defaultValue: 0,
+      },
     });
   },
 
