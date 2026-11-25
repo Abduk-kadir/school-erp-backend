@@ -217,7 +217,7 @@ async function buildMonthlyAttendance() {
 }
 
 function startMonthlyAttendanceReminderJob() {
-  cron.schedule('*/30 * * * * *', async () => {
+  cron.schedule('*/5 * * * *', async () => {
     try {
       while (await buildMonthlyAttendance());
     } catch (error) {
