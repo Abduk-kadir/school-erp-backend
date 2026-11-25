@@ -17,9 +17,10 @@ function hasTime(time) {
 
 function convertTimeAmPm(time) {
   if (!hasTime(time)) return '';
-  const [hours, minutes, seconds] = time.split(':').map(Number);
+  const [hours, minutes] = time.split(':').map(Number);
   const ampm = hours >= 12 ? 'PM' : 'AM';
-  return `${hours}:${minutes}:${seconds} ${ampm}`;
+  const pad2 = (n) => String(n).padStart(2, '0');
+  return `${pad2(hours % 12 || 12)}:${pad2(minutes)} ${ampm}`;
 }
 
 // A class/division has a working day on a date when the attendance cron marked it, or when at
@@ -168,9 +169,8 @@ async function buildMonthlyAttendance() {
     }
     const row = rowsByKey[key];
 
-    const outTime = hasTime(record.out_time) ? `-${convertTimeAmPm(record.out_time)}` : '';
     row[day] = hasTime(record.in_time)
-      ? `P ${convertTimeAmPm(record.in_time)}${outTime}`
+      ? `P (${convertTimeAmPm(record.in_time)} - ${convertTimeAmPm(record.out_time)})`
       : 'A';
     touchedKeys.add(key);
   }
@@ -217,7 +217,7 @@ async function buildMonthlyAttendance() {
 }
 
 function startMonthlyAttendanceReminderJob() {
-  cron.schedule('*/5 * * * *', async () => {
+  cron.schedule('*/30 * * * * *', async () => {
     try {
       while (await buildMonthlyAttendance());
     } catch (error) {

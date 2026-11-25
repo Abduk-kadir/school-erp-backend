@@ -901,7 +901,17 @@ const inOutAttendanceController = {
       replacements.startmonthNumber = startmonthNumber;
       replacements.endmonthNumber = endmonthNumber;
     }
-   
+
+    const fromSql = `
+      FROM par_student_personal_informations p
+      LEFT JOIN class_masters cm ON cm.id = p.class
+      LEFT JOIN division_masters dm ON dm.id = p.division
+      LEFT JOIN monthlyattendances a
+        ON a.reg_no = p.reg_no
+        ${monthSql}
+      WHERE ${whereClause.join(' AND ')}
+    `;
+
     const sql = `
       SELECT
         a.id as id,
@@ -946,25 +956,40 @@ const inOutAttendanceController = {
         a.total_absent,
         a.total_workingdays,
         a.present_percent
-      FROM par_student_personal_informations p
-      LEFT JOIN class_masters cm ON cm.id = p.class
-      LEFT JOIN division_masters dm ON dm.id = p.division
-      LEFT JOIN monthlyattendances a
-        ON a.reg_no = p.reg_no
-        ${monthSql}
-      WHERE ${whereClause.join(' AND ')}
+      ${fromSql}
       ORDER BY p.reg_no ASC
       LIMIT :length OFFSET :start
     `;
+    const countSql = `SELECT COUNT(*) AS total ${fromSql}`;
 
-    const data = await sequelize.query(sql, {
-      replacements,
-      type: Sequelize.QueryTypes.SELECT,
-      raw: true,
-     
+    const countReplacements = { ...replacements };
+    delete countReplacements.length;
+    delete countReplacements.start;
+
+    const [countRows, data] = await Promise.all([
+      sequelize.query(countSql, {
+        replacements: countReplacements,
+        type: Sequelize.QueryTypes.SELECT,
+        raw: true,
+      }),
+      sequelize.query(sql, {
+        replacements,
+        type: Sequelize.QueryTypes.SELECT,
+        raw: true,
+      }),
+    ]);
+
+    const recordsTotal = Number(countRows[0]?.total ?? 0);
+    const recordsFiltered = recordsTotal;
+
+    return res.status(200).json({
+      success: true,
+      draw,
+      recordsTotal,
+      recordsFiltered,
+      count: data.length,
+      data,
     });
-    
-    return res.status(200).json({ success: true, count: data.length, data ,draw});
     
   }),
 
