@@ -256,6 +256,106 @@ const assignDescriptiveRemarkController = {
       },
     });
   }),
+
+  update: asyncHandler(async (req, res) => {
+    const rowsInput = Array.isArray(req.body.assigned_remarks) ? req.body.assigned_remarks : null;
+
+    if (!rowsInput || !rowsInput.length) {
+      throw httpError(400, 'assigned_remarks array is required');
+    }
+
+    const rows = rowsInput.map((row, index) => {
+      const id = toNumberOrNull(row.id);
+      const exam_scheme_id = toNumberOrNull(row.exam_scheme_id);
+      const reg_no = toNumberOrNull(row.reg_no);
+      const remark_id = toNumberOrNull(row.remark_id);
+      const sequence = toNumberOrNull(row.sequence);
+
+      if (!exam_scheme_id || !reg_no || !remark_id) {
+        throw httpError(400, `Row ${index + 1}: exam_scheme_id, reg_no and remark_id are required`);
+      }
+      if (sequence === null) {
+        throw httpError(400, `Row ${index + 1}: sequence is required`);
+      }
+      return { id, exam_scheme_id, reg_no, remark_id, sequence };
+    });
+
+    const schemeIds = [...new Set(rows.map((r) => r.exam_scheme_id))];
+    const regNos = [...new Set(rows.map((r) => r.reg_no))];
+    const remarkIds = [...new Set(rows.map((r) => r.remark_id))];
+
+    const [schemes, remarks, students] = await Promise.all([
+      exam_scheme.findAll({ where: { id: schemeIds }, attributes: ['id'] }),
+      descriptive_remark.findAll({ where: { id: remarkIds }, attributes: ['id'] }),
+      par_student_personal_information.findAll({
+        where: { reg_no: regNos },
+        attributes: ['reg_no'],
+      }),
+    ]);
+
+    const schemeSet = new Set(schemes.map((s) => s.id));
+    const remarkSet = new Set(remarks.map((r) => r.id));
+    const studentSet = new Set(students.map((s) => Number(s.reg_no)));
+
+    for (const schemeId of schemeIds) {
+      if (!schemeSet.has(schemeId)) throw httpError(404, `Exam scheme ${schemeId} not found`);
+    }
+    for (const remarkId of remarkIds) {
+      if (!remarkSet.has(remarkId)) throw httpError(404, `Descriptive remark ${remarkId} not found`);
+    }
+    for (const regNo of regNos) {
+      if (!studentSet.has(Number(regNo))) throw httpError(404, `Student not found for reg_no ${regNo}`);
+    }
+
+    const updatedIds = [];
+
+    await sequelize.transaction(async (transaction) => {
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const existing = row.id
+          ? await assign_descriptive_remark.findByPk(row.id, { transaction })
+          : await assign_descriptive_remark.findOne({
+              where: {
+                exam_scheme_id: row.exam_scheme_id,
+                reg_no: row.reg_no,
+                remark_id: row.remark_id,
+              },
+              transaction,
+            });
+
+        if (!existing) {
+          throw httpError(
+            404,
+            `Row ${i + 1}: assigned remark not found for exam_scheme_id=${row.exam_scheme_id}, reg_no=${row.reg_no}, remark_id=${row.remark_id}`
+          );
+        }
+
+        await existing.update(
+          {
+            exam_scheme_id: row.exam_scheme_id,
+            reg_no: row.reg_no,
+            remark_id: row.remark_id,
+            sequence: row.sequence,
+          },
+          { transaction }
+        );
+        updatedIds.push(existing.id);
+      }
+    });
+
+    const data = await assign_descriptive_remark.findAll({
+      where: { id: updatedIds },
+      include,
+      order: [['sequence', 'ASC'], ['id', 'ASC']],
+    });
+
+    res.json({
+      success: true,
+      message: 'Assigned descriptive remarks updated',
+      count: data.length,
+      data,
+    });
+  }),
 };
 
 module.exports = assignDescriptiveRemarkController;

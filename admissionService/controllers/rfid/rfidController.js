@@ -360,19 +360,33 @@ const saveattendancebyrfid = asyncHandler(async (req, res) => {
 const allfridExcelDownload = asyncHandler(async (req, res) => {
   try {
     const rows = await AllRfid.findAll({
-      attributes: ['id', 'data'],
+      attributes: ['id', 'data', 'createdAt'],
       order: [['id', 'ASC']],
     });
 
-    const columns = ['Id', 'Data'];
+    const columns = ['Id', 'Data', 'Created At'];
 
     const cell = (v) => (v == null ? '' : String(v));
+    const dateCell = (v) =>
+      v
+        ? new Date(v).toLocaleString('en-IN', {
+            timeZone: 'Asia/Kolkata',
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true,
+          })
+        : '';
 
     const data = rows.map((r) => {
       const o = r.toJSON();
       return [
         cell(o.id),
         cell(o.data),
+        dateCell(o.createdAt),
       ];
     });
 
@@ -403,19 +417,33 @@ const allfridExcelDownload = asyncHandler(async (req, res) => {
 const allunknownexcelDownload= asyncHandler(async (req, res) => {
   try {
     const rows = await RfidUnknown.findAll({
-      attributes: ['id', 'data'],
+      attributes: ['id', 'data', 'createdAt'],
       order: [['id', 'ASC']],
     });
 
-    const columns = ['Id', 'Data'];
+    const columns = ['Id', 'Data', 'Created At'];
 
     const cell = (v) => (v == null ? '' : String(v));
+    const dateCell = (v) =>
+      v
+        ? new Date(v).toLocaleString('en-IN', {
+            timeZone: 'Asia/Kolkata',
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true,
+          })
+        : '';
 
     const data = rows.map((r) => {
       const o = r.toJSON();
       return [
         cell(o.id),
         cell(o.data),
+        dateCell(o.createdAt),
       ];
     });
 
@@ -431,7 +459,7 @@ const allunknownexcelDownload= asyncHandler(async (req, res) => {
     );
     res.setHeader(
       'Content-Disposition',
-      'attachment; filename=all-rfid.xlsx'
+      'attachment; filename=unknown-rfid.xlsx'
     );
     res.send(buffer);
   } catch (error) {
@@ -446,19 +474,33 @@ const allunknownexcelDownload= asyncHandler(async (req, res) => {
 const notmatchedexcelDownload=asyncHandler(async(req,res)=>{
   try {
     const rows = await NotMatchedRfid.findAll({
-      attributes: ['id', 'data'],
+      attributes: ['id', 'data', 'createdAt'],
       order: [['id', 'ASC']],
     });
 
-    const columns = ['Id', 'Data'];
+    const columns = ['Id', 'Data', 'Created At'];
 
     const cell = (v) => (v == null ? '' : String(v));
+    const dateCell = (v) =>
+      v
+        ? new Date(v).toLocaleString('en-IN', {
+            timeZone: 'Asia/Kolkata',
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true,
+          })
+        : '';
 
     const data = rows.map((r) => {
       const o = r.toJSON();
       return [
         cell(o.id),
         cell(o.data),
+        dateCell(o.createdAt),
       ];
     });
 
@@ -474,7 +516,7 @@ const notmatchedexcelDownload=asyncHandler(async(req,res)=>{
     );
     res.setHeader(
       'Content-Disposition',
-      'attachment; filename=all-rfid.xlsx'
+      'attachment; filename=not-matched-rfid.xlsx'
     );
     res.send(buffer);
   } catch (error) {
