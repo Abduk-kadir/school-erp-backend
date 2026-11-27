@@ -208,6 +208,66 @@ async function upsertAttendanceAndCollectNotify(punch, student) {
   return { notifyJobs, punchedAt };
 }
 
+// Returns true only for a real time; null/empty and '00:00:00' mean "not set"
+function isTimeSet(t) {
+  return Boolean(t) && String(t) !== '00:00:00';
+}
+
+async function upsertAttendanceAndCollectNotify2(punch, student) {
+  const { attendanceDate, punchTime, machineId, punchedAt } = punch;
+  const row = await InOutAttendance.findOne({
+    where: { reg_no: student.reg_no, attendance_date: attendanceDate },
+  });
+
+  const notifyJobs = [];
+
+  // First punch of the day is always in_time
+  if (!row) {
+    await InOutAttendance.create({
+      reg_no: student.reg_no,
+      attendance_date: attendanceDate,
+      in_time: punchTime,
+      out_time: '00:00:00',
+      machine_id: machineId,
+    });
+    return { notifyJobs, punchedAt };
+  }
+
+  const punchSeconds = timeToSeconds(punchTime);
+  const inTimeInSeconds = timeToSeconds(row.in_time);
+
+  // Only in_time exists (out_time is empty/00:00:00)
+  if (!isTimeSet(row.out_time)) {
+    if (punchSeconds === inTimeInSeconds) return { notifyJobs, punchedAt };
+
+    if (inTimeInSeconds > punchSeconds) {
+      // Earlier punch arrived late: punch becomes in_time, old in_time becomes out_time
+      await row.update({
+        out_time: row.in_time,
+        in_time: punchTime,
+        machine_id: machineId || row.machine_id,
+      });
+      return { notifyJobs, punchedAt };
+    }
+
+    await row.update({
+      out_time: punchTime,
+      machine_id: machineId || row.machine_id,
+    });
+    return { notifyJobs, punchedAt };
+  }
+
+  // Both in_time and out_time exist: keep the latest punch as out_time
+  if (punchSeconds > timeToSeconds(row.out_time)) {
+    await row.update({
+      out_time: punchTime,
+      machine_id: machineId || row.machine_id,
+    });
+  }
+
+  return { notifyJobs, punchedAt };
+}
+
 async function queueNotifications(notifyJobs) {
   console.log("in queueNotifications section**********")
   if (!notifyJobs.length) return;

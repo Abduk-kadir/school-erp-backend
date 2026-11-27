@@ -505,6 +505,17 @@ const inOutAttendanceController = {
      
     });
     const cell = (v) => (v == null ? '' : String(v));
+    const formatDate = (v) => {
+      if (!v) return '-';
+      const [y, m, d] = String(v).slice(0, 10).split('-');
+      return `${d}/${m}/${y}`;
+    };
+    const formatTime = (v) => {
+      if (!v) return '-';
+      if (v === '00:00:00') return cell(v);
+      const [h, m] = String(v).split(':').map(Number);
+      return `${String(h % 12 || 12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
+    };
     const buffer = await generatePdf({
       title: 'In-Out Attendance',
       columns: ['Reg No','Name','Last Name','Class','Division','Roll no','Date',"In Time","Out Time"],
@@ -515,9 +526,9 @@ const inOutAttendanceController = {
         cell(r.class),
         cell(r.div),
         cell(r.roll_no),
-        cell(r.date),
-        cell(r.in_time),
-        cell(r.out_time),
+        formatDate(r.date),
+        formatTime(r.in_time),
+        formatTime(r.out_time),
       ]),
     });
     res.setHeader('Content-Type', 'application/pdf');
@@ -603,6 +614,17 @@ const inOutAttendanceController = {
       raw: true,
     });
     const cell = (v) => (v == null ? '' : String(v));
+    const formatDate = (v) => {
+      if (!v) return '-';
+      const [y, m, d] = String(v).slice(0, 10).split('-');
+      return `${d}/${m}/${y}`;
+    };
+    const formatTime = (v) => {
+      if (!v) return '-';
+      if (v === '00:00:00') return cell(v);
+      const [h, m] = String(v).split(':').map(Number);
+      return `${String(h % 12 || 12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
+    };
     const buffer = await generateExcel({
       title: 'In-Out Attendance',
       columns: ['Reg No','Name','Last Name','Class','Division','Roll no','Date',"In Time","Out Time"],
@@ -613,9 +635,9 @@ const inOutAttendanceController = {
         cell(r.class),
         cell(r.div),
         cell(r.roll_no),
-        cell(r.date),
-        cell(r.in_time),
-        cell(r.out_time),
+        formatDate(r.date),
+        formatTime(r.in_time),
+        formatTime(r.out_time),
       ]),
     });
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
